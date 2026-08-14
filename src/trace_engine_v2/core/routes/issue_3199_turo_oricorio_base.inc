@@ -1,0 +1,430 @@
+  std::optional<Card> turo_oricorio_finishing_basic_energy() const {
+    if (!state_.active || pays_apex_energy_cost(*state_.active)) return std::nullopt;
+    for (const Card basic : {Card::Grass, Card::Fire}) {
+      if (!might_be_unseen(basic)) continue;
+      Pokemon projected = *state_.active;
+      if (attach_energy_card(projected, basic) && pays_apex_energy_cost(projected)) {
+        // Vital Dance searches Basic Energy only. Project the physical attachment
+        // semantically so DDE + either Basic is recognized as Apex Dragon's GGF:
+        // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+        // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2418
+        return basic;
+      }
+    }
+    return std::nullopt;
+  }
+
+  bool turo_oricorio_energy_route_live() const {
+    if (!supporter_allowed() || hand_count(Card::ProfessorTuro) == 0 ||
+        state_.manual_energy_used || !state_.active ||
+        state_.active->card != Card::RegidragoVstar ||
+        need_regi() || need_vstar() || need_active_vstar() || need_payload()) {
+      return false;
+    }
+
+    // Professor Turo's Scenario can replay Oricorio, but Vital Dance cannot begin a
+    // deck search when zero cards remain. Reject the route before using the Supporter:
+    // https://api.pokemontcg.io/v2/cards/sv4-171
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://compendium.pokegym.net/category/7-gameplay/searching-deck-or-discard/
+    if (state_.deck.empty()) return false;
+
+    // Test the actual post-attachment Apex payment state. DDE provides two
+    // Energy of every type while attached to a Dragon, so raw Basic counters do
+    // not identify the final legal Vital Dance target:
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2418
+    const auto needed_energy = turo_oricorio_finishing_basic_energy();
+    if (!needed_energy) return false;
+
+    // Crispin is the direct Energy Supporter and remains preferred whenever the
+    // same exact Basic Energy is searchable. With one type available, the unused
+    // manual attachment can still complete the route:
+    // https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    if (hand_count(Card::Crispin) > 0) return false;
+
+    return std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+      return pokemon.card == Card::Oricorio;
+    });
+  }
+
+  void discard_turo_attachment(const Card card) {
+    state_.discard.push_back(card);
+    state_.discarded_this_turn.push_back(card);
+  }
+
+  bool turo_tapu_future_supporter_route_live() const {
+    if (!supporter_allowed() || hand_count(Card::ProfessorTuro) == 0 ||
+        !strict_payload_timing() || scenario_.locks != LockMode::None ||
+        state_.turn + 2 > scenario_.max_turn || !state_.manual_energy_used ||
+        !state_.active || state_.active->card != Card::TapuLeleGX ||
+        state_.active->grass != 0 || state_.active->fire != 0 ||
+        state_.active->tool != Tool::None ||
+        !ability_available_for_pokemon(Card::TapuLeleGX) ||
+        // K1 is complete after either legal deck inspection or full Prize inspection:
+        // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+        // https://github.com/FlareZ123/pokemon-sims/commit/690808e65feb4c17034cd3d76157ff5929a65754
+        // https://github.com/FlareZ123/pokemon-sims/issues/1924
+        !prizes_known() ||
+        hand_count(Card::Fire) == 0 || hand_count(Card::Gladion) > 0 ||
+        hand_count(Card::MysteriousTreasure) > 0 ||
+        !need_vstar() || !need_energy() || !need_payload() ||
+        count_of(state_.deck, Card::Gladion) == 0 ||
+        count_of(state_.deck, Card::RegidragoVstar) == 0 ||
+        count_of(state_.prizes, Card::MysteriousTreasure) == 0 ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    // After the current turn's second Grass attachment, Professor Turo may return
+    // Active Tapu Lele-GX, promote the prior-turn Regidrago V, and replay Tapu.
+    // Wonder Tag then banks the observable future Supporter connector. The route
+    // uses held or K1-known cards through T5 and does not depend on a future draw:
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago V and VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Supporter, Active replacement, Bench, Ability, and evolution procedure:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // Earliest source-bounded route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Knowledge state: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1165
+    return std::any_of(state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoV &&
+          pokemon.entered_turn < state_.turn && pokemon.grass >= 2 && pokemon.fire == 0;
+    });
+  }
+
+  bool play_turo_tapu_future_supporter_route() {
+    if (!turo_tapu_future_supporter_route_live()) return false;
+
+    const auto promoted = std::find_if(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+              pokemon.entered_turn < state_.turn && pokemon.grass >= 2 && pokemon.fire == 0;
+        });
+    if (promoted == state_.bench.end()) return false;
+
+    remove_one(state_.hand, Card::ProfessorTuro);
+    state_.discard.push_back(Card::ProfessorTuro);
+    state_.supporter_used = true;
+    state_.hand.push_back(Card::TapuLeleGX);
+    state_.active = *promoted;
+    state_.bench.erase(promoted);
+
+    // Turo has now resolved its return and replacement-Active state changes. Record
+    // that Supporter action before replaying Tapu, because the later hand-to-Bench
+    // play emits BENCH and then Wonder Tag in chronological order:
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Core Supporter, Active replacement, Bench, and Ability procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Readable-trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+    // Confirmed chronology bug: https://github.com/FlareZ123/pokemon-sims/issues/2244
+    trace("PLAY SUPPORTER", "R-GAME-SUPPORTER; R-TAPU-01; P-KNOWLEDGE-01",
+          "Professor Turo returned Tapu Lele-GX and promoted the established Regidrago V.");
+
+    if (!bench_from_hand(Card::TapuLeleGX, true)) {
+      throw std::logic_error("Professor Turo returned Tapu Lele-GX but its replay failed");
+    }
+    return true;
+  }
+
+  bool play_turo_active_promotion_route() {
+    // A direct evolution route requires a prior-turn Regidrago V, the matching
+    // Regidrago VSTAR card in hand, and GGF already attached to that Active line.
+    // Otherwise Professor Turo may promote an already complete Benched VSTAR:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://api.pokemontcg.io/v2/cards/sv4-171
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool active_regidrago_has_ready_direct_evolution = state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        hand_count(Card::RegidragoVstar) > 0 &&
+        // DDE can satisfy two typed units of Apex Dragon while legally attached:
+        // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // https://api.pokemontcg.io/v2/cards/swsh12-136
+        // https://github.com/FlareZ123/pokemon-sims/issues/2418
+        pays_apex_energy_cost(*state_.active);
+
+    // Under Item lock, Turo may solve the Active axis one turn before Burnet solves
+    // the strict-JIT payload axis. Admit only a held, searchable Burnet line with a
+    // remaining modeled turn, so the current Supporter play has a deterministic
+    // completion rather than merely postponing the missing payload:
+    // https://api.pokemontcg.io/v2/cards/sv4-171
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/issues/900
+    const bool delayed_burnet_payload_route = strict_payload_timing() && item_locked() &&
+        need_payload() && state_.turn < scenario_.max_turn &&
+        hand_count(Card::ProfessorBurnet) > 0 && payload_might_be_in_deck();
+    if (!supporter_allowed() || hand_count(Card::ProfessorTuro) == 0 || !state_.active ||
+        !is_basic(state_.active->card) || active_regidrago_has_ready_direct_evolution ||
+        !need_active_vstar() || need_regi() || need_vstar() || need_energy() ||
+        (need_payload() && !delayed_burnet_payload_route) || can_free_retreat_with_latias() ||
+        hand_count(Card::TateLiza) > 0) {
+      return false;
+    }
+
+    const auto promoted = std::find_if(state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+      // Promote any Regidrago VSTAR that semantically pays Apex Dragon, including
+      // DDE + Grass and DDE + Fire:
+      // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      // https://github.com/FlareZ123/pokemon-sims/issues/2418
+      return pokemon.card == Card::RegidragoVstar && pays_apex_energy_cost(pokemon);
+    });
+    if (promoted == state_.bench.end()) return false;
+
+    const Pokemon returned = *state_.active;
+    remove_one(state_.hand, Card::ProfessorTuro);
+    state_.discard.push_back(Card::ProfessorTuro);
+    state_.supporter_used = true;
+
+    // Professor Turo's Scenario returns one Pokémon in play to hand and discards
+    // every attached card. With the Active Pokémon gone, a Benched Pokémon becomes
+    // the replacement Active Pokémon under the core game procedure:
+    // https://api.pokemontcg.io/v2/cards/sv4-171
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    for (int energy = 0; energy < returned.grass; ++energy) discard_turo_attachment(Card::Grass);
+    for (int energy = 0; energy < returned.fire; ++energy) discard_turo_attachment(Card::Fire);
+    // Turo discards every attached card. DDE is a physical Special Energy card,
+    // so each attached copy must enter both public discard records when returned:
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2418
+    for (int energy = 0; energy < returned.double_dragon; ++energy) {
+      discard_turo_attachment(Card::DoubleDragonEnergy);
+    }
+    if (returned.tool == Tool::ForestSealStone) discard_turo_attachment(Card::ForestSealStone);
+    if (returned.tool == Tool::Powerglass) discard_turo_attachment(Card::Powerglass);
+
+    state_.hand.push_back(returned.card);
+    state_.active = *promoted;
+    state_.bench.erase(promoted);
+    trace("PLAY SUPPORTER", "R-GAME-SUPPORTER",
+          "Professor Turo returned the Basic Active Pokémon and promoted the complete Benched Regidrago VSTAR.");
+    return true;
+  }
+
+  bool play_guzma_active_promotion_route() {
+    // Guzma switches the user's Active Pokémon only if the opponent's Benched-to-
+    // Active switch was performed. The goldfish scenarios default to Unknown, so
+    // this route is legal only under an explicit Available scenario assumption:
+    // https://api.pokemontcg.io/v2/cards/sm3-115
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#opponent-actions
+    // https://github.com/FlareZ123/pokemon-sims/issues/741
+    if (scenario_.opponent_bench != OpponentBenchState::Available ||
+        !supporter_allowed() || hand_count(Card::Guzma) == 0 ||
+        hand_count(Card::TateLiza) > 0 || !state_.active ||
+        !need_active_vstar() || need_regi() || need_vstar() ||
+        need_energy() || need_payload() || !benched_vstar_promotion_ready()) {
+      return false;
+    }
+
+    Pokemon* target = best_benched_vstar_for_promotion();
+    if (target == nullptr) return false;
+    remove_one(state_.hand, Card::Guzma);
+    state_.discard.push_back(Card::Guzma);
+    state_.supporter_used = true;
+    std::swap(*state_.active, *target);
+    trace("PLAY SUPPORTER", "R-GUZMA-01; R-GAME-SUPPORTER",
+          "The explicit opponent-Bench assumption satisfied Guzma's conditional switch, promoting the complete Benched Regidrago VSTAR.");
+    return true;
+  }
+
+  bool play_turo_oricorio_energy_route() {
+    if (!turo_oricorio_energy_route_live()) return false;
+
+    const auto needed_energy = turo_oricorio_finishing_basic_energy();
+    if (!needed_energy) return false;
+    auto oricorio = std::find_if(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+      return pokemon.card == Card::Oricorio;
+    });
+    if (oricorio == state_.bench.end()) return false;
+
+    const Pokemon returned = *oricorio;
+    remove_one(state_.hand, Card::ProfessorTuro);
+    state_.discard.push_back(Card::ProfessorTuro);
+    state_.supporter_used = true;
+
+    // Professor Turo's Scenario returns the selected Pokémon to hand and discards
+    // every attached card: https://api.pokemontcg.io/v2/cards/sv4-171
+    for (int energy = 0; energy < returned.grass; ++energy) discard_turo_attachment(Card::Grass);
+    for (int energy = 0; energy < returned.fire; ++energy) discard_turo_attachment(Card::Fire);
+    if (returned.tool == Tool::ForestSealStone) discard_turo_attachment(Card::ForestSealStone);
+    if (returned.tool == Tool::Powerglass) discard_turo_attachment(Card::Powerglass);
+    state_.bench.erase(oricorio);
+    state_.hand.push_back(Card::Oricorio);
+
+    // Professor Turo has now resolved its return and attachment cleanup. Record the
+    // Supporter action before the returned Oricorio can be replayed from hand, because
+    // that later Bench play triggers Vital Dance and precedes the manual attachment:
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Core Supporter, Bench, Ability, search, and Energy-attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Underlying Turo-Oricorio route: https://github.com/FlareZ123/pokemon-sims/issues/267
+    // Prior Tapu replay chronology precedent: https://github.com/FlareZ123/pokemon-sims/issues/2244
+    // Readable-trace contract: https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
+    // Confirmed Oricorio chronology bug: https://github.com/FlareZ123/pokemon-sims/issues/2310
+    trace("PLAY SUPPORTER", "R-GAME-SUPPORTER; R-ORICORIO-01",
+          "Professor Turo returned Oricorio to hand for the Active-specific final Energy route.");
+
+    // Replaying the returned Basic Pokémon onto the open Bench triggers Vital Dance.
+    // Search the exact Basic Energy required by the Active Regidrago VSTAR; Vital
+    // Dance permits searching for up to 2, so selecting only the required card is legal:
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    if (!bench_from_hand(Card::Oricorio, false)) {
+      throw std::logic_error("Professor Turo returned Oricorio but its replay failed");
+    }
+    record_deck_search_knowledge("Vital Dance");
+    const bool found = move_deck_to_hand(*needed_energy);
+    shuffle(state_.deck);
+    trace("VITAL DANCE", "R-ORICORIO-01",
+          found ? "Searched the exact Basic Energy required by the Active Regidrago VSTAR."
+                : "The required Basic Energy was not in the deck after legal search.");
+
+    // A player may attach one Energy from hand during the turn. Complete that
+    // attachment here so a separately preferred Benched Regidrago cannot redirect
+    // the generic attachment helper away from the Active attacker:
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    if (found) {
+      if (!remove_one(state_.hand, *needed_energy)) {
+        throw std::logic_error("Vital Dance Energy disappeared before manual attachment");
+      }
+      if (*needed_energy == Card::Grass) {
+        ++state_.active->grass;
+      } else {
+        ++state_.active->fire;
+      }
+      state_.manual_energy_used = true;
+      trace("ATTACH", "R-GAME-ENERGY",
+            "Manually attached the Vital Dance Energy to the Active Regidrago VSTAR.");
+    }
+
+    return true;
+  }
+
+  std::vector<Card> tate_k0_public_projection_deck() const {
+    std::vector<Card> projected_deck;
+    for (const auto& [card, copies] : recipe_) {
+      const int evolved_regidrago_bases =
+          card == Card::RegidragoV ? in_play_count(Card::RegidragoVstar) : 0;
+      const int evolved_pineco_bases =
+          card == Card::Pineco ? in_play_count(Card::ForretressEx) : 0;
+      const int public_known = hand_count(card) + count_of(state_.discard, card) +
+          in_play_count(card) + evolved_regidrago_bases +
+          evolved_pineco_bases + attached_public_count(card);
+      for (int unseen = std::max(0, copies - public_known); unseen > 0; --unseen) {
+        projected_deck.push_back(card);
+      }
+    }
+    return projected_deck;
+  }
+
+  bool tate_draw_has_held_non_supporter_completion() const {
+    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 ||
+        !setup_axis_missing()) {
+      return false;
+    }
+
+    std::mt19937_64 shadow_rng = rng_;
+    Engine projected(scenario_, recipe_, shadow_rng);
+    projected.state_ = state_;
+
+    // The held-route classifier may prove completion from public held cards, while
+    // unresolved Dark Asset cards remain probabilistic until Crobat V is played.
+    // Disable a new shadow Dark Asset resolution; a Dark Asset that already resolved
+    // in the real state remains represented by its public hand and board result:
+    // Crobat V / Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Core Bench, Ability, draw, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Future-card-oracle boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // Crobat probabilistic-connector policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#crobat-v-draw-connector-policy
+    // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/1526
+    projected.state_.dark_asset_used = true;
+    if (deck_seen_ || prizes_revealed_) {
+      projected.deck_seen_ = deck_seen_;
+      projected.prizes_revealed_ = prizes_revealed_;
+    } else {
+      // Before a legal inspection, assign every card still possible from fixed copy
+      // counts to one synthetic search zone. This keeps the held-route classifier
+      // identical for equal public K0 states while retaining exact K1 behavior after
+      // a real deck or Prize inspection:
+      // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Supporter, Item, evolution, and attachment procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // K0/K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+      // Future-card-oracle boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1522
+      projected.state_.deck = tate_k0_public_projection_deck();
+      projected.state_.prizes.clear();
+      projected.deck_seen_ = false;
+      projected.prizes_revealed_ = false;
+    }
+    while (remove_one(projected.state_.hand, Card::TateLiza)) {
+    }
+    projected.state_.supporter_used = true;
+    projected.run_turn();
+
+    // Legacy Star samples a shuffled private top seven. That result cannot prove
+    // that the public held non-Supporter cards deterministically complete the turn:
+    // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Future-card-oracle boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // Earliest-ready policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Prior fixes: https://github.com/FlareZ123/pokemon-sims/issues/1057
+    // https://github.com/FlareZ123/pokemon-sims/issues/1130
+    // Confirmed hidden-placement bug: https://github.com/FlareZ123/pokemon-sims/issues/1522
+    if (projected.outcome_.used_legacy_star) return false;
+
+    // Double Dragon Energy provides every Energy type and 2 Energy at a time to a
+    // Dragon Pokémon, so the shadow's ready-state proof must use semantic Apex payment:
+    // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // DDE-aware readiness specification: https://github.com/FlareZ123/pokemon-sims/issues/2238
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2419
+    return projected.active_is_vstar() &&
+        projected.pays_apex_energy_cost(*projected.state_.active) &&
+        projected.payload_ready();
+  }
+
+  void choose_supporter() {
+    if (!supporter_allowed()) return;
+    if (tate_draw_has_held_non_supporter_completion()) {
+      // Shuffling the held Item, Evolution, Energy, or payload cards would replace a
+      // deterministic current-turn finish with a weaker random route. Preserve Tate:
+      // https://api.pokemontcg.io/v2/cards/sm7-148
+      // https://api.pokemontcg.io/v2/cards/sv8-164
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://github.com/FlareZ123/pokemon-sims/issues/1057
+      if (trace_ != nullptr) {
+        trace_->add_policy_once(
+            state_, "issue-1057-held-non-supporter-route", state_.turn,
+            "HOLD SUPPORTER", "R-TATE-01; P-KNOWLEDGE-01; P-COMPRESS-01",
+            "Retained Tate & Liza because held non-Supporter cards already complete the current-turn ready route.");
+      }
+      return;
+    }
+    // Roseanne's Backup may choose its Pokémon and Energy modes together, so resolve
+    // that two-axis route before single-axis recovery policies:
+    // https://api.pokemontcg.io/v2/cards/swsh9-148
+    if (play_roseanne_vstar_energy_recovery()) return;
+    // Evaluate Active-specific routes before the generic preferred-Regidrago axis
+    // gate, which may consider a different Benched Regidrago already complete.
+    if (play_guzma_active_promotion_route()) return;
+    if (play_turo_oricorio_energy_route()) return;
+    if (play_turo_tapu_future_supporter_route()) return;
+    if (play_turo_active_promotion_route()) return;
+    if (!setup_axis_missing()) return;
+    choose_supporter_turo_original();
+  }

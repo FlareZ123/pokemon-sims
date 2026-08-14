@@ -1,4 +1,12 @@
   template <typename Predicate>
+  [[nodiscard]] Pokemon* find_board_pokemon_matching(Predicate predicate) {
+    if (state_.active && predicate(*state_.active)) return &*state_.active;
+    const auto match = std::find_if(
+        state_.bench.begin(), state_.bench.end(), predicate);
+    return match == state_.bench.end() ? nullptr : &*match;
+  }
+
+  template <typename Predicate>
   [[nodiscard]] const Pokemon* find_board_pokemon_matching(
       Predicate predicate) const {
     if (state_.active && predicate(*state_.active)) return &*state_.active;

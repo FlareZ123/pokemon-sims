@@ -76,8 +76,17 @@
 
   bool issue_3545_recovered_supporter_is_used(Engine& projected,
                                                const Card candidate) const {
+    // A recovered Supporter earns VS-Seeker route credit only if it survives the
+    // production pre-Supporter Item fixed point. This prevents a false positive where
+    // the recovered card is spent as Mysterious Treasure / Quick Ball / Vessel fuel
+    // and a different Supporter is later played.
+    // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Production turn order: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
+    projected.issue_3545_prepare_supporter_projection();
     const int recovered_count = projected.hand_count(candidate);
-    projected.choose_supporter();
+    if (recovered_count == 0) return false;
+    projected.issue_3545_choose_supporter_from_prepared_projection();
     return projected.state_.supporter_used &&
            projected.hand_count(candidate) < recovered_count;
   }

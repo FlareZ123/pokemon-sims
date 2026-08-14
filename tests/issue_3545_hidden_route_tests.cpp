@@ -27,6 +27,20 @@ struct EngineTestAccess {
   static std::vector<Card> refined_targets(const Engine& engine) {
     return engine.issue_3545_refined_battle_compressor_targets();
   }
+  static std::vector<Card> lusamine_targets(const Engine& engine,
+                                            const bool permit_payload = false) {
+    return engine.issue_3545_lusamine_route_targets(permit_payload);
+  }
+  static void play_issue3545_items(Engine& engine,
+                                   const bool permit_payload = false) {
+    engine.play_items_until_stable_issue3545(permit_payload);
+  }
+  static int hand_count(const Engine& engine, const Card card) {
+    return engine.hand_count(card);
+  }
+  static int discard_count(const Engine& engine, const Card card) {
+    return count_of(engine.state_.discard, card);
+  }
 };
 }  // namespace sim
 
@@ -139,6 +153,52 @@ void test_two_vs_bank_does_not_spend_redundant_supporter_slot() {
          "BC spent two slots on Supporters even though the second VS can re-bank the first.");
 }
 
+void test_one_vs_lusamine_banks_two_supporters_before_item_lock() {
+  // Strict JIT cannot discard the Dragon payload on T1 before Regidrago VSTAR is
+  // ready. With only one VS Seeker and a persistent T2+ Item lock, BC may instead
+  // stage Lusamine + Crispin + Professor Burnet. VS recovers Lusamine now; Lusamine
+  // recovers both future Supporters before Items become unavailable. The scorer must
+  // prove both banked Supporters are actually played across T2/T3 before selecting
+  // this three-card package.
+  // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+  // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+  // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Persistent Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+  std::mt19937_64 rng{3545005};
+  sim::Engine engine{scenario(sim::DciProfile::StrictJit,
+                              sim::LockMode::TurnTwoItem, 3),
+                     sim::baseline_recipe(), rng};
+  sim::State state;
+  state.turn = 1;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 0, 0, 0};
+  state.hand = {sim::Card::BattleCompressor, sim::Card::VsSeeker,
+                sim::Card::RegidragoVstar, sim::Card::Grass};
+  state.deck = {sim::Card::Lusamine, sim::Card::Crispin,
+                sim::Card::ProfessorBurnet, sim::Card::Grass,
+                sim::Card::Grass, sim::Card::Fire,
+                sim::Card::MegaDragonite, sim::Card::MysteriousTreasure,
+                sim::Card::QuickBall, sim::Card::EarthenVessel};
+  sim::EngineTestAccess::set_state(engine, std::move(state), false);
+
+  const std::vector<sim::Card> expected{
+      sim::Card::Lusamine, sim::Card::Crispin, sim::Card::ProfessorBurnet};
+  expect(sim::EngineTestAccess::lusamine_targets(engine, false) == expected,
+         "One-VS Lusamine bank did not beat the existing public-horizon scheduler.");
+
+  sim::EngineTestAccess::play_issue3545_items(engine, false);
+  expect(sim::EngineTestAccess::hand_count(engine, sim::Card::BattleCompressor) == 0,
+         "Lusamine bank left Battle Compressor in hand.");
+  expect(sim::EngineTestAccess::hand_count(engine, sim::Card::VsSeeker) == 0,
+         "Lusamine bank spent more or fewer than the sole VS Seeker.");
+  expect(sim::EngineTestAccess::hand_count(engine, sim::Card::Lusamine) == 1,
+         "VS Seeker did not recover Lusamine for the current Supporter action.");
+  expect(sim::EngineTestAccess::discard_count(engine, sim::Card::Crispin) == 1 &&
+             sim::EngineTestAccess::discard_count(engine, sim::Card::ProfessorBurnet) == 1,
+         "BC did not stage both future Supporters before the Item lock.");
+}
+
 void test_strict_and_flex_can_reserve_steven_powerglass_package() {
   // With a held Dragon, VS Seeker, Powerglass, and the exact public deck resources,
   // Steven + Grass is the complete BC package. Steven then reserves VSTAR, Crispin,
@@ -186,6 +246,7 @@ int main() {
   try {
     test_bc_vs_route_is_rng_invariant();
     test_two_vs_bank_does_not_spend_redundant_supporter_slot();
+    test_one_vs_lusamine_banks_two_supporters_before_item_lock();
     test_strict_and_flex_can_reserve_steven_powerglass_package();
     test_no_control_powerglass_competes_with_surplus_payload();
     std::cout << "issue 3545 hidden-route tests passed\n";

@@ -295,3 +295,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - `src/trace_engine_v2/core/board_state_policy.inc` now owns one Active-first `find_board_pokemon_matching()` traversal. Boolean board queries delegate to that finder, preserving the repository's explicit Active-before-Bench short-circuit contract while giving later cleanup one reusable board lookup seam. C++ algorithm semantics: https://eel.is/c++draft/alg.find
 - `src/trace_engine_v2/core/forretress_combo_contract.inc` now names `OptionalBoardIndex` beside `BoardIndex` and `AttachmentDestinations`, and marks pure combo queries `[[nodiscard]]`. This keeps board-index/result vocabulary in the declared contract rather than spreading raw container types through future forwarding `.inc` files. Pineco / Forretress ex sources: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
 - Next safe follow-up: migrate the out-of-class Forretress definitions to the existing `BoardIndex`, `OptionalBoardIndex`, and `AttachmentDestinations` aliases only after the declaration boundary is proven in CI. Keep that future edit type-only, preserve Exploding Energy's existing card/ruling URLs beside its resolver, and do not combine it with route-policy changes. Current implementation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_forretress_ex_combo_legacy.inc
+
+## Arven metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3577
+- Canonical print: `sv1-166`; exact card data: https://api.pokemontcg.io/v2/cards/sv1-166
+- `src/cards/trainers/arven.hpp` and `kRegisteredCardDefinitions` now own Arven identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Arven's intrinsic facts; registered metadata is the sole owner. Supporter/search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- Focused registration coverage: `tests/arven_card_class_tests.cpp`.
+- This wave intentionally leaves Arven's printed Item plus Pokémon Tool search, reveal, hand movement, shuffle, Supporter contention, K0/K1 transitions, DCI/UDP/AMR, connector domination, and route strategy at their current Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sv1-166
+- A later resolver migration must first locate the single live Arven resolution boundary and preserve printed search/reveal/shuffle ordering through `CardContext` without moving strategic target preference into card code.

@@ -122,7 +122,8 @@
 // C++ textual macro replacement: https://eel.is/c++draft/cpp.replace
 // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
 #if defined(play_items_until_stable_issue3545) || defined(choose_supporter) || \
-    defined(play_battle_compressor_hidden_routes)
+    defined(play_battle_compressor_hidden_routes) || \
+    defined(issue_3545_hidden_battle_compressor_targets)
 #error "Issue-3545 policy aliases must be undefined on entry"
 #endif
 
@@ -137,16 +138,20 @@
 #undef choose_supporter
 #undef play_items_until_stable_issue3545
 
-// Preserve the validated hidden-route executor under private names. The refinement
-// layer may substitute a strictly better target vector, then delegates all remaining
-// Item work to the same base scheduler.
+// Preserve the validated hidden target/executor under private names. The binding
+// layer then proves that a distinct second-VS Supporter bank is the actual next-turn
+// Supporter action before exposing the public hidden target vector to refinements.
+#define issue_3545_hidden_battle_compressor_targets \
+    issue_3545_hidden_battle_compressor_targets_unbound
 #define play_battle_compressor_hidden_routes \
-    play_battle_compressor_hidden_routes_issue3545_base
+    play_battle_compressor_hidden_routes_issue3545_unbound
 #define play_items_until_stable_issue3545 \
     play_items_until_stable_issue3545_hidden_base
 #include "../core/battle_compressor_hidden_routes.inc"
 #undef play_items_until_stable_issue3545
 #undef play_battle_compressor_hidden_routes
+#undef issue_3545_hidden_battle_compressor_targets
+#include "../core/battle_compressor_future_bank_binding.inc"
 
 // Preserve the complete cross-profile scheduler as the comparison/delegation base.
 // The Lusamine layer may consume BC + one VS only when its deterministic public
@@ -163,7 +168,8 @@
 
 #if defined(play_chaotic_swell) || defined(play_field_blower) || \
     defined(play_items_until_stable_issue3545) || defined(choose_supporter) || \
-    defined(play_battle_compressor_hidden_routes)
+    defined(play_battle_compressor_hidden_routes) || \
+    defined(issue_3545_hidden_battle_compressor_targets)
 #error "Issue-3057/3545 composition leaked a temporary policy alias"
 #endif
 
@@ -203,7 +209,7 @@
 // Route reporting and the production CLI continue through the appended two rows while
 // the historical public registry remains available to focused tests.
 // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
-// Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
+// Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7/142
 // Model specification: https://github.com/FlareZ123/pokemon-sims/issues/2808
 #if defined(all_scenarios) || defined(scenario_by_label)
 #error "Scenario-registry composition requires aliases to be undefined on entry"

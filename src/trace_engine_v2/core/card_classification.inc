@@ -61,6 +61,13 @@ constexpr bool is_pokemon_v(const Card card) {
          card == Card::CrobatV;  // Pokémon V: https://api.pokemontcg.io/v2/cards/swsh3-104
 }
 
+// Keep Regidrago evolution-line identity beside the other intrinsic Pokémon classifiers.
+// Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+// Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+[[nodiscard]] constexpr bool is_regidrago_v_line(const Card card) {
+  return card == Card::RegidragoV || card == Card::RegidragoVstar;
+}
+
 constexpr bool is_rule_box_pokemon(const Card card) {
   if (const cards::CardDefinition* definition = registered_pokemon_definition(card)) {
     return definition->rule_box;
@@ -139,10 +146,8 @@ constexpr int retreat_cost(const Card card) {
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
   // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
-  // Keep this legacy resolver independent until the confirmed retreat-cost bugs
-  // are merged; cleanup metadata must not silently change live retreat behavior:
-  // https://github.com/FlareZ123/pokemon-sims/issues/3643
-  // https://github.com/FlareZ123/pokemon-sims/issues/3652
+  // Keep this live resolver explicit while the confirmed sibling metadata bug
+  // remains owned separately: https://github.com/FlareZ123/pokemon-sims/issues/3652
   switch (card) {
     case Card::TapuLeleGX: return 1;
     case Card::CrobatV: return 1;  // Printed Retreat Cost: https://api.pokemontcg.io/v2/cards/swsh3-104
@@ -153,26 +158,25 @@ constexpr int retreat_cost(const Card card) {
     case Card::LatiasEx: return 2;  // Exact sv8-76 print: https://api.pokemontcg.io/v2/cards/sv8-76
     case Card::MawileGX: return 1;  // Exact sm11-141 print: https://api.pokemontcg.io/v2/cards/sm11-141 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/1301
     case Card::Oricorio: return 1;
+    case Card::Appletun: return 3;  // Exact sv8-140 print: https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/cards/en/sv8.json
     default: return 0;
   }
 }
 
-// Grass and Fire are the modeled Basic Energy cards. DDE is a Special
-// Energy, so Basic-only searches must continue to use is_basic_energy or
-// their explicit Grass/Fire target lists:
-// https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-// https://github.com/FlareZ123/pokemon-sims/issues/2238
+// Grass and Fire are the modeled Basic Energy cards. Registered Energy cards
+// own intrinsic Energy and Basic/Special classification in CardDefinition.
+// Double Dragon Energy exact Special Energy print: https://api.pokemontcg.io/v2/cards/xy6-97
 constexpr bool is_basic_energy(const Card card) {
+  if (cards::has_definition(card)) return cards::registered_is_basic_energy(card);
   return card == Card::Grass || card == Card::Fire;
 }
 constexpr bool is_energy(const Card card) {
-  return is_basic_energy(card) || card == Card::DoubleDragonEnergy;
+  if (cards::has_definition(card)) return cards::registered_is_energy(card);
+  return is_basic_energy(card);
 }
 constexpr bool is_special_energy(const Card card) {
-  // Double Dragon Energy is Special Energy and remains excluded from Basic-only searches.
-  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-  // Guzma & Hala: https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sm-series/sm12/229/
-  return is_energy(card) && !is_basic_energy(card);
+  if (cards::has_definition(card)) return cards::registered_is_special_energy(card);
+  return false;
 }
 constexpr bool is_supporter(const Card card) {
   // Registered Supporters own intrinsic subtype classification in CardDefinition.

@@ -79,7 +79,6 @@ constexpr std::string_view name(const Card card) {
     case Card::RoseannesBackup: return "Roseanne's Backup";
     case Card::ErikasInvitation: return "Erika's Invitation";
     case Card::PathToPeak: return "Path to the Peak";
-    case Card::DoubleDragonEnergy: return "Double Dragon Energy";  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
     case Card::Appletun: // Exact registered label and print: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
@@ -91,6 +90,7 @@ constexpr std::string_view name(const Card card) {
     case Card::Channeler:
     case Card::Crispin:
     case Card::Dawn:
+    case Card::DoubleDragonEnergy: // Exact registered Special Energy label: https://api.pokemontcg.io/v2/cards/xy6-97
     case Card::EvolutionIncense:
     case Card::FieldBlower:
     case Card::ForestOfVitality: // Exact registered name: https://api.pokemontcg.io/v2/cards/me1-117 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3639
@@ -108,7 +108,7 @@ constexpr std::string_view name(const Card card) {
     case Card::QuickBall:
     case Card::SecretBox:
     case Card::WishfulBaton: // Exact registered name: https://api.pokemontcg.io/v2/cards/sm3-128
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 ; Appletun: https://api.pokemontcg.io/v2/cards/sv8-140 ; Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
   }
   return "Unknown";
 }

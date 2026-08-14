@@ -51,7 +51,7 @@ void test_legacy_intrinsic_parity() {
               sim::is_dragon(sim::Card::RegidragoV),
           "Registered Regidrago V must remain a Dragon search target."); // Exact type: https://api.pokemontcg.io/v2/cards/swsh12-135
   require(sim::retreat_cost(sim::Card::RegidragoV) == 3,
-          "Cleanup must preserve the live Retreat Cost resolver."); // Printed Retreat Cost: https://api.pokemontcg.io/v2/cards/swsh12-135 ; claimed sibling bugs remain separate: https://github.com/FlareZ123/pokemon-sims/issues/3643 https://github.com/FlareZ123/pokemon-sims/issues/3652
+          "Cleanup must preserve the live Retreat Cost resolver."); // Printed Retreat Cost: https://api.pokemontcg.io/v2/cards/swsh12-135 ; confirmed sibling bug remains separate: https://github.com/FlareZ123/pokemon-sims/issues/3652
 }
 
 }  // namespace

@@ -1,6 +1,7 @@
   int issue_3545_next_public_turn_score(
       const std::vector<Card>& targets,
       const std::optional<Card> required_current_supporter = std::nullopt) const {
+    if (targets.empty()) return -1;
     std::mt19937_64 shadow_rng = rng_;
     Engine projected = issue_3545_projection(shadow_rng);
     if (!issue_3545_hidden_project_compressor(projected, targets)) return -1;
@@ -35,9 +36,52 @@
     return projected.issue_3545_setup_route_score();
   }
 
+  bool issue_3545_grant_stage_available(
+      const std::vector<Card>& existing_targets) const {
+    // Grant has no setup-axis Supporter value in these goldfish recipes, while its
+    // printed discard-pile auxiliary effect is an independent current-turn action:
+    // discard two other cards from hand to return Grant to hand. The engine already
+    // invokes that recovery from record_ready() when GGF + Active VSTAR are complete
+    // and payload is the sole missing axis. BC may therefore stage Grant before the
+    // ready turn without violating strict JIT, provided the currently visible hand
+    // already proves both future recovery costs: one held Dragon and one ordinary
+    // DCI card. This route does not consume the future Supporter action.
+    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+    // Grant: https://api.pokemontcg.io/v2/cards/swsh10-144
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Existing Grant recovery owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
+    if (!strict_payload_timing() || state_.turn_ended || item_locked() ||
+        !need_payload() || can_play_payload_this_turn() ||
+        state_.turn >= scenario_.max_turn || existing_targets.size() >= 3U ||
+        count_of(state_.deck, Card::Grant) <= count_of(existing_targets, Card::Grant) ||
+        std::find(existing_targets.begin(), existing_targets.end(),
+                  Card::StevensResolve) != existing_targets.end() ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    Engine probe = *this;
+    remove_one(probe.state_.hand, Card::BattleCompressor);
+    const bool flex_fodder = scenario_.dci == DciProfile::MatchupFlexJit;
+    const auto payload = probe.choose_discard(true, flex_fodder);
+    if (!payload || !is_payload(*payload) ||
+        !remove_one(probe.state_.hand, *payload)) {
+      return false;
+    }
+
+    // Grant itself may not pay its own auxiliary recovery cost. Remove held copies
+    // only in this non-mutating proof, matching grant_recovery_strict_jit_costs().
+    probe.state_.hand.erase(
+        std::remove(probe.state_.hand.begin(), probe.state_.hand.end(), Card::Grant),
+        probe.state_.hand.end());
+    const auto ordinary = probe.choose_discard(false, flex_fodder);
+    return ordinary.has_value() && *ordinary != Card::Grant;
+  }
+
   std::vector<Card> issue_3545_refined_battle_compressor_targets() const {
     std::vector<Card> best = issue_3545_hidden_battle_compressor_targets();
-    if (best.empty()) return best;
     int best_score = issue_3545_next_public_turn_score(best);
 
     const auto powerglass_energy = issue_3545_powerglass_energy_target();
@@ -66,6 +110,14 @@
         best_score = steven_score;
         best = steven_targets;
       }
+    }
+
+    // When no current-turn payload action is legal, an otherwise-unused BC slot may
+    // prepare Grant as the future same-ready-turn Dragon outlet. The proof above uses
+    // only current public hand contents. A complete Steven + Powerglass + Treasure
+    // package already supplies a deterministic outlet and therefore keeps its slot.
+    if (issue_3545_grant_stage_available(best)) {
+      best.push_back(Card::Grant);
     }
 
     // No-discard-control permits early Dragon banking, while multiple early Dragons

@@ -27,11 +27,12 @@
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
 #include "trainers/secret_box.hpp"
+#include "trainers/ultra_ball.hpp"
 #include "trainers/wishful_baton.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 25> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 26> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
@@ -54,6 +55,7 @@ inline constexpr std::array<const CardDefinition*, 25> kRegisteredCardDefinition
     &ProfessorBurnet::definition, // Exact Trainer Gallery Supporter: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     &ProfessorTuroScenario::definition, // Exact Paradox Rift Supporter: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
     &SecretBox::definition, // Exact Twilight Masquerade ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv6-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3541
+    &UltraBall::definition, // Exact Scarlet & Violet Item: https://api.pokemontcg.io/v2/cards/sv1-196 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3517
     &Lusamine::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
     &Klara::definition, // Exact Chilling Reign Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
     &WishfulBaton::definition, // Exact Burning Shadows Pokémon Tool: https://api.pokemontcg.io/v2/cards/sm3-128 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3631
@@ -100,6 +102,8 @@ constexpr bool definition_matches_registration(
 // Architecture plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
 static_assert(definition_matches_registration(QuickBall::definition, Card::QuickBall,
                                               "swsh1-179", "Quick Ball"));
+static_assert(definition_matches_registration(UltraBall::definition, Card::UltraBall,
+                                              "sv1-196", "Ultra Ball")); // Exact Item: https://api.pokemontcg.io/v2/cards/sv1-196
 static_assert(definition_matches_registration(GuzmaHala::definition, Card::GuzmaHala,
                                               "sm12-229", "Guzma & Hala"));
 static_assert(definition_matches_registration(Arven::definition, Card::Arven,

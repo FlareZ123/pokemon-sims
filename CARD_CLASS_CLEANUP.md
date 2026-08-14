@@ -400,3 +400,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - `src/trace_engine_v2/core/deck_knowledge.inc` is the canonical K0/K1 query seam. Read-only knowledge helpers remain visibly query-only and hidden-deck inference stays behind `deck_seen_`; do not duplicate public/known copy arithmetic in route `.inc` files. Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 - Migration ownership must be checked before selecting the next card. During this wave, the obvious remaining metadata candidates inspected (Ultra Ball #3517, Earthen Vessel #3475, Path to the Peak #3519, Grant #3589, Serena #3585, Tate & Liza #3562, plus the newer Forest of Vitality, Team Yell's Cheer, Roseanne's Backup, and Erika's Invitation migrations) already have agent claims. Do not create a parallel migration solely to satisfy cleanup cadence; the next wave should select exactly one unclaimed modeled card or wait for an existing migration owner to finish.
 - Keep architecture cleanup behavior-preserving while bug #3643 is confirmation-pending. Appletun's Retreat Cost correction belongs to that confirmed-bug workflow rather than a metadata cleanup branch. Bug: https://github.com/FlareZ123/pokemon-sims/issues/3643 Appletun: https://api.pokemontcg.io/v2/cards/sv8-140 Advanced retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+## Appletun metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3642
+- Canonical print: `sv8-140`; exact card data: https://api.pokemontcg.io/v2/cards/sv8-140
+- `src/cards/pokemon/appletun.hpp` and `kRegisteredCardDefinitions` own Appletun identity, simulator display label, Stage 1 classification, Dragon type, and printed Retreat Cost metadata.
+- Focused registration coverage: `tests/appletun_card_class_tests.cpp`.
+- This wave preserves payload strategy, DCI/UDP/AMR, connector domination, K0/K1, attack selection, ready-turn behavior, and live route/state transitions at their current Engine owners.
+- Live retreat behavior is tracked separately by confirmed bug https://github.com/FlareZ123/pokemon-sims/issues/3643 and fix PR https://github.com/FlareZ123/pokemon-sims/pull/3648.
+- A later resolver migration must preserve the advanced manual's retreat procedure and keep route timing outside intrinsic metadata. Rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

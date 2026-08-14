@@ -73,7 +73,6 @@ constexpr std::string_view name(const Card card) {
     case Card::Grant: return "Grant";
     case Card::Serena: return "Serena";
     case Card::TateLiza: return "Tate & Liza";
-    case Card::StevensResolve: return "Steven's Resolve";
     case Card::Guzma: return "Guzma";
     case Card::Gladion: return "Gladion";
     case Card::TeamYellsCheer: return "Team Yell's Cheer";
@@ -107,6 +106,7 @@ constexpr std::string_view name(const Card card) {
     case Card::ProfessorsLetter:
     case Card::QuickBall:
     case Card::SecretBox:
+    case Card::StevensResolve: // Exact registered name: https://api.pokemontcg.io/v2/cards/sm7-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3595
     case Card::WishfulBaton: // Exact registered name: https://api.pokemontcg.io/v2/cards/sm3-128
       break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Appletun: https://api.pokemontcg.io/v2/cards/sv8-140 ; Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
   }

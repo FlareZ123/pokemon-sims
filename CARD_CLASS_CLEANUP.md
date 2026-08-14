@@ -101,6 +101,16 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Existing Pokémon V holder selection, Active-versus-Bench Tool-slot reservation, Star Alchemy resolution, VSTAR Power accounting, DCI/UDP/AMR, connector domination, K0/K1, lock behavior, and route strategy remain in Engine. Live holder owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010_attach_fss_override.inc
 - A later printed-resolution migration must preserve the Advanced Player manual's one-Tool-per-Pokémon procedure and keep strategic holder choice outside card metadata. Advanced Tool procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
+### Guzma
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3618
+- Canonical print: `sm3-115`; exact card data: https://api.pokemontcg.io/v2/cards/sm3-115
+- `src/cards/trainers/guzma.hpp` and `kRegisteredCardDefinitions` own Guzma identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Guzma's intrinsic facts; registered metadata is the sole owner. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- Focused registration coverage: `tests/guzma_card_class_tests.cpp`.
+- This metadata-only wave leaves the printed opponent switch followed by the user's Active switch, Supporter contention, target selection, DCI/UDP/AMR, connector domination, K0/K1, lock handling, and route strategy at their current Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm3-115
+- A later resolver migration must first locate the single live Guzma resolution boundary and preserve the printed conditional switch ordering through `CardContext` without moving strategic target selection into card code.
+
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ### Cleanup wave 2026-08-13 checkpoint

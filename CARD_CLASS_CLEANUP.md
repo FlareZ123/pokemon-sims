@@ -311,3 +311,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Focused registration coverage: `tests/crispin_card_class_tests.cpp`.
 - This wave intentionally leaves Crispin's printed search for up to two Basic Energy cards of different types, one-to-hand/one-attach resolution, reveal and shuffle ordering, Supporter contention, K0/K1 transitions, DCI/UDP/AMR, connector domination, and route strategy at their current Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sv7-133
 - A later resolver migration must first locate the single live Crispin resolution boundary and preserve printed search/reveal/attachment/hand/shuffle ordering through `CardContext` without moving strategic Energy choice into card code.
+
+## Grant metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3589
+- Canonical print: `swsh10-144`; exact card data: https://api.pokemontcg.io/v2/cards/swsh10-144
+- `src/cards/trainers/grant.hpp` and `kRegisteredCardDefinitions` now own Grant identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Grant's intrinsic facts; registered metadata is the sole owner. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- Focused registration coverage: `tests/grant_card_class_tests.cpp`.
+- This wave intentionally leaves Grant's attack-boost resolution, discard-pile two-card recovery cost, Supporter contention, DCI/UDP/AMR, connector domination, K0/K1, and route strategy at their current Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/swsh10-144
+- A later resolver migration must first locate the live Grant play and discard-pile recovery boundaries, then preserve the printed distinction that recovering Grant from discard does not consume the Supporter play for the turn.

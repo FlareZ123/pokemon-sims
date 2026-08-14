@@ -92,12 +92,22 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Focused registration coverage: `tests/field_blower_card_class_tests.cpp`.
 - Follow-up must locate the single live Field Blower printed-resolution owner before moving state transitions. Preserve target choice and all lock-removal policy in Engine until a reusable `CardContext` boundary exists.
 
+### Ultra Ball
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3517
+- Canonical print: `sv1-196`.
+- Card data: https://api.pokemontcg.io/v2/cards/sv1-196
+- Status: exact identity, display name, Trainer kind, Item subtype, and the printed two-other-card play cost are owned by `src/cards/trainers/ultra_ball.hpp` and `kRegisteredCardDefinitions`.
+- Legacy `is_item()` no longer duplicates Ultra Ball's intrinsic subtype; registered metadata is the single Item-classification owner. Focused coverage: `tests/ultra_ball_card_class_tests.cpp`.
+- Existing Ultra Ball target choice, discard admission, DCI/UDP/AMR, K0/K1 timing, connector domination, search/shuffle resolution, and route priority remain in Engine for this metadata-only wave. Printed effect: https://api.pokemontcg.io/v2/cards/sv1-196
+- A later resolver migration must first locate the single live Ultra Ball resolution boundary, preserve the requirement to discard two other cards, keep strategic discard/target selection in Engine, and preserve search/reveal/shuffle ordering through `CardContext`.
+
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ### Cleanup wave 2026-08-13 checkpoint
 
-- Registered display names for Battle VIP Pass, Brilliant Blender, Field Blower, Hisuian Heavy Ball, Professor's Letter, Evolution Incense, Mysterious Treasure, Quick Ball, and Guzma & Hala now flow through `CardDefinition`; their legacy `name()` branches no longer duplicate those strings. Canonical registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-- `is_item()` delegates every registered Item to registry metadata. Its legacy switch now contains only unmigrated Items: Secret Box, Ultra Ball, Pokémon Communication, and Earthen Vessel. Exact migrated Item prints: https://api.pokemontcg.io/v2/cards/swsh8-225 https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/swsh10-146 https://api.pokemontcg.io/v2/cards/xy1-123 https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
+- Registered display names for Battle VIP Pass, Brilliant Blender, Field Blower, Hisuian Heavy Ball, Professor's Letter, Evolution Incense, Mysterious Treasure, Quick Ball, Ultra Ball, and Guzma & Hala now flow through `CardDefinition`; their legacy `name()` branches no longer duplicate those strings. Canonical registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+- `is_item()` delegates every registered Item to registry metadata. Its legacy switch now contains only unmigrated Items: Secret Box, Pokémon Communication, and Earthen Vessel. Ultra Ball exact migrated print: https://api.pokemontcg.io/v2/cards/sv1-196
 - This wave is mechanical ownership cleanup only. Printed resolution, strategy, DCI/UDP/AMR, connector priority, and K0/K1 transitions remain at their existing owners. The next resolver migration must still locate the single live resolution boundary before moving state transitions. Architecture contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#card-module-contract
 
 ## Composition consolidation status
@@ -121,9 +131,11 @@ The former `src/trace_engine_v2/part_issue_989_wonder_tag_complete_route_overrid
 
 Registered-card compatibility now uses `find_definition()` as the single registry lookup. `has_definition()` and intrinsic Item classification delegate to that lookup instead of maintaining parallel card switches, reducing duplicate ownership as additional cards migrate.
 
+The compatibility wrapper `src/trace_engine_v2/part_001.inc` now contains no inactive payload predicate mirror. `src/trace_engine_v2/core/card_classification.inc` is the single source owner for `is_payload()`, while the historical wrapper keeps only include guards and source anchors. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
+
 ### Registry consolidation checkpoint
 
-- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Battle VIP Pass, Brilliant Blender, Evolution Incense, Field Blower, Guzma & Hala, Hisuian Heavy Ball, Mysterious Treasure, Professor's Letter, and Quick Ball use that inventory; future migrations append one definition there instead of extending a lookup switch. Representative sources: https://api.pokemontcg.io/v2/cards/swsh8-225 https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/sm12-229 https://api.pokemontcg.io/v2/cards/swsh10-146
+- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Battle VIP Pass, Brilliant Blender, Evolution Incense, Field Blower, Guzma & Hala, Hisuian Heavy Ball, Mysterious Treasure, Professor's Letter, Quick Ball, and Ultra Ball use that inventory; future migrations append one definition there instead of extending a lookup switch. Ultra Ball source: https://api.pokemontcg.io/v2/cards/sv1-196
 - Registered display-name ownership is now mechanically complete for the current registry inventory: `name()` consults `find_definition()` first and has no duplicate return strings for registered cards.
 - Registered Item ownership is now mechanically complete for the current registry inventory: `is_item()` delegates registered cards before reaching a legacy switch that contains only unmigrated Items.
 - `registered_is_trainer_kind()` is the shared intrinsic Trainer-subtype query. Item, Supporter, Stadium, and Tool compatibility checks should delegate to this helper as those classifications migrate.

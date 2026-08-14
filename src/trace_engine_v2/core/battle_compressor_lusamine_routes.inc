@@ -2,19 +2,18 @@
       Engine projected, const bool permit_payload,
       bool* const rule_box_locked_out = nullptr) const {
     // Compare any Lusamine package against the complete existing #3545 Item policy,
-    // then continue through the same deterministic pre-/post-Supporter public actions.
-    // Unknown future draws remain omitted by the established projection adapter:
+    // then continue through every configured public turn using the same deterministic
+    // pre-/post-Supporter actions. Unknown start-of-turn draws remain omitted by the
+    // established projection adapter:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
     projected.play_items_until_stable_issue3545_refined_base(permit_payload);
-    projected.issue_3545_prepare_supporter_projection();
-    projected.issue_3545_choose_supporter_from_prepared_projection();
-    projected.issue_3545_continue_after_supporter(projected);
-    projected.resolve_powerglass_end_turn();
-    if (projected.state_.turn < projected.scenario_.max_turn) {
-      issue_3545_advance_public_state_one_turn(projected);
+    for (;;) {
       projected.issue_3545_prepare_supporter_projection();
       projected.issue_3545_choose_supporter_from_prepared_projection();
       projected.issue_3545_continue_after_supporter(projected);
+      projected.resolve_powerglass_end_turn();
+      if (projected.state_.turn >= projected.scenario_.max_turn) break;
+      issue_3545_advance_public_state_one_turn(projected);
     }
     if (rule_box_locked_out != nullptr) {
       *rule_box_locked_out = projected.rule_box_abilities_locked();
@@ -49,7 +48,7 @@
     if (state_.turn_ended || item_locked() || !supporter_allowed() ||
         uses_full_supporter_lock(scenario_.locks) ||
         hand_count(Card::BattleCompressor) == 0 ||
-        hand_count(Card::VsSeeker) != 1 || state_.turn >= scenario_.max_turn ||
+        hand_count(Card::VsSeeker) != 1 || state_.turn + 2 > scenario_.max_turn ||
         !item_locked_on_turn(state_.turn + 1) || !need_energy() || !need_payload() ||
         hand_count(Card::Lusamine) > 0 || count_of(state_.discard, Card::Lusamine) > 0 ||
         hand_count(Card::Crispin) > 0 || count_of(state_.discard, Card::Crispin) > 0 ||
@@ -87,24 +86,29 @@
 
     projected.issue_3545_continue_after_supporter(projected);
     projected.resolve_powerglass_end_turn();
-    if (projected.state_.turn >= projected.scenario_.max_turn) return -1;
-    issue_3545_advance_public_state_one_turn(projected);
 
-    // The bank earns route credit only if the Item-locked turn actually spends one
-    // of the two Supporters that Lusamine moved into hand. This is the same provenance
-    // principle used by VS recovery: a staged Supporter cannot receive credit merely
-    // because it later becomes discard-cost fodder.
-    projected.issue_3545_prepare_supporter_projection();
-    const int crispin_before_use = projected.hand_count(Card::Crispin);
-    const int burnet_before_use = projected.hand_count(Card::ProfessorBurnet);
-    projected.issue_3545_choose_supporter_from_prepared_projection();
-    const bool banked_supporter_used = projected.state_.supporter_used &&
-        ((crispin_before_use > 0 &&
-          projected.hand_count(Card::Crispin) < crispin_before_use) ||
-         (burnet_before_use > 0 &&
-          projected.hand_count(Card::ProfessorBurnet) < burnet_before_use));
-    if (!banked_supporter_used) return -1;
-    projected.issue_3545_continue_after_supporter(projected);
+    bool crispin_used = false;
+    bool burnet_used = false;
+    while (projected.state_.turn < projected.scenario_.max_turn) {
+      issue_3545_advance_public_state_one_turn(projected);
+      projected.issue_3545_prepare_supporter_projection();
+      const int crispin_before_use = projected.hand_count(Card::Crispin);
+      const int burnet_before_use = projected.hand_count(Card::ProfessorBurnet);
+      projected.issue_3545_choose_supporter_from_prepared_projection();
+      crispin_used = crispin_used ||
+          (crispin_before_use > 0 &&
+           projected.hand_count(Card::Crispin) < crispin_before_use);
+      burnet_used = burnet_used ||
+          (burnet_before_use > 0 &&
+           projected.hand_count(Card::ProfessorBurnet) < burnet_before_use);
+      if (!projected.state_.supporter_used) return -1;
+      projected.issue_3545_continue_after_supporter(projected);
+      projected.resolve_powerglass_end_turn();
+    }
+
+    // Both staged cards must be real future Supporter actions. This keeps the three-
+    // card BC package from earning credit for a redundant second Supporter slot.
+    if (!crispin_used || !burnet_used) return -1;
     return projected.issue_3545_setup_route_score();
   }
 
@@ -154,11 +158,12 @@
     // Production ordering: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
     projected.issue_3545_continue_after_supporter(projected);
     projected.resolve_powerglass_end_turn();
-    if (projected.state_.turn < projected.scenario_.max_turn) {
+    while (projected.state_.turn < projected.scenario_.max_turn) {
       issue_3545_advance_public_state_one_turn(projected);
       projected.issue_3545_prepare_supporter_projection();
       projected.issue_3545_choose_supporter_from_prepared_projection();
       projected.issue_3545_continue_after_supporter(projected);
+      projected.resolve_powerglass_end_turn();
     }
     return projected.issue_3545_setup_route_score();
   }

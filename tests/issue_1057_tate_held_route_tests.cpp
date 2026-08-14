@@ -119,9 +119,10 @@ void test_negative_boundaries() {
 int main() {
   // Current source-bound held-route witness: https://github.com/FlareZ123/pokemon-sims/issues/3753
   // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
   // Advanced Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   expect_seed_holds_tate("matchup-flex-jit/go-first", 250, 3,
-                         "Searched and discarded: Mega Dragonite ex");
+                         "R-BLENDER-01");
   expect_seed_holds_tate("strict-jit/go-second", 13, 2,
                          "Mega Dragonite ex (Mysterious Treasure cost)");
   expect_seed_holds_tate("strict-jit-rulebox-ability-lock/go-second", 13, 2,

@@ -449,3 +449,4 @@ if (!cost && want_regi && hand_count(Card::RegidragoVstar) >= 2) {
                            (target == Card::LatiasEx && want_latias) ||
                            (target == Card::TapuLeleGX && want_tapu) ||
                            (target == Card::Oricorio && want_oricorio) ||
+                           (target == Card::CrobatV && want_crobat) ||

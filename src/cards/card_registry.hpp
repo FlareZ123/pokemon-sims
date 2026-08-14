@@ -11,6 +11,7 @@
 #include "trainers/dawn.hpp"
 #include "trainers/evolution_incense.hpp"
 #include "trainers/field_blower.hpp"
+#include "trainers/forest_seal_stone.hpp"
 #include "trainers/guzma_hala.hpp"
 #include "trainers/hisuian_heavy_ball.hpp"
 #include "trainers/lusamine.hpp"
@@ -24,7 +25,7 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 18> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 19> kRegisteredCardDefinitions{
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -33,6 +34,7 @@ inline constexpr std::array<const CardDefinition*, 18> kRegisteredCardDefinition
     &Dawn::definition, // Exact Mega Evolution Supporter: https://api.pokemontcg.io/v2/cards/me2-87
     &EvolutionIncense::definition, // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163
     &FieldBlower::definition, // Exact SM 125 metadata: https://api.pokemontcg.io/v2/cards/sm2-125
+    &ForestSealStone::definition, // Exact Silver Tempest Pokémon Tool: https://api.pokemontcg.io/v2/cards/swsh12-156 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3612
     &QuickBall::definition,
     &ProfessorsLetter::definition, // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123
     &MysteriousTreasure::definition, // Exact SM 113 metadata: https://api.pokemontcg.io/v2/cards/sm6-113

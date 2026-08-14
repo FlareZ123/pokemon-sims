@@ -237,7 +237,6 @@ Rules source for Item/Supporter/search procedure: https://github.com/FlareZ123/p
 Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
 
 ## Cleanup wave 2026-08-13 composition follow-up
-
 - Forest Seal Stone holder selection now has one selector in `src/trace_engine_v2/part_010_attach_fss_override.inc`. The `allow_active` parameter preserves the existing general Active-first attachment order and the Powerglass-specific Bench-only reservation path. Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156 Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
 - The issue-3040 Supporter continuation in `src/trace_engine_v2/part_issue_1070_tate_after_vstar_search_override.inc` now exposes a responsibility-based fallback name while preserving the existing macro boundary and Turo route. Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
 - The issue-962 eligibility, projection, and decision sections now compose directly in `part_014a.inc` at the same proven member boundary. Their three compatibility `.inc` files are retired, while implementation ownership remains in `core/routes/issue_962_route.inc`.
@@ -319,8 +318,12 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - This consolidation is mechanical. It preserves the exact function bodies, macro lifetimes, helper include, direct card/rule URLs, and declaration order. Future Arven cleanup should continue from `composition/post_014a_overrides.inc` and avoid recreating one-owner `part_*.inc` fragments.
 - Validation gate remains strict Release compilation, the full regression suite, representative `--simulate-this` traces, and the paired T2/T3 matrix. Any matrix movement requires a separately justified behavior change rather than being accepted as cleanup drift.
 
-## Cleanup wave 2026-08-14 late-Supporter owner merge
+## Pokémon Communication metadata migration
 
-- Completed: `src/trace_engine_v2/core/routes/tate_after_vstar_search_selector.inc` now owns both the issue-3040 Professor Turo staging policy and the issue-1070 late-Supporter fallback selector. The one-function `core/routes/professor_turo_regidrago_staging_policy.inc` fragment is retired, removing a composition layer while preserving the exact function body, selector order, and direct rule/card/issue URLs. Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171 Confirmed route specification: https://github.com/FlareZ123/pokemon-sims/issues/3040
-- Keep the historical `part_issue_1070_tate_after_vstar_search_override.inc` path as a thin boundary forwarder while `composition/post_014a_overrides.inc` still consumes that compatibility name. The next safe cleanup is to include the canonical selector directly from `post_014a_overrides.inc` only after the class-member boundary and `choose_supporter` macro lifetime are revalidated. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
-- This merge is behavior-preserving. It does not change Supporter legality, Turo resolution, Active replacement, K0/K1, DCI/JIT policy, route priority, or readiness semantics. Validation remains strict Release compilation, full regressions, representative `--simulate-this` traces, and the paired T2/T3 matrix. Rules procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Policy contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3552
+- Canonical print: `sm9-152`; exact card data: https://api.pokemontcg.io/v2/cards/sm9-152
+- `src/cards/trainers/pokemon_communication.hpp` and `kRegisteredCardDefinitions` now own Pokémon Communication identity, display name, Trainer kind, and Item subtype.
+- Legacy `name()` and `is_item()` compatibility tables no longer duplicate Pokémon Communication's intrinsic facts. The only remaining legacy Item fallbacks are Ultra Ball and Earthen Vessel.
+- Focused registration coverage: `tests/pokemon_communication_card_class_tests.cpp`.
+- This wave preserves the existing exchange/search/reveal/shuffle resolver and all DCI/UDP/AMR, connector-domination, K0/K1, and route-selection behavior at their current Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm9-152
+- Any later printed-resolution migration must begin from the single live owner at `src/trace_engine_v2/part_pokemon_communication.inc` and preserve the card's printed exchange, search, reveal, hand movement, and shuffle ordering through `CardContext`. Rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

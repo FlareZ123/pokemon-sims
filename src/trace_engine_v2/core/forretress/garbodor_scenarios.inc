@@ -1,0 +1,34 @@
+// The historical registry is defined later in part_014c.inc. This extension is
+// composed at a verified namespace boundary after Engine closes, so a forward
+// declaration preserves the public historical registry for the existing corpus:
+// https://github.com/FlareZ123/pokemon-sims/issues/2808
+std::vector<Scenario> all_scenarios();
+
+const std::array<Scenario, 2> kGarbodorScenarios{{
+    {"garbodor-shake-ability-lock/go-first",
+     DciProfile::StrictJit, LockMode::None, true, 5},
+    {"garbodor-shake-ability-lock/go-second",
+     DciProfile::StrictJit, LockMode::None, false, 5},
+}};
+
+std::vector<Scenario> all_scenarios_with_garbodor() {
+  std::vector<Scenario> result = all_scenarios();
+  // Garbodor BKP 57 suppresses Pokemon Abilities while it has a Tool. Boost Shake
+  // establishes Garbodor during the opponent's first turn, producing different
+  // Regidrago T1 timing by seat. Append these rows so existing scenario indexes and
+  // seeded common-random-number comparisons remain stable:
+  // https://api.pokemontcg.io/v2/cards/xy9-57
+  // https://api.pokemontcg.io/v2/cards/swsh7-142
+  // https://github.com/FlareZ123/pokemon-sims/issues/2808
+  result.insert(result.end(), kGarbodorScenarios.begin(), kGarbodorScenarios.end());
+  return result;
+}
+
+std::optional<Scenario> scenario_by_label_with_garbodor(const std::string& label) {
+  const std::vector<Scenario> scenarios = all_scenarios_with_garbodor();
+  const auto match = std::find_if(
+      scenarios.begin(), scenarios.end(), [&label](const Scenario& scenario) {
+        return scenario.label == label;
+      });
+  return match == scenarios.end() ? std::nullopt : std::optional<Scenario>{*match};
+}

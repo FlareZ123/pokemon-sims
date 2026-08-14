@@ -75,19 +75,21 @@
       return false;
     }
 
-    const int basic_energy_after_bc =
-        count_of(state_.deck, Card::Grass) + count_of(state_.deck, Card::Fire) -
-        count_of(targets, Card::Grass) - count_of(targets, Card::Fire);
+    const int energy_after_bc =
+        static_cast<int>(std::count_if(state_.deck.begin(), state_.deck.end(), is_energy)) -
+        static_cast<int>(std::count_if(targets.begin(), targets.end(), is_energy));
     const int deck_after_bc = static_cast<int>(state_.deck.size() - targets.size());
-    if (basic_energy_after_bc <= 0 || deck_after_bc <= 3) return false;
+    if (energy_after_bc <= 0 || deck_after_bc <= 3) return false;
 
     // Whether the production Celestial Roar policy elects to attack is decided from
-    // public state before its random top-three resolution. Use a fixed private shadow
-    // RNG only to execute the copied attack after that admission decision; no drawn
-    // identity is inspected by BC. The existing 64-seed target-invariance regression
-    // independently protects this boundary.
+    // public state before its random top-three resolution. Celestial Roar attaches
+    // every Energy card it finds, including modeled Double Dragon Energy. Use a fixed
+    // private shadow RNG only to execute the copied attack after that admission
+    // decision; no drawn identity is inspected by BC. The existing 64-seed target-
+    // invariance regression independently protects this boundary.
     // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
     // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
     // Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
     std::mt19937_64 shadow_rng{3545135ULL};
     Engine projected = issue_3545_projection(shadow_rng);
@@ -104,8 +106,8 @@
     if (targets.size() >= 3U) return targets;
 
     // Removing a non-Energy card before a live Celestial Roar strictly increases the
-    // Basic-Energy density of the shuffled deck. Restrict strict/flex candidates to
-    // cards already stable dead in the modeled state so probability improvement never
+    // Energy density of the shuffled deck. Restrict strict/flex candidates to cards
+    // already stable dead in the modeled state so probability improvement never
     // authorizes sacrificing a live connector, lock answer, Supporter, or Dragon.
     // Wishful Baton is unused by the goldfish setup model; Dipplin has no Applin line;
     // Battle VIP Pass is dead after turn one; excess Regidrago copies are dead only

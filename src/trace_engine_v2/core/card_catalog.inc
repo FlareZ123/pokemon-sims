@@ -103,7 +103,6 @@ constexpr std::string_view name(const Card card) {
     case Card::ErikasInvitation: return "Erika's Invitation";
     case Card::ForestSealStone: return "Forest Seal Stone";
     case Card::WishfulBaton: return "Wishful Baton";
-    case Card::ChaoticSwell: return "Chaotic Swell";
     case Card::ForestOfVitality: return "Forest of Vitality";
     case Card::PathToPeak: return "Path to the Peak";
     case Card::DoubleDragonEnergy: return "Double Dragon Energy";  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
@@ -111,6 +110,7 @@ constexpr std::string_view name(const Card card) {
     case Card::Fire: return "Fire Energy";
     case Card::BattleVipPass:
     case Card::BrilliantBlender:
+    case Card::ChaoticSwell:
     case Card::EvolutionIncense:
     case Card::FieldBlower:
     case Card::GuzmaHala:

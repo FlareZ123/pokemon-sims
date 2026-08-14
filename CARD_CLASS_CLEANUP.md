@@ -437,8 +437,12 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - This is a textual-include ownership cleanup only. It preserves the substantive route-policy body, declaration order, DCI/UDP/AMR, connector domination, K0/K1 timing, lock admission, action ordering, and readiness behavior. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 - Next safe follow-up: continue retiring compatibility forwarders only after a live parent boundary is independently proven, and do not recreate the retired Oricorio path.
 
-## Cleanup wave 2026-08-14 query-contract consolidation
+## Regidrago V metadata migration
 
-- `src/trace_engine_v2/core/payload_hand_policy.inc` now marks its pure payload selectors and counts `[[nodiscard]]` and names the generic preference callback as a predicate. The ordering and payload identities are unchanged. Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-- `src/trace_engine_v2/core/deck_knowledge.inc` now names its hand-plus-discard subtotal `unattached_public_copy_count()` before composing attached public copies. This keeps the K0 arithmetic explicit at its canonical knowledge seam without changing hidden-deck inference or K1 behavior. Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-- Keep future query-only cleanup in these canonical policy owners. Do not move route admission, DCI/UDP/AMR, connector domination, or gameplay state transitions into these helpers. Advanced rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3683
+- Canonical print: `swsh12-135`; exact card data: https://api.pokemontcg.io/v2/cards/swsh12-135
+- `src/cards/pokemon/regidrago_v.hpp` and `kRegisteredCardDefinitions` now own Regidrago V identity, display name, Basic stage, Dragon type, Pokémon V / Rule Box flags, and printed Retreat Cost metadata.
+- Registered Pokémon compatibility now reuses `CardDefinition` for intrinsic Basic, Pokémon, Pokémon V, Rule Box, Dragon, and Dragon-or-Psychic queries instead of duplicating Regidrago V branches across legacy switches. Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+- Live `retreat_cost()` resolution remains in the legacy compatibility table while confirmed bug #3652 is owned by its bug branch, so this cleanup does not silently alter claimed sibling retreat behavior. Bug: https://github.com/FlareZ123/pokemon-sims/issues/3652 Advanced retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- Focused registration and compatibility coverage: `tests/regidrago_v_card_class_tests.cpp`.
+- DCI/UDP/AMR, connector domination, K0/K1 timing, evolution, Energy planning, attack selection, Active-position policy, and ready-turn behavior remain at their existing Engine owners.

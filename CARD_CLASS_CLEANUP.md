@@ -386,3 +386,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Focused registration coverage: `tests/professor_turo_card_class_tests.cpp`.
 - This wave preserves Professor Turo's printed pickup-and-attached-card discard resolution, target choice, Supporter contention, DCI/UDP/AMR, connector domination, K0/K1 state, scheduled lock behavior, and route strategy at their existing Engine owners. Exact printed effect: https://api.pokemontcg.io/v2/cards/sv4-171
 - Existing route ownership remains under `src/trace_engine_v2/core/routes/professor_turo_regidrago_staging_policy.inc` and the surrounding Engine resolver. A later printed-resolution migration must first identify the single live state-transition owner and preserve the required attached-card discard when the chosen Pokémon returns to hand. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+## Appletun metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3642
+- Canonical print: `sv8-140`; exact card data: https://api.pokemontcg.io/v2/cards/sv8-140
+- `src/cards/pokemon/appletun.hpp` and `kRegisteredCardDefinitions` own Appletun identity, simulator display label, Stage 1 classification, Dragon type, and printed Retreat Cost metadata.
+- Focused registration coverage: `tests/appletun_card_class_tests.cpp`.
+- This wave preserves payload strategy, DCI/UDP/AMR, connector domination, K0/K1, attack selection, ready-turn behavior, and live route/state transitions at their current Engine owners.
+- Live retreat behavior is tracked by confirmed bug https://github.com/FlareZ123/pokemon-sims/issues/3643 and remains outside this architecture cleanup.
+- A later resolver migration must preserve the advanced manual's retreat procedure and keep route timing outside intrinsic metadata. Rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

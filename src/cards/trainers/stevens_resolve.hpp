@@ -1,0 +1,19 @@
+#pragma once
+
+#include "../card_definition.hpp"
+
+namespace sim::cards {
+
+class StevensResolve final {
+ public:
+  static constexpr CardDefinition definition{
+      .id = Card::StevensResolve,
+      .canonical_id = "sm7-145", // Exact Celestial Storm print: https://api.pokemontcg.io/v2/cards/sm7-145
+      .name = "Steven's Resolve",
+      .kind = CardKind::Trainer, // Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+      .trainer_kind = TrainerKind::Supporter,
+      .source_url = "https://api.pokemontcg.io/v2/cards/sm7-145", // Cleanup enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3595
+  };
+};
+
+}  // namespace sim::cards

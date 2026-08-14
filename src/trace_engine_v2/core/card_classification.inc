@@ -49,6 +49,14 @@ constexpr bool is_pokemon_v(const Card card) {
          card == Card::GoodraVstar ||  // Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136 ; Pokémon V ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/ ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3608
          card == Card::CrobatV;  // Pokémon V: https://api.pokemontcg.io/v2/cards/swsh3-104
 }
+
+// Keep Regidrago evolution-line identity beside the other intrinsic Pokémon classifiers.
+// Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+// Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+[[nodiscard]] constexpr bool is_regidrago_v_line(const Card card) {
+  return card == Card::RegidragoV || card == Card::RegidragoVstar;
+}
+
 constexpr bool is_rule_box_pokemon(const Card card) {
   switch (card) {
     case Card::RegidragoV:

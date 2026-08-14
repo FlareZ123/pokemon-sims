@@ -1,23 +1,35 @@
-  std::optional<Card> legacy_star_projection_removed_marker_;
+  struct LegacyStarProjectionProvenance {
+    std::optional<Card> removed_card;
+
+    bool should_remove(const std::vector<Card>& discard,
+                       const std::vector<Card>& discarded_this_turn,
+                       const Card card) const {
+      const int current_turn_copies = count_of(discarded_this_turn, card);
+      const int discard_copies = count_of(discard, card);
+      return current_turn_copies > 0 && discard_copies == current_turn_copies;
+    }
+
+    void mark_recovery(std::vector<Card>& discarded_this_turn, const Card card) {
+      const auto turn_it = std::find(
+          discarded_this_turn.begin(), discarded_this_turn.end(), card);
+      discarded_this_turn.erase(turn_it);
+      removed_card = card;
+    }
+
+    void restore(std::vector<Card>& discarded_this_turn) {
+      if (!removed_card) return;
+      discarded_this_turn.push_back(*removed_card);
+      removed_card.reset();
+    }
+  };
+
+  LegacyStarProjectionProvenance legacy_star_projection_provenance_;
 
   bool should_remove_legacy_star_projection_provenance(
       const std::vector<Card>& zone, const Card card) const {
     if (&zone != &state_.discard) return false;
-    const int current_turn_copies = count_of(state_.discarded_this_turn, card);
-    const int discard_copies = count_of(state_.discard, card);
-    return current_turn_copies > 0 && discard_copies == current_turn_copies;
-  }
-
-  void remove_current_turn_discard_provenance(const Card card) {
-    auto& discarded_this_turn = state_.discarded_this_turn;
-    const auto turn_it = std::find(
-        discarded_this_turn.begin(), discarded_this_turn.end(), card);
-    discarded_this_turn.erase(turn_it);
-  }
-
-  void mark_legacy_star_projection_recovery(const Card card) {
-    remove_current_turn_discard_provenance(card);
-    legacy_star_projection_removed_marker_ = card;
+    return legacy_star_projection_provenance_.should_remove(
+        state_.discard, state_.discarded_this_turn, card);
   }
 
   bool remove_one_legacy_star_projection(std::vector<Card>& zone, const Card card) {
@@ -33,7 +45,8 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
     // https://github.com/FlareZ123/pokemon-sims/issues/936
     if (remove_current_turn_provenance) {
-      mark_legacy_star_projection_recovery(card);
+      legacy_star_projection_provenance_.mark_recovery(
+          state_.discarded_this_turn, card);
     }
     return true;
   }
@@ -45,9 +58,7 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/sm9-152
     // https://github.com/FlareZ123/pokemon-sims/issues/936
-    if (!legacy_star_projection_removed_marker_) return;
-    state_.discarded_this_turn.push_back(*legacy_star_projection_removed_marker_);
-    legacy_star_projection_removed_marker_.reset();
+    legacy_star_projection_provenance_.restore(state_.discarded_this_turn);
   }
 
   std::optional<PokemonCommunicationPlan>

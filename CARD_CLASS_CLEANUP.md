@@ -149,6 +149,14 @@ Next mechanical Steven step: inspect the remaining root `part_issue_2622_steven_
 
 Future policy cleanup should reuse these named seams before adding another payload preference loop or Garbodor scenario-label/timing branch. Keep behavior changes on separately confirmed bug branches.
 
+## Provenance cleanup plan
+
+`src/trace_engine_v2/core/crispin_trace_provenance.inc` now owns only the Crispin trace-wording correction and the macro handoff that surrounds the historical Secret Box body. The complete issue-3152 Steven/Secret Box comparator and executor live at `src/trace_engine_v2/core/routes/issue_3152_steven_secret_box_policy.inc` at the same textual class-body position. This separates trace provenance from route admission while preserving K1, strict-JIT, Supporter timing, connector domination, target selection, and direct source URLs. Route specification: https://github.com/FlareZ123/pokemon-sims/issues/3152 Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+
+`src/trace_engine_v2/core/legacy_star_projection_provenance.inc` now groups the speculative removed-card marker and its should-remove, mark, and restore operations under `LegacyStarProjectionProvenance`. Engine keeps the zone-identity check and Pokémon Communication wrapper, so the issue-936 projection remains behavior-identical while its temporary state has one owner. Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136 Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152 Confirmed provenance contract: https://github.com/FlareZ123/pokemon-sims/issues/936
+
+Future provenance cleanup should keep trace-only wording helpers separate from route choice, and should use a named temporary-state owner when a speculative projection must be restored before returning to live Engine state.
+
 ## Rules and policy anchors
 
 Advanced rules procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

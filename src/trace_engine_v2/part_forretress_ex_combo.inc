@@ -8,7 +8,8 @@
 // composed at the verified namespace boundary after Engine closes, so forward
 // declarations preserve the public historical registry for the existing corpus:
 // Scenario model: https://github.com/FlareZ123/pokemon-sims/issues/2808
-std::vector<Scenario> all_scenarios();
+using ScenarioList = std::vector<Scenario>;
+ScenarioList all_scenarios();
 std::optional<Scenario> scenario_by_label(const std::string& label);
 
 const std::array<Scenario, 2> kGarbodorScenarios{{
@@ -18,8 +19,8 @@ const std::array<Scenario, 2> kGarbodorScenarios{{
      DciProfile::StrictJit, LockMode::None, false, 5},
 }};
 
-std::vector<Scenario> all_scenarios_with_garbodor() {
-  std::vector<Scenario> result = all_scenarios();
+ScenarioList all_scenarios_with_garbodor() {
+  ScenarioList result = all_scenarios();
   // Garbodor BKP 57 suppresses Pokemon Abilities while it has a Tool. Boost Shake
   // establishes Garbodor during the opponent's first turn, producing different
   // Regidrago T1 timing by seat. Append these rows so existing scenario indexes and

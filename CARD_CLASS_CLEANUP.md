@@ -337,3 +337,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Focused registration coverage: `tests/lusamine_card_class_tests.cpp`.
 - This wave preserves Lusamine's discard-recovery resolution, target choice, Supporter contention, DCI/UDP/AMR, connector domination, K0/K1 state, and route strategy at their existing Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm4-96
 - A later resolver migration must locate the single live Lusamine resolution boundary and preserve its Supporter/Stadium recovery ordering through `CardContext` without moving strategic recovery choice into card code.
+
+## Team Yell's Cheer metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3620
+- Canonical print: `swsh9-149`; exact card data: https://api.pokemontcg.io/v2/cards/swsh9-149
+- `src/cards/trainers/team_yells_cheer.hpp` and `kRegisteredCardDefinitions` own Team Yell's Cheer identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Team Yell's Cheer's intrinsic facts; registered metadata is the sole owner. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- Focused registration coverage: `tests/team_yells_cheer_card_class_tests.cpp`.
+- This wave preserves the existing discard-recovery resolver, recovery target choice, Supporter contention, DCI/UDP/AMR, connector domination, K0/K1, and route-selection behavior at their current Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/swsh9-149
+- Any later printed-resolution migration must first locate the single live Team Yell's Cheer resolver and preserve the printed “up to 3” recovery and shuffle ordering through `CardContext` without moving strategic recovery selection into card code.

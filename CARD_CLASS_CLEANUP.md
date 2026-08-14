@@ -264,3 +264,11 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - `src/trace_engine_v2/cli/crobat_modeling.inc` now directly owns temporary Crobat deck construction, lookup, simulation scheduling, and CSV reporting inside its single `sim` namespace boundary. The former `crobat_modeling_decks.inc` and `crobat_modeling_matrix.inc` one-owner fragments were folded into that owner in declaration order and retired.
 - Keep future Crobat-modeling organization inside `crobat_modeling.inc` unless a reusable cross-CLI abstraction emerges. Do not recreate forwarding `.inc` files solely to separate adjacent declarations. Modeling contract: https://github.com/FlareZ123/pokemon-sims/issues/1394
 - This consolidation is behavior-preserving: recipe validation, common-random-number seed slots, atomic CSV writes, and the existing Crobat modeling command contract remain unchanged. Atomic result-write contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#windows-build-and-result-write-behavior
+
+## Powerglass metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3553
+- Canonical print: `sv6pt5-63`; exact card data: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+- `src/cards/trainers/powerglass.hpp` and `kRegisteredCardDefinitions` now own Powerglass identity, display name, Trainer kind, and Pokémon Tool subtype.
+- Legacy `name()` and `is_tool()` compatibility paths delegate registered Powerglass metadata to the registry while retaining fallbacks for unmigrated Tools. Focused coverage: `tests/powerglass_card_class_tests.cpp`.
+- Existing end-of-turn Basic Energy attachment resolution, Active-position requirement, attachment-destination strategy, DCI/UDP/AMR, K0/K1, connector domination, and setup-axis policy remain in Engine. A later resolver migration must first locate the single live Powerglass resolution boundary and preserve end-of-turn sequencing through `CardContext`.

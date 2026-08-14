@@ -68,13 +68,21 @@ When a legacy function mixes these responsibilities, keep route admission and st
 
 ## Registered-card inventory
 
-The active registry currently contains 27 definitions. The source of truth is `src/cards/card_registry.hpp`; this list is a planning index rather than a second registry.
+The active registry currently contains 29 definitions. The source of truth is `src/cards/card_registry.hpp`; this list is a planning index rather than a second registry.
 
-- Pokémon: Appletun (`sv8-140`), Regidrago V (`swsh12-135`). Sources: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/swsh12-135
+- Pokémon: Appletun (`sv8-140`), Mawile-GX (`sm11-141`), Oricorio (`sm2-55`), Regidrago V (`swsh12-135`). Sources: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/sm11-141 https://api.pokemontcg.io/v2/cards/sm2-55 https://api.pokemontcg.io/v2/cards/swsh12-135
 - Energy: Double Dragon Energy (`xy6-97`). Source: https://api.pokemontcg.io/v2/cards/xy6-97
 - Trainers: Arven, Battle VIP Pass, Brilliant Blender, Chaotic Swell, Channeler, Crispin, Dawn, Evolution Incense, Field Blower, Forest of Vitality, Forest Seal Stone, Guzma & Hala, Hisuian Heavy Ball, Klara, Lusamine, Mysterious Treasure, Pokémon Communication, Powerglass, Professor Burnet, Professor Turo's Scenario, Professor's Letter, Quick Ball, Secret Box, Wishful Baton. Registry with exact-print URLs: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
 Do not create a parallel migration for a card whose enhancement or bug branch is already owned. Migration ownership must be checked before selecting the next card.
+
+### Oricorio migration
+
+- Enhancement owner: https://github.com/FlareZ123/pokemon-sims/issues/3712
+- Exact Guardians Rising print: https://api.pokemontcg.io/v2/cards/sm2-55
+- `src/cards/pokemon/oricorio.hpp` and the explicit registry own intrinsic identity, Basic stage, Psychic type, printed Retreat Cost 1, and no-Rule-Box metadata.
+- Preserve the established simulator display label `Oricorio GRI 55` because readable seeded trace contracts depend on it: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/issue_2310_turo_oricorio_trace_order_tests.cpp
+- Vital Dance resolution, Energy target choice, DCI/UDP/AMR, connector domination, K0/K1 state, locks, and route priority remain in Engine. Existing connector owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/oricorio_connector_policy.inc
 
 ## One-card workflow
 

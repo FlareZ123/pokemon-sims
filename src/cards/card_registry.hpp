@@ -18,6 +18,7 @@
 #include "trainers/professor_burnet.hpp"
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
+#include "trainers/ultra_ball.hpp"
 
 namespace sim::cards {
 
@@ -31,6 +32,7 @@ inline constexpr std::array<const CardDefinition*, 15> kRegisteredCardDefinition
     &EvolutionIncense::definition, // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163
     &FieldBlower::definition, // Exact SM 125 metadata: https://api.pokemontcg.io/v2/cards/sm2-125
     &QuickBall::definition,
+    &UltraBall::definition, // Exact Scarlet & Violet Item: https://api.pokemontcg.io/v2/cards/sv1-196
     &ProfessorsLetter::definition, // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123
     &MysteriousTreasure::definition, // Exact SM 113 metadata: https://api.pokemontcg.io/v2/cards/sm6-113
     &HisuianHeavyBall::definition, // Exact SWSH 146 metadata: https://api.pokemontcg.io/v2/cards/swsh10-146

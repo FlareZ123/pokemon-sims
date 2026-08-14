@@ -10,17 +10,9 @@
 
 #endif  // SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
 
-// Compatibility source-contract shim. Canonical implementation:
+// Compatibility source-contract shim. Canonical implementation and payload
+// predicate now have one executable/source owner:
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
-// The executable compiles only the canonical core include above. The inactive
-// mirror keeps raw-source contracts able to inspect the payload predicate after
-// the implementation moved into core/.
-#if 0
-constexpr bool is_payload(const Card card) {
-  return card == Card::Dragapult || card == Card::MegaDragonite || card == Card::DialgaGX ||
-         card == Card::GoodraVstar || card == Card::Appletun;
-}
-#endif
 // Legacy source-anchor compatibility follows. Historical source links into this
 // wrapper remain resolvable while the implementation lives in core/.
 // 020

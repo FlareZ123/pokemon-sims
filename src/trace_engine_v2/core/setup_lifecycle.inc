@@ -1,3 +1,7 @@
+  // Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  inline static constexpr int kOpeningHandSize = 7;
+  inline static constexpr int kStartingPrizeCount = 6;
+
   void move_top_cards_from_deck(std::vector<Card>& destination, int count) {
     // Setup draws and Prize placement both move cards from the already-shuffled deck
     // without introducing an extra shuffle between those steps:
@@ -11,7 +15,7 @@
   void draw_opening_hand_with_mulligans() {
     while (true) {
       state_.hand.clear();
-      move_top_cards_from_deck(state_.hand, 7);
+      move_top_cards_from_deck(state_.hand, kOpeningHandSize);
       if (std::any_of(state_.hand.begin(), state_.hand.end(), is_basic)) return;
       state_.deck.insert(state_.deck.end(), state_.hand.begin(), state_.hand.end());
       state_.hand.clear();
@@ -24,7 +28,7 @@
     // Place six Prize cards from the already-shuffled remaining deck after the
     // opening Active and optional Bench are selected. The setup procedure does
     // not add another shuffle at this point: https://www.pokemon.com/us/pokemon-tcg/rules
-    move_top_cards_from_deck(state_.prizes, 6);
+    move_top_cards_from_deck(state_.prizes, kStartingPrizeCount);
   }
 
   void emit_setup_trace() {

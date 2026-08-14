@@ -155,7 +155,7 @@ constexpr bool is_special_energy(const Card card) {
 }
 constexpr bool is_supporter(const Card card) {
   // Registered Supporters own intrinsic subtype classification in CardDefinition.
-  // Crispin exact Supporter print: https://api.pokemontcg.io/v2/cards/sv7-133 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3580
+  // Team Yell's Cheer exact Supporter print: https://api.pokemontcg.io/v2/cards/swsh9-149 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3620
   if (cards::has_definition(card)) return cards::registered_is_supporter(card);
 
   switch (card) {
@@ -167,7 +167,6 @@ constexpr bool is_supporter(const Card card) {
     case Card::Channeler:
     case Card::Gladion:
     case Card::ErikasInvitation:
-    case Card::TeamYellsCheer:
     case Card::RoseannesBackup:
     case Card::Klara:
     case Card::ProfessorTuro:

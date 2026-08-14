@@ -201,17 +201,18 @@ Future policy cleanup should reuse these named seams before adding another paylo
 
 ## Numbered policy-fragment migration
 
-Two compatibility forwarders remain for previously anonymous trace-engine fragments that now have named canonical owners at the same textual include boundaries:
+One compatibility forwarder remains for a previously anonymous trace-engine fragment with a named canonical owner at the same textual include boundary:
 
-- `part_013.inc` forwards to `core/supporter_legacy_runtime.inc`.
-- `part_014b.inc` forwards to `core/recovery_supporter_policy.inc`.
+- `part_014b.inc` forwards to `core/recovery_supporter_policy.inc` and remains live through `composition/post_014a_overrides.inc` inside its established `choose_supporter` macro boundary.
 
-`part_014a.inc` is retired. `composition/engine_body.inc` now includes `turn_action_policy_runtime.inc` directly at the exact former `part_014a.inc` member and macro boundary, leaving one executable include path for that runtime owner. The runtime remains at the trace-engine root because its established nested `core/routes/...` includes are relative to that directory.
+`part_013.inc` is retired after repository-wide reference inspection found no live composition include or raw-source consumer. `core/supporter_legacy_runtime.inc` remains the canonical runtime owner. `part_014a.inc` is also retired; `composition/engine_body.inc` includes `turn_action_policy_runtime.inc` directly at the exact former `part_014a.inc` member and macro boundary, leaving one executable include path for that runtime owner. The runtime remains at the trace-engine root because its established nested `core/routes/...` includes are relative to that directory.
 
-Future retirement of the remaining forwarders must first migrate raw-source readers and same-repository anchors, then retarget their composition owners at identical member and macro boundaries. Preserve DCI/UDP/AMR behavior, Supporter contention, connector domination, K0/K1 semantics, declaration order, macro order, and direct rule/card URLs throughout that work.
+Next numbered-forwarder step: retire `part_014b.inc` only by retargeting `composition/post_014a_overrides.inc` to `core/recovery_supporter_policy.inc` at the identical `choose_supporter` macro and member boundary. Preserve DCI/UDP/AMR behavior, Supporter contention, connector domination, K0/K1 semantics, declaration order, macro order, and direct rule/card URLs throughout that move.
 
+Supporter runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/supporter_legacy_runtime.inc
+Recovery Supporter policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/recovery_supporter_policy.inc
 Turn action runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/turn_action_policy_runtime.inc
-Composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
+Composition owners: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 Advanced rules and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 Decision priorities and knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md

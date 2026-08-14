@@ -1,4 +1,9 @@
-#include "core/regidrago_line_helpers.inc"
+#ifndef SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
+#define SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
+// Canonical intrinsic Pokémon classification owner:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
+#include "core/card_classification.inc"
+#endif
 
   bool active_powerglass_tool_slot_needed() const {
     if (!state_.active || state_.active->tool != Tool::None ||

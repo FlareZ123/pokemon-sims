@@ -7,7 +7,7 @@
 #define play_steven TRACE_ENGINE_FINAL_PLAY_STEVEN_ALIAS
 #endif
 
-#include "core/late_steven_burnet_route_policy.inc"
+#include "core/routes/late_steven_burnet_route_policy.inc" // Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_burnet_route_policy.inc
 
   bool known_hand_or_deck_card_available(const Card card) const {
     // Once the deck is known, route package checks should express card access once

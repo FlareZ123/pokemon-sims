@@ -75,7 +75,6 @@ constexpr std::string_view name(const Card card) {
     case Card::StevensResolve: return "Steven's Resolve";
     case Card::Guzma: return "Guzma";
     case Card::Gladion: return "Gladion";
-    case Card::TeamYellsCheer: return "Team Yell's Cheer";
     case Card::ErikasInvitation: return "Erika's Invitation";
     case Card::PathToPeak: return "Path to the Peak";
     case Card::Grass: return "Grass Energy";
@@ -107,8 +106,9 @@ constexpr std::string_view name(const Card card) {
     case Card::QuickBall:
     case Card::RoseannesBackup: // Exact registered Supporter: https://api.pokemontcg.io/v2/cards/swsh9-148 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3629
     case Card::SecretBox:
+    case Card::TeamYellsCheer: // Exact registered Supporter name: https://api.pokemontcg.io/v2/cards/swsh9-149 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3620
     case Card::WishfulBaton: // Exact registered name: https://api.pokemontcg.io/v2/cards/sm3-128
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 ; Appletun: https://api.pokemontcg.io/v2/cards/sv8-140 ; Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117 ; Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
   }
   return "Unknown";
 }

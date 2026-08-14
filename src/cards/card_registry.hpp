@@ -13,6 +13,7 @@
 #include "trainers/field_blower.hpp"
 #include "trainers/guzma_hala.hpp"
 #include "trainers/hisuian_heavy_ball.hpp"
+#include "trainers/lusamine.hpp"
 #include "trainers/mysterious_treasure.hpp"
 #include "trainers/pokemon_communication.hpp"
 #include "trainers/powerglass.hpp"
@@ -23,7 +24,7 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 17> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 18> kRegisteredCardDefinitions{
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -41,6 +42,7 @@ inline constexpr std::array<const CardDefinition*, 17> kRegisteredCardDefinition
     &Powerglass::definition, // Exact Shrouded Fable Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
     &ProfessorBurnet::definition, // Exact Trainer Gallery Supporter: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     &SecretBox::definition, // Exact Twilight Masquerade ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv6-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3541
+    &Lusamine::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
 };
 
 constexpr const CardDefinition* find_definition(const Card card) {

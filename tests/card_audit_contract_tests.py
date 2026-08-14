@@ -83,7 +83,11 @@ def require_documented_count(documented: str, label: str, expected: int) -> None
 
 def emitted_rule_ids() -> set[str]:
     emitted: set[str] = set()
-    for path in TRACE_SOURCE_DIR.glob("*.inc"):
+    # Executable trace owners now live below nested core/routes directories, so the
+    # production rule inventory must follow the entire trace-engine source tree:
+    # https://github.com/FlareZ123/pokemon-sims/issues/3754
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/RULES_TRACEABILITY.md
+    for path in TRACE_SOURCE_DIR.rglob("*.inc"):
         for rule_field in TRACE_CALL.findall(path.read_text(encoding="utf-8")):
             emitted.update(RULE_ID.findall(rule_field))
     return emitted
@@ -229,6 +233,10 @@ def main() -> int:
     missing = sorted(emitted - registered)
     if missing:
         raise AssertionError(f"Unregistered emitted rule IDs: {', '.join(missing)}")
+    # This regression lives in a nested production owner after #3199. A top-level-only
+    # source scan drops it from `emitted` and makes this exact contract fail:
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_3199_turo_oricorio_base.inc
+    # https://github.com/FlareZ123/pokemon-sims/issues/3754
     if "R-GUZMA-01" not in emitted or "R-GUZMA-01" not in registered:
         raise AssertionError("R-GUZMA-01 must be emitted and registered.")
     return 0

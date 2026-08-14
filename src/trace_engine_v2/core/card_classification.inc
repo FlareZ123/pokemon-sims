@@ -207,5 +207,9 @@ constexpr bool is_stadium(const Card card) {
 }
 
 constexpr bool is_ace_spec(const Card card) {
-  return card == Card::BrilliantBlender || card == Card::SecretBox;
+  // Registered ACE SPEC ownership comes from exact-print CardDefinition metadata.
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  if (cards::has_definition(card)) return cards::registered_is_ace_spec(card);
+
+  return card == Card::SecretBox;
 }

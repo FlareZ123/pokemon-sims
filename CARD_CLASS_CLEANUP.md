@@ -141,6 +141,8 @@ Pineco / Forretress ex exact cards: https://api.pokemontcg.io/v2/cards/sv4pt5-1 
 
 The issue-3653 Steven free-slot connector now has canonical policy ownership at `src/trace_engine_v2/core/routes/steven_free_slot_connector_policy.inc`. The historical `part_issue_3653_steven_free_slot_connector.inc` path is a source-contract forwarder because `composition/opening_engine_overrides.inc` still includes that path inside the existing `play_steven` macro boundary. Connector policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_free_slot_connector_policy.inc Confirmed connector-domination bug: https://github.com/FlareZ123/pokemon-sims/issues/3653
 
+The canonical issue-3653 policy now separates free-Blender availability, held-route completion, and the final banking decision into named predicates. Keep those predicates inside the route policy so connector-domination reasoning has one readable owner while the historical forwarder remains behavior-neutral. Connector-domination concepts: https://github.com/FlareZ123/pokemon-sims/issues/3653 Policy owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_free_slot_connector_policy.inc
+
 Next mechanical Steven step: retire the issue-3653 root forwarder only after the opening composition owner can include the canonical route path at the identical macro boundary and every raw-source consumer of the historical path is migrated. Keep that change behavior-neutral and preserve the direct Steven, Blender, Quick Ball, Regidrago, advanced-manual, and decision-priority URLs with the canonical route policy. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 ## Shared policy cleanup plan

@@ -78,6 +78,14 @@ constexpr bool registered_is_supporter(const Card card) {
   return registered_is_trainer_kind(card, TrainerKind::Supporter);
 }
 
+constexpr bool registered_is_tool(const Card card) {
+  return registered_is_trainer_kind(card, TrainerKind::Tool);
+}
+
+constexpr bool registered_is_stadium(const Card card) {
+  return registered_is_trainer_kind(card, TrainerKind::Stadium);
+}
+
 constexpr bool registered_is_ace_spec(const Card card) {
   const CardDefinition* definition = find_definition(card);
   return definition != nullptr && definition->ace_spec;

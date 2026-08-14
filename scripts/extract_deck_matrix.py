@@ -7,6 +7,11 @@ import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
+from scripts.summarize_t2_t3_matrix import summarize_matrix
+
+
+DEFAULT_SUMMARY_OUTPUT = Path("trace-t2-t3-summary.txt")
+
 
 # The paired aggregate already contains both registered decks, including the
 # canonical regidrago-shell rows, so those rows can be reused byte-for-byte:
@@ -59,17 +64,31 @@ def extract_deck_rows(source: Path, destination: Path, deck: str) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Extract one deck's rows from an already-generated paired matrix."
+        description=(
+            "Extract one deck's rows from an already-generated paired matrix and "
+            "emit the canonical human-readable T2/T3 summary used by CI audits."
+        )
     )
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--deck", required=True)
+    parser.add_argument(
+        "--summary-output",
+        type=Path,
+        default=DEFAULT_SUMMARY_OUTPUT,
+        help="human-readable paired T2/T3 summary output",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     extract_deck_rows(args.input, args.output, args.deck)
+    # CI already uploads trace-*.txt, so this source-derived table becomes part of
+    # the validation artifact without another reporting or transcription step.
+    # Confirmed reporting-boundary defect:
+    # https://github.com/FlareZ123/pokemon-sims/issues/3764
+    summarize_matrix(args.input, args.summary_output)
     return 0
 
 

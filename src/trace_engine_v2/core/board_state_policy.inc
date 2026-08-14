@@ -1,18 +1,26 @@
+  template <typename ActiveZone, typename BenchZone, typename Predicate>
+  [[nodiscard]] static auto find_board_pokemon_matching_in_zones(
+      ActiveZone& active, BenchZone& bench, Predicate predicate)
+      -> decltype(&*active) {
+    // Keep Active-before-Bench traversal in one implementation so mutable and
+    // const board queries cannot diverge as the policy layer evolves.
+    // C++ find_if semantics: https://eel.is/c++draft/alg.find
+    if (active && predicate(*active)) return &*active;
+    const auto match = std::find_if(bench.begin(), bench.end(), predicate);
+    return match == bench.end() ? nullptr : &*match;
+  }
+
   template <typename Predicate>
   [[nodiscard]] Pokemon* find_board_pokemon_matching(Predicate predicate) {
-    if (state_.active && predicate(*state_.active)) return &*state_.active;
-    const auto match = std::find_if(
-        state_.bench.begin(), state_.bench.end(), predicate);
-    return match == state_.bench.end() ? nullptr : &*match;
+    return find_board_pokemon_matching_in_zones(
+        state_.active, state_.bench, predicate);
   }
 
   template <typename Predicate>
   [[nodiscard]] const Pokemon* find_board_pokemon_matching(
       Predicate predicate) const {
-    if (state_.active && predicate(*state_.active)) return &*state_.active;
-    const auto match = std::find_if(
-        state_.bench.begin(), state_.bench.end(), predicate);
-    return match == state_.bench.end() ? nullptr : &*match;
+    return find_board_pokemon_matching_in_zones(
+        state_.active, state_.bench, predicate);
   }
 
   template <typename Predicate>

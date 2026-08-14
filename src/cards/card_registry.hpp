@@ -89,40 +89,37 @@ constexpr bool registered_is_ace_spec(const Card card) {
   return definition != nullptr && definition->ace_spec;
 }
 
+constexpr bool definition_matches_registration(
+    const CardDefinition& definition, const Card id,
+    const std::string_view canonical_id, const std::string_view canonical_name) {
+  return definition.id == id && definition.canonical_id == canonical_id &&
+         definition.name == canonical_name;
+}
+
 // Registry-owned compile-time contracts stay beside the definitions they verify.
 // Architecture plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
-static_assert(QuickBall::definition.id == Card::QuickBall);
-static_assert(QuickBall::definition.canonical_id == "swsh1-179");
-static_assert(QuickBall::definition.name == "Quick Ball");
-static_assert(GuzmaHala::definition.id == Card::GuzmaHala);
-static_assert(GuzmaHala::definition.canonical_id == "sm12-229");
-static_assert(GuzmaHala::definition.name == "Guzma & Hala");
-static_assert(Arven::definition.id == Card::Arven); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
-static_assert(Arven::definition.canonical_id == "sv1-166");
-static_assert(Arven::definition.name == "Arven");
-static_assert(Crispin::definition.id == Card::Crispin); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv7-133 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3580
-static_assert(Crispin::definition.canonical_id == "sv7-133");
-static_assert(Crispin::definition.name == "Crispin");
-static_assert(Dawn::definition.id == Card::Dawn); // Exact Supporter: https://api.pokemontcg.io/v2/cards/me2-87
-static_assert(Dawn::definition.canonical_id == "me2-87");
-static_assert(Dawn::definition.name == "Dawn");
-static_assert(Powerglass::definition.id == Card::Powerglass); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
-static_assert(Powerglass::definition.canonical_id == "sv6pt5-63");
-static_assert(Powerglass::definition.name == "Powerglass");
-static_assert(Lusamine::definition.id == Card::Lusamine); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
-static_assert(Lusamine::definition.canonical_id == "sm4-96");
-static_assert(Lusamine::definition.name == "Lusamine");
-static_assert(Klara::definition.id == Card::Klara); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
-static_assert(Klara::definition.canonical_id == "swsh6-145");
-static_assert(Klara::definition.name == "Klara");
-static_assert(WishfulBaton::definition.id == Card::WishfulBaton); // Exact Pokémon Tool: https://api.pokemontcg.io/v2/cards/sm3-128 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3631
-static_assert(WishfulBaton::definition.canonical_id == "sm3-128");
-static_assert(WishfulBaton::definition.name == "Wishful Baton");
-static_assert(Channeler::definition.id == Card::Channeler); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm11-190 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3624
-static_assert(Channeler::definition.canonical_id == "sm11-190");
-static_assert(Channeler::definition.name == "Channeler");
-static_assert(ProfessorTuroScenario::definition.id == Card::ProfessorTuro); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
-static_assert(ProfessorTuroScenario::definition.canonical_id == "sv4-171");
-static_assert(ProfessorTuroScenario::definition.name == "Professor Turo's Scenario");
+static_assert(definition_matches_registration(QuickBall::definition, Card::QuickBall,
+                                              "swsh1-179", "Quick Ball"));
+static_assert(definition_matches_registration(GuzmaHala::definition, Card::GuzmaHala,
+                                              "sm12-229", "Guzma & Hala"));
+static_assert(definition_matches_registration(Arven::definition, Card::Arven,
+                                              "sv1-166", "Arven")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
+static_assert(definition_matches_registration(Crispin::definition, Card::Crispin,
+                                              "sv7-133", "Crispin")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv7-133 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3580
+static_assert(definition_matches_registration(Dawn::definition, Card::Dawn,
+                                              "me2-87", "Dawn")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/me2-87
+static_assert(definition_matches_registration(Powerglass::definition, Card::Powerglass,
+                                              "sv6pt5-63", "Powerglass")); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+static_assert(definition_matches_registration(Lusamine::definition, Card::Lusamine,
+                                              "sm4-96", "Lusamine")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
+static_assert(definition_matches_registration(Klara::definition, Card::Klara,
+                                              "swsh6-145", "Klara")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
+static_assert(definition_matches_registration(WishfulBaton::definition, Card::WishfulBaton,
+                                              "sm3-128", "Wishful Baton")); // Exact Pokémon Tool: https://api.pokemontcg.io/v2/cards/sm3-128 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3631
+static_assert(definition_matches_registration(Channeler::definition, Card::Channeler,
+                                              "sm11-190", "Channeler")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm11-190 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3624
+static_assert(definition_matches_registration(ProfessorTuroScenario::definition,
+                                              Card::ProfessorTuro, "sv4-171",
+                                              "Professor Turo's Scenario")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
 
 }  // namespace sim::cards

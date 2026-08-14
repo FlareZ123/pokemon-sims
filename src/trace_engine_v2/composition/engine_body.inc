@@ -96,6 +96,7 @@
 #define play_chaotic_swell play_chaotic_swell_issue_3057
 #define play_field_blower play_field_blower_issue_3057
 #include "post_014a_overrides.inc"
+#include "../core/battle_compressor_vs_seeker_policy.inc" // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
 #undef play_field_blower
 #undef play_chaotic_swell
 
@@ -113,7 +114,7 @@
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #define hand_count hand_count_issue_3057
-#define play_items_until_stable play_items_until_stable_issue_3057
+#define play_items_until_stable play_items_until_stable_issue3545
 #include "../part_014c.inc"
 #undef play_items_until_stable
 #undef hand_count

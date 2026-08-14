@@ -22,24 +22,25 @@
     const bool dde_only_axis = state_.active &&
         state_.active->double_dragon > 0 && state_.active->grass == 0 &&
         state_.active->fire == 0 && completing_basic_in_deck;
-    const bool exact_reported_axis = state_.turn == 2 && active_is_vstar() &&
+    const bool supported_energy_axis = active_is_vstar() &&
         (canonical_gf_axis || dde_only_axis);
 
     // Legacy Star may return Earthen Vessel now for a fully public next-turn
     // finish. The current turn's manual attachment is already spent, while the
     // next turn gets a fresh attachment. A held Dragon pays Vessel and enters
-    // discard during that next strict-JIT ready turn:
+    // discard during that next same-ready-turn JIT window.
     // Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
-    // Mega Dragonite ex: https://api.pokemontcg.io/v2/cards/me2pt5-152
-    // Official Item, discard, search, attachment, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // K1, dynamic DCI, strict-JIT, and earliest-route specifications: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1844
-    return scenario_.dci == DciProfile::StrictJit &&
-        scenario_.locks == LockMode::None && deck_seen_ &&
-        state_.turn + 1 <= scenario_.max_turn && state_.manual_energy_used &&
-        exact_reported_axis && held_payload &&
+    // DCI timing policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Action-specific lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    const bool next_turn_item_locked =
+        scenario_.locks == LockMode::FullItem ||
+        (uses_turn_two_item_lock(scenario_.locks) && state_.turn + 1 >= 2);
+    return strict_payload_timing() && // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+        ability_available_for_pokemon(Card::RegidragoVstar) && // https://api.pokemontcg.io/v2/cards/swsh12-136
+        !next_turn_item_locked && // https://api.pokemontcg.io/v2/cards/sv4-163
+        deck_seen_ && state_.turn + 1 <= scenario_.max_turn &&
+        state_.manual_energy_used && supported_energy_axis && held_payload &&
         (count_of(state_.discard, Card::EarthenVessel) > 0 ||
          hand_count(Card::EarthenVessel) > 0);
   }

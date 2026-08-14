@@ -27,6 +27,62 @@
     return projected.issue_3545_setup_route_score();
   }
 
+  int issue_3545_hold_compressor_for_next_public_turn_score() const {
+    if (!strict_payload_timing() || state_.turn_ended || item_locked() ||
+        hand_count(Card::BattleCompressor) != 1 || state_.turn >= scenario_.max_turn ||
+        item_locked_on_turn(state_.turn + 1) || !need_payload() ||
+        can_play_payload_this_turn() || !deck_seen_) {
+      return -1;
+    }
+
+    // Once K1 has established that a Dragon payload physically remains in deck, the
+    // last Battle Compressor itself is a deterministic future same-ready-turn outlet.
+    // Evaluate the current public turn with that Item hidden from every discard/search
+    // policy, advance one turn without the unknown draw, then spend BC only after the
+    // ordinary public setup sequence has made its payload timing legal.
+    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Same-ready-turn JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // K1 / future-card oracle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    if (!std::any_of(state_.deck.begin(), state_.deck.end(), is_payload)) return -1;
+
+    std::mt19937_64 shadow_rng = rng_;
+    Engine projected = issue_3545_projection(shadow_rng);
+    if (!remove_one(projected.state_.hand, Card::BattleCompressor)) return -1;
+
+    projected.issue_3545_prepare_supporter_projection();
+    projected.issue_3545_choose_supporter_from_prepared_projection();
+    projected.issue_3545_continue_after_supporter(projected);
+    projected.resolve_powerglass_end_turn();
+    projected.state_.hand.push_back(Card::BattleCompressor);
+
+    if (projected.state_.turn >= projected.scenario_.max_turn) {
+      return -1;
+    }
+    issue_3545_advance_public_state_one_turn(projected);
+
+    // Keep the reserved BC invisible while ordinary next-turn setup runs. This
+    // prevents DCI costs from consuming the exact outlet being evaluated.
+    if (!remove_one(projected.state_.hand, Card::BattleCompressor)) return -1;
+    projected.issue_3545_prepare_supporter_projection();
+    projected.issue_3545_choose_supporter_from_prepared_projection();
+    projected.issue_3545_continue_after_supporter(projected);
+    projected.state_.hand.push_back(Card::BattleCompressor);
+
+    projected.issue_3545_project_direct_compressor_payload();
+    return projected.issue_3545_setup_route_score();
+  }
+
+  bool issue_3545_should_reserve_last_compressor_for_ready_turn() const {
+    const int hold_score = issue_3545_hold_compressor_for_next_public_turn_score();
+    if (hold_score < 0) return false;
+
+    const std::vector<Card> immediate = issue_3545_refined_battle_compressor_targets();
+    if (immediate.empty()) return true;
+    const int immediate_score = issue_3545_next_public_turn_score(immediate);
+    return hold_score > immediate_score;
+  }
+
   bool issue_3545_grant_stage_available(
       const std::vector<Card>& existing_targets) const {
     // Grant has no setup-axis Supporter value in these goldfish recipes, while its
@@ -53,11 +109,6 @@
         std::find_if(state_.hand.begin(), state_.hand.end(), is_payload);
     if (payload_it == state_.hand.end()) return false;
 
-    // This is a future-ready-turn proof, so reserve the currently held Dragon
-    // symbolically rather than calling choose_discard(true), which correctly protects
-    // that Dragon under strict JIT on the current pre-ready turn. The ordinary second
-    // Grant cost is still validated by the shared DCI selector after removing the BC
-    // that will be consumed now and excluding Grant itself from legal costs.
     Engine probe = *this;
     remove_one(probe.state_.hand, Card::BattleCompressor);
     if (!remove_one(probe.state_.hand, *payload_it)) return false;
@@ -236,6 +287,19 @@
   void play_items_until_stable_issue3545(const bool permit_payload) {
     if (state_.turn_ended) return;
     for (int guard = 0; guard < 8; ++guard) {
+      if (issue_3545_should_reserve_last_compressor_for_ready_turn()) {
+        // Hide the reserved BC from the entire legacy fixed point, including discard
+        // costs. Restore it afterward and re-evaluate because ordinary search, Energy,
+        // or evolution actions may have moved the state into the legal payload window.
+        if (!remove_one(state_.hand, Card::BattleCompressor)) {
+          throw std::logic_error("reserved Battle Compressor disappeared");
+        }
+        play_items_until_stable_issue3545_base(permit_payload);
+        state_.hand.push_back(Card::BattleCompressor);
+        if (issue_3545_should_reserve_last_compressor_for_ready_turn()) break;
+        continue;
+      }
+
       const bool refined_action = play_battle_compressor_refined_routes();
       play_items_until_stable_issue3545_base(permit_payload);
       if (!refined_action || state_.turn_ended) break;

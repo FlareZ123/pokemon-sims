@@ -78,7 +78,7 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Card data: https://api.pokemontcg.io/v2/cards/swsh10-146
 - Status: exact identity, display name, Trainer kind, and Item subtype are owned by `src/cards/trainers/hisuian_heavy_ball.hpp` and `kRegisteredCardDefinitions`.
 - Existing Hisuian Heavy Ball strategy and resolution remain in Engine for this metadata-only wave. Prize inspection, Basic-Pokémon choice, Prize replacement, shuffle, K0/K1 timing, DCI/AMR, connector priority, and readiness behavior remain unchanged.
-- Legacy `name()` and `is_item()` cases remain compatibility-only and are unreachable for the registered definition. Remove those duplicate fallbacks in a later mechanical edit rather than mixing legacy-table deletion with this registration wave.
+- Legacy compatibility cleanup is complete for intrinsic name and Item subtype: `name()` and `is_item()` now delegate the registered definition without duplicate Heavy Ball fallbacks. Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp Card data: https://api.pokemontcg.io/v2/cards/swsh10-146
 - Follow-up for this card must locate the single live Hisuian Heavy Ball resolver before moving printed Prize inspection and replacement through `CardContext`; preserve the printed branch that discards the Item when no Basic Pokémon is revealed. Printed effect: https://api.pokemontcg.io/v2/cards/swsh10-146
 
 ### Field Blower
@@ -95,8 +95,8 @@ These staged entries advance the card-class plan without changing the simulator'
 
 ### Cleanup wave 2026-08-13 checkpoint
 
-- Field Blower's registered display name now flows through `CardDefinition`, while the concurrently migrated Hisuian Heavy Ball retains its temporary legacy compatibility label for a later mechanical cleanup. Canonical registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-- `is_item()` delegates Field Blower, Professor's Letter, Evolution Incense, Mysterious Treasure, and Quick Ball identity to registered metadata. Hisuian Heavy Ball retains its compatibility fallback for a later mechanical edit. Exact prints: https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/xy1-123 https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/swsh10-146
+- Field Blower and Hisuian Heavy Ball registered display names now flow through `CardDefinition`; neither card retains a duplicate legacy display-name case. Canonical registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+- `is_item()` delegates all currently registered Item definitions before consulting the reduced legacy switch. The legacy switch now contains only unmigrated Items, while Battle VIP Pass, Brilliant Blender, Field Blower, Professor's Letter, Evolution Incense, Mysterious Treasure, Quick Ball, and Hisuian Heavy Ball derive Item identity from the registry. Exact Heavy Ball print: https://api.pokemontcg.io/v2/cards/swsh10-146
 - This wave is mechanical ownership cleanup only. Printed resolution, strategy, DCI/UDP/AMR, connector priority, and K0/K1 transitions remain at their existing owners. The next resolver migration must still locate the single live resolution boundary before moving state transitions. Architecture contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#card-module-contract
 
 ## Composition consolidation status
@@ -123,7 +123,7 @@ Registered-card compatibility now uses `find_definition()` as the single registr
 
 ### Registry consolidation checkpoint
 
-- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Brilliant Blender, Field Blower, Quick Ball, Professor's Letter, Evolution Incense, Mysterious Treasure, and Hisuian Heavy Ball now use that inventory; future migrations append one definition there instead of extending a lookup switch. Field Blower source: https://api.pokemontcg.io/v2/cards/sm2-125 Hisuian Heavy Ball source: https://api.pokemontcg.io/v2/cards/swsh10-146
+- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Battle VIP Pass, Brilliant Blender, Field Blower, Quick Ball, Professor's Letter, Evolution Incense, Mysterious Treasure, and Hisuian Heavy Ball now use that inventory; future migrations append one definition there instead of extending a lookup switch. Field Blower source: https://api.pokemontcg.io/v2/cards/sm2-125 Hisuian Heavy Ball source: https://api.pokemontcg.io/v2/cards/swsh10-146
 - `registered_is_trainer_kind()` is the shared intrinsic Trainer-subtype query. Item, Supporter, Stadium, and Tool compatibility checks should delegate to this helper as those classifications migrate.
 - `is_trainer_kind()` belongs with `CardDefinition` because it interprets intrinsic metadata only. Route policy, DCI/UDP, AMR, connector domination, K0/K1, and matchup state remain outside the registry.
 - The next card migration should reuse these registry primitives before adding any new compatibility branch. If a migrated fact still needs a legacy fallback, keep that fallback only for unmigrated cards.

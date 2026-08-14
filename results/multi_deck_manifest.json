@@ -24,7 +24,7 @@
     "garbodor-shake-ability-lock/go-first",
     "garbodor-shake-ability-lock/go-second"
   ],
-  "simulator_policy_source_sha256": "9ddac6b4f1e5ab9a3ca15a0e7e28ecc75c2044e866c5c701b951abaa9595fec4",
+  "simulator_policy_source_sha256": "ae47971b2fdfea2276d8eaa21c929ee4ca39adf3d1194f5e8ba6dfe156cfbb4c",
   "total_simulated_games": 3200000,
   "traces": [
     {

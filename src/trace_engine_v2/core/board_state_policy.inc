@@ -64,3 +64,26 @@
       return pokemon_can_evolve_into_regidrago_vstar(pokemon, current_turn);
     });
   }
+
+  [[nodiscard]] static constexpr bool pokemon_can_evolve_into_forretress_ex(
+      const Pokemon& pokemon, const int current_turn,
+      const bool forest_of_vitality_active) {
+    // Pineco evolves into Forretress ex. Forest of Vitality can waive the normal
+    // entry-turn restriction for this Grass-to-Grass evolution after turn one.
+    // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+    // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+    return pokemon.card == Card::Pineco &&
+           pokemon_satisfies_evolution_turn_timing(
+               pokemon, current_turn, forest_of_vitality_active);
+  }
+
+  [[nodiscard]] Pokemon* find_evolvable_pineco(
+      const bool forest_of_vitality_active) {
+    const int current_turn = state_.turn;
+    return find_board_pokemon_matching(
+        [current_turn, forest_of_vitality_active](const Pokemon& pokemon) {
+          return pokemon_can_evolve_into_forretress_ex(
+              pokemon, current_turn, forest_of_vitality_active);
+        });
+  }

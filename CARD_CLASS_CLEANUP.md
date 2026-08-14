@@ -199,6 +199,17 @@ Keep payload role, DCI/UDP, strict-JIT admission, connector priority, and K0/K1 
 
 Future policy cleanup should reuse these named seams before adding another payload preference loop or Garbodor scenario-label/timing branch.
 
+## Route predicate consolidation
+
+Keep route predicates named when a single policy question is repeated or would otherwise be buried in a resolver. `quick_ball_has_live_connector_route()` owns the issue-1016 Quick Ball connector test, while `issue_1674_turo_promotion_ready()` owns the deadline Turo promotion readiness test. Both remain Engine strategy predicates because they depend on route state, readiness, DCI/JIT timing, and connector value. Their callers continue to own the actual Legacy Star and Professor Turo resolution paths.
+
+Future cleanup should prefer one named predicate for an established policy question before adding another inline conjunction in a resolver. Preserve the exact card/rule URLs beside the resolver that consumes the predicate, and keep printed card validation in card/rules code rather than moving route policy into `src/cards/`.
+
+Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+Decision priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+
 ## Numbered policy-fragment migration
 
 Two compatibility forwarders remain for previously anonymous trace-engine fragments that now have named canonical owners at the same textual include boundaries:

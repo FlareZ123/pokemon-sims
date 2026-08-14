@@ -2,6 +2,13 @@
     inline static constexpr std::string_view kShakeScenarioPrefix =
         "garbodor-shake-ability-lock/";
 
+    [[nodiscard]] static constexpr bool matches(const std::string_view label) {
+      // Keep scenario identity beside the activation timing it selects so callers
+      // do not duplicate or reinterpret the Garbodor scenario prefix.
+      // C++ string_view starts_with semantics: https://eel.is/c++draft/string.view
+      return label.starts_with(kShakeScenarioPrefix);
+    }
+
     [[nodiscard]] static constexpr int lock_activation_turn(
         const bool simulator_goes_first) {
       return simulator_goes_first ? 2 : 1;
@@ -9,8 +16,7 @@
   };
 
   [[nodiscard]] bool garbodor_shake_scenario() const {
-    return scenario_.label.starts_with(
-        GarbodorScenarioPolicy::kShakeScenarioPrefix);
+    return GarbodorScenarioPolicy::matches(scenario_.label);
   }
 
   [[nodiscard]] int garbodor_lock_activation_turn() const {

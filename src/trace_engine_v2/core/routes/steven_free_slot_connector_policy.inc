@@ -8,14 +8,14 @@
     // Search/discard procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Connector/resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed connector-domination bug: https://github.com/FlareZ123/pokemon-sims/issues/3653
-    const bool issue_3653_free_blender_over_paid_quick_ball =
+    const bool should_bank_free_blender =
         target == Card::RegidragoVstar && found.empty() && wanted.size() < 3U &&
         payload_outlet == Card::BrilliantBlender &&
         hand_count(Card::BrilliantBlender) == 0 &&
         deck_count_after_search_started(Card::BrilliantBlender) > 0 &&
         steven_held_routes_complete_next_turn(
             wanted, next_turn_item_locked, projected_vstar_available);
-    if (issue_3653_free_blender_over_paid_quick_ball && move_deck_to_hand(target)) {
+    if (should_bank_free_blender && move_deck_to_hand(target)) {
       found.push_back(target);
       if (!move_deck_to_hand(Card::BrilliantBlender)) {
         throw std::logic_error("Issue-3653 known Brilliant Blender target disappeared");

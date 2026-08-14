@@ -105,6 +105,87 @@ void test_projected_next_turn_route() {
          "A Regidrago V already in play before this turn remains evolvable next turn.");
 }
 
+void test_scheduled_item_lock_projection() {
+  // TurnTwoItem begins on the player's second turn, so T1 Quick Ball remains legal.
+  // The projected T2 continuation uses Professor Burnet, evolution, attachment, and
+  // retreat, with no Item action. Full Item, Rule Box Ability, combined, and Supporter
+  // locks must still fail through the exact action they prohibit:
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Advanced Item, Supporter, Ability, evolution, and retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Persistent T2 Item-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+  // Original route and paired FSS precedent: https://github.com/FlareZ123/pokemon-sims/issues/2704 https://github.com/FlareZ123/pokemon-sims/pull/2896
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3555
+  const sim::Scenario scheduled_item{"issue-3555-turn-two-item",
+                                     sim::DciProfile::StrictJit,
+                                     sim::LockMode::TurnTwoItem, false, 2};
+  std::mt19937_64 scheduled_rng{355500};
+  sim::Engine scheduled =
+      make_engine(scheduled_item, scheduled_rng, route_state(1, 1));
+  expect(sim::EngineTestAccess::latias_route(scheduled),
+         "T1 going second must admit the Item-free T2 completion under scheduled Item lock.");
+  expect(sim::EngineTestAccess::tate_cost(scheduled) == sim::Card::TateLiza,
+         "The scheduled-lock route must retain Tate & Liza as the replaced Quick Ball cost.");
+
+  const sim::Scenario full_item{"issue-3555-full-item", sim::DciProfile::StrictJit,
+                                sim::LockMode::FullItem, false, 2};
+  std::mt19937_64 full_item_rng{355501};
+  sim::Engine full_item_engine =
+      make_engine(full_item, full_item_rng, route_state(1, 1));
+  expect(!sim::EngineTestAccess::latias_route(full_item_engine),
+         "Always-on Item lock must block the current Quick Ball action.");
+
+  const sim::Scenario rulebox_lock{"issue-3555-rulebox",
+                                   sim::DciProfile::StrictJit,
+                                   sim::LockMode::FullRuleBoxAbility, false, 2};
+  std::mt19937_64 rulebox_rng{355502};
+  sim::Engine rulebox = make_engine(rulebox_lock, rulebox_rng, route_state(1, 1));
+  expect(!sim::EngineTestAccess::latias_route(rulebox),
+         "Rule Box Ability lock must block Latias ex Skyliner.");
+
+  const sim::Scenario combined_lock{"issue-3555-combined",
+                                    sim::DciProfile::StrictJit,
+                                    sim::LockMode::FullCombined, false, 2};
+  std::mt19937_64 combined_rng{355503};
+  sim::Engine combined =
+      make_engine(combined_lock, combined_rng, route_state(1, 1));
+  expect(!sim::EngineTestAccess::latias_route(combined),
+         "Combined scheduled Item and Rule Box Ability lock must remain blocked.");
+
+  const sim::Scenario current_t2_item{"issue-3555-current-t2-item",
+                                      sim::DciProfile::StrictJit,
+                                      sim::LockMode::TurnTwoItem, false, 3};
+  std::mt19937_64 current_t2_rng{355504};
+  sim::Engine current_t2 =
+      make_engine(current_t2_item, current_t2_rng, route_state(2, 2));
+  expect(!sim::EngineTestAccess::latias_route(current_t2),
+         "TurnTwoItem must block Quick Ball once the current turn is T2.");
+
+  const sim::Scenario supporter_lock{"issue-3555-supporter",
+                                     sim::DciProfile::StrictJit,
+                                     sim::LockMode::FullSupporter, false, 2};
+  std::mt19937_64 supporter_rng{355505};
+  sim::Engine supporter =
+      make_engine(supporter_lock, supporter_rng, route_state(1, 1));
+  expect(!sim::EngineTestAccess::latias_route(supporter),
+         "Projected Professor Burnet must keep a full Supporter lock negative.");
+
+  std::mt19937_64 k0_rng{355506};
+  sim::Engine k0 = make_engine(scheduled_item, k0_rng, route_state(1, 1), false);
+  expect(!sim::EngineTestAccess::latias_route(k0),
+         "Scheduled Item-lock admission must not weaken the K1 requirement.");
+
+  sim::State missing_burnet_state = route_state(1, 1);
+  remove_card(missing_burnet_state.hand, sim::Card::ProfessorBurnet);
+  std::mt19937_64 missing_burnet_rng{355507};
+  sim::Engine missing_burnet = make_engine(
+      scheduled_item, missing_burnet_rng, std::move(missing_burnet_state));
+  expect(!sim::EngineTestAccess::latias_route(missing_burnet),
+         "Scheduled Item-lock admission must still require held Professor Burnet.");
+}
+
 void test_projection_controls() {
   // These controls preserve the physical K1, lock, Bench, Ability, Retreat,
   // evolution, and resource boundaries while removing only witness-specific timing:
@@ -225,8 +306,9 @@ void test_projection_controls() {
 int main() {
   try {
     test_projected_next_turn_route();
+    test_scheduled_item_lock_projection();
     test_projection_controls();
-    std::cout << "Issue 2704 Quick Ball Latias state-generic tests passed\n";
+    std::cout << "Issue 2704/3555 Quick Ball Latias state-generic tests passed\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

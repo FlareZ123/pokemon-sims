@@ -3,11 +3,11 @@
       bool* const rule_box_locked_out = nullptr) const {
     // Compare any Lusamine package against the complete existing #3545 Item policy,
     // then continue through every configured public turn using the same deterministic
-    // pre-/post-Supporter actions. Unknown start-of-turn draws remain omitted by the
-    // established projection adapter:
+    // Item/Supporter/post-Supporter sequence. Unknown start-of-turn draws remain
+    // omitted by the established projection adapter:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
-    projected.play_items_until_stable_issue3545_refined_base(permit_payload);
     for (;;) {
+      projected.play_items_until_stable_issue3545_refined_base(permit_payload);
       projected.issue_3545_prepare_supporter_projection();
       projected.issue_3545_choose_supporter_from_prepared_projection();
       projected.issue_3545_continue_after_supporter(projected);
@@ -91,6 +91,7 @@
     bool burnet_used = false;
     while (projected.state_.turn < projected.scenario_.max_turn) {
       issue_3545_advance_public_state_one_turn(projected);
+      projected.play_items_until_stable_issue3545_refined_base(permit_payload);
       projected.issue_3545_prepare_supporter_projection();
       const int crispin_before_use = projected.hand_count(Card::Crispin);
       const int burnet_before_use = projected.hand_count(Card::ProfessorBurnet);
@@ -160,6 +161,7 @@
     projected.resolve_powerglass_end_turn();
     while (projected.state_.turn < projected.scenario_.max_turn) {
       issue_3545_advance_public_state_one_turn(projected);
+      projected.play_items_until_stable_issue3545_refined_base(permit_payload);
       projected.issue_3545_prepare_supporter_projection();
       projected.issue_3545_choose_supporter_from_prepared_projection();
       projected.issue_3545_continue_after_supporter(projected);

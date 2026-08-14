@@ -28,6 +28,20 @@
     return find_board_pokemon_matching(predicate) != nullptr;
   }
 
+  [[nodiscard]] std::optional<std::size_t> board_index_of(
+      const Pokemon* target) const {
+    if (target == nullptr) return std::nullopt;
+    if (state_.active && target == &*state_.active) return 0U;
+    const auto match = std::find_if(
+        state_.bench.begin(), state_.bench.end(),
+        [target](const Pokemon& pokemon) { return target == &pokemon; });
+    if (match == state_.bench.end()) return std::nullopt;
+    // Board index 0 is Active and Bench indexes begin at 1. Keep pointer-to-index
+    // recovery beside the canonical Active-before-Bench traversal.
+    // C++ find_if semantics: https://eel.is/c++draft/alg.find
+    return static_cast<std::size_t>(std::distance(state_.bench.begin(), match)) + 1U;
+  }
+
   [[nodiscard]] static constexpr bool pokemon_has_open_v_tool_slot(
       const Pokemon& pokemon) {
     return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;

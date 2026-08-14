@@ -14,6 +14,7 @@
 #include "trainers/guzma_hala.hpp"
 #include "trainers/hisuian_heavy_ball.hpp"
 #include "trainers/mysterious_treasure.hpp"
+#include "trainers/pokemon_communication.hpp"
 #include "trainers/powerglass.hpp"
 #include "trainers/professor_burnet.hpp"
 #include "trainers/professors_letter.hpp"
@@ -22,7 +23,7 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 16> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 17> kRegisteredCardDefinitions{
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -36,6 +37,7 @@ inline constexpr std::array<const CardDefinition*, 16> kRegisteredCardDefinition
     &MysteriousTreasure::definition, // Exact SM 113 metadata: https://api.pokemontcg.io/v2/cards/sm6-113
     &HisuianHeavyBall::definition, // Exact SWSH 146 metadata: https://api.pokemontcg.io/v2/cards/swsh10-146
     &GuzmaHala::definition, // Exact Cosmic Eclipse 229 Supporter: https://api.pokemontcg.io/v2/cards/sm12-229
+    &PokemonCommunication::definition, // Exact Team Up Item: https://api.pokemontcg.io/v2/cards/sm9-152 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3552
     &Powerglass::definition, // Exact Shrouded Fable Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
     &ProfessorBurnet::definition, // Exact Trainer Gallery Supporter: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     &SecretBox::definition, // Exact Twilight Masquerade ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv6-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3541

@@ -125,6 +125,14 @@ Next mechanical Forretress step: migrate raw board-index spellings in `src/trace
 
 Pineco / Forretress ex exact cards: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
 
+## Shared policy cleanup plan
+
+`src/trace_engine_v2/core/payload_hand_policy.inc` owns payload preference order and payload-zone scans through `PayloadPreferencePolicy`. Keep payload role, DCI/UDP, strict-JIT admission, and connector priority in Engine strategy. Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+
+`src/trace_engine_v2/core/garbodor_lock_policy.inc` owns Garbodor scenario recognition and activation timing through `GarbodorScenarioPolicy`. Garbotoxin semantics, shared lock-removal state, and Rule Box lock interaction remain at their existing policy owners. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142 Scenario specification: https://github.com/FlareZ123/pokemon-sims/issues/2808
+
+Future policy cleanup should reuse these named seams before adding another payload preference loop or Garbodor scenario-label/timing branch. Keep behavior changes on separately confirmed bug branches.
+
 ## Rules and policy anchors
 
 Advanced rules procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

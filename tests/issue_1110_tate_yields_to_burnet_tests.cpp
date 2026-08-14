@@ -51,8 +51,11 @@ void test_seed_182_uses_burnet_on_turn_three() {
 }
 
 void test_existing_deterministic_tate_routes_remain_green() {
+  // Current source-bound held-route witness: https://github.com/FlareZ123/pokemon-sims/issues/3753
+  // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+  // Advanced Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   for (const auto& [label, seed, expected_turn] : {
-           std::tuple{"matchup-flex-jit/go-first", std::uint64_t{185}, 3},
+           std::tuple{"matchup-flex-jit/go-first", std::uint64_t{250}, 3},
            std::tuple{"strict-jit/go-second", std::uint64_t{13}, 2}}) {
     const auto scenario = sim::scenario_by_label(label);
     if (!scenario) throw std::runtime_error("Missing control scenario");

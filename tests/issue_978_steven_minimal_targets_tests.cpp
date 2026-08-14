@@ -75,25 +75,30 @@ bool held_routes_complete(sim::State state, const bool next_turn_item_locked = f
       engine, {sim::Card::RegidragoVstar}, next_turn_item_locked, true);
 }
 
-void test_searches_only_vstar_when_held_routes_complete_t3() {
-  // Steven may search up to three cards. Held Fire is the next manual attachment,
-  // and target-legal Quick Ball discards Dragapult ex during the ready turn:
-  // https://api.pokemontcg.io/v2/cards/sm7-145
-  // https://api.pokemontcg.io/v2/cards/swsh1-179
-  // https://api.pokemontcg.io/v2/cards/sv6-130
-  // https://api.pokemontcg.io/v2/cards/swsh12-136
-  // https://www.pokemon.com/us/pokemon-tcg/rules
-  // https://github.com/FlareZ123/pokemon-sims/issues/978
+void test_banks_free_blender_over_paid_quick_ball_route() {
+  // Steven may search up to three unrestricted cards. Once the VSTAR target is
+  // required, the otherwise-free Brilliant Blender target dominates spending
+  // Quick Ball plus the held Dragon as the next-turn payload outlet:
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Advanced search/discard procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Connector/resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3653
   const sim::State after = resolve(live_route_state());
   expect(contains(after.hand, sim::Card::RegidragoVstar),
          "Steven should search the missing VSTAR card.");
+  expect(contains(after.hand, sim::Card::BrilliantBlender),
+         "Steven should use the free target slot to bank Brilliant Blender.");
   expect(!contains(after.hand, sim::Card::Crispin),
          "Held Fire must prevent redundant Crispin search.");
-  expect(!contains(after.hand, sim::Card::BrilliantBlender),
-         "Held Quick Ball plus Dragapult must preserve Blender in deck.");
+  expect(contains(after.hand, sim::Card::QuickBall) &&
+             contains(after.hand, sim::Card::Dragapult),
+         "Banking Blender must preserve Quick Ball and the held Dragon payload.");
   expect(contains(after.deck, sim::Card::Crispin) &&
-             contains(after.deck, sim::Card::BrilliantBlender),
-         "Both redundant targets should remain in deck.");
+             !contains(after.deck, sim::Card::BrilliantBlender),
+         "Crispin should remain in deck while the free Blender target moves to hand.");
 }
 
 void test_rejects_minimal_route_without_held_energy() {
@@ -145,7 +150,7 @@ void test_rejects_minimal_route_under_next_turn_item_lock() {
 }  // namespace
 
 int main() {
-  test_searches_only_vstar_when_held_routes_complete_t3();
+  test_banks_free_blender_over_paid_quick_ball_route();
   test_rejects_minimal_route_without_held_energy();
   test_rejects_minimal_route_without_held_payload();
   test_rejects_minimal_route_when_quick_ball_has_no_basic_target();

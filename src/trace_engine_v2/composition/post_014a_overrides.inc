@@ -62,8 +62,8 @@
 #error "Legacy Star projection chain leaked a wrapper alias"
 #endif
 
-// Gladion wrappers live directly on the post-search composition boundary. Each
-// alias exposes the implementation from the preceding layer to the next override
+// Gladion wrappers live directly on the post-search composition boundary. Each alias
+// exposes the implementation from the preceding layer to the next override
 // without leaking macro state outward.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
@@ -360,7 +360,7 @@
 
 #include "../core/ultra_ball_target_policy.inc"
 #include "../part_blender_vstar_axis_override.inc"
-#include "../core/oricorio_connector_policy.inc"
+#include "../core/routes/oricorio_connector_policy.inc" // Source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/oricorio_connector_policy.inc
 
 // Post-search Earthen Vessel and Mysterious Treasure connector stack. This is the
 // sole composition owner, so the wrapper aliases and their release points are kept

@@ -79,6 +79,25 @@ void complete_public_route_is_admitted() {
          "Complete delayed Vessel route was rejected");
 }
 
+void later_equivalent_turn_is_admitted() {
+  Fixture fixture;
+  sim::State state = complete_state();
+  state.turn = 3;
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // Absolute T2 was only the historical witness. With the same K1, held payload,
+  // spent current attachment, completing Basic Energy, legal Legacy Star, legal
+  // projected Vessel, and remaining next-turn horizon, the T3 state is equivalent.
+  // Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Turn/evolution/action procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Same-ready-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Production dependency: https://github.com/FlareZ123/pokemon-sims/issues/3199
+  // Regression bug: https://github.com/FlareZ123/pokemon-sims/issues/3399
+  expect(sim::EngineTestAccess::delayed_vessel_route(fixture.engine),
+         "Later equivalent delayed Vessel route was rejected");
+}
+
 void recovered_vessel_is_held_until_next_turn() {
   Fixture fixture;
   sim::State state = complete_state();
@@ -87,7 +106,7 @@ void recovered_vessel_is_held_until_next_turn() {
       std::find(state.discard.begin(), state.discard.end(), sim::Card::EarthenVessel));
   sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
 
-  // The T2 attachment window is spent. Spending Vessel now would discard the
+  // The current attachment window is spent. Spending Vessel now would discard the
   // Dragon payload one turn before strict-JIT readiness:
   // https://api.pokemontcg.io/v2/cards/swsh12-136
   // https://api.pokemontcg.io/v2/cards/sv4-163
@@ -99,12 +118,10 @@ void recovered_vessel_is_held_until_next_turn() {
 }
 
 void nonreported_energy_axis_is_rejected() {
-  for (const int mode : {0, 1, 2}) {
+  for (const int mode : {1, 2}) {
     Fixture fixture;
     sim::State state = complete_state();
-    if (mode == 0) {
-      state.turn = 3;
-    } else if (mode == 1) {
+    if (mode == 1) {
       state.active->fire = 0;
     } else {
       state.active->grass = 2;
@@ -113,7 +130,7 @@ void nonreported_energy_axis_is_rejected() {
     }
     sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
     expect(!sim::EngineTestAccess::delayed_vessel_route(fixture.engine),
-           "Delayed Vessel exception escaped the exact T2 GF-to-GGF boundary");
+           "Delayed Vessel exception escaped the supported one-attachment Energy boundary");
   }
 }
 
@@ -199,6 +216,7 @@ void exact_seed_reaches_turn_three() {
 int main() {
   try {
     complete_public_route_is_admitted();
+    later_equivalent_turn_is_admitted();
     recovered_vessel_is_held_until_next_turn();
     nonreported_energy_axis_is_rejected();
     item_lock_rejects_route();

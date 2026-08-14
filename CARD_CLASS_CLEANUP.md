@@ -430,3 +430,9 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - src/trace_engine_v2/core/setup_lifecycle.inc owns the opening-hand and starting-Prize counts as named constants, matching the advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 - Recipe expansion and K0 setup-knowledge reset are isolated behind setup-lifecycle helpers. The refactor preserves deck order, shuffle timing, mulligan handling, Prize placement, DCI/UDP/AMR, connector domination, K0/K1 transitions, and route selection.
 - Keep future setup cleanup mechanical at this owner; printed card resolution and gameplay strategy stay outside the setup lifecycle. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/setup_lifecycle.inc
+
+## Cleanup wave 2026-08-14 board and scenario abstraction follow-up
+
+- `src/trace_engine_v2/core/board_state_policy.inc` now exposes matching mutable and const Active-first `find_board_pokemon_matching()` seams. Future Forretress resolution cleanup should reuse the mutable finder instead of introducing another Active/Bench traversal. Board-state owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+- `src/trace_engine_v2/core/forretress/scenarios.inc` now centralizes reserve-and-append mechanics in `append_scenarios()`, preserving the established Garbodor scenario order and seeded common-random-number stability. Scenario specification: https://github.com/FlareZ123/pokemon-sims/issues/2808
+- This wave is structural only. Card effects, setup policy, DCI/UDP/AMR, connector domination, K0/K1, lock timing, readiness, and action selection are unchanged. Advanced rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

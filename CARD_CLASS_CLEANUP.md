@@ -167,9 +167,9 @@ Future retirement of either shim requires migrating every raw-source reader and 
 
 `src/trace_engine_v2/part_forretress_ex_combo.inc` owns the Garbodor scenario extension directly beside the `core/forretress/runtime.inc` include. Preserve the local `ScenarioExtension` value ownership and the same `std::optional<Scenario>` lookup shape as the public registry.
 
-`src/trace_engine_v2/core/board_state_policy.inc` owns the shared Active-first mutable/const board traversal and shared prior-turn evolution timing predicate. `src/trace_engine_v2/core/forretress/runtime.inc` now delegates Pineco evolution-candidate lookup plus prior/current-turn Pineco presence checks through that seam while keeping Forest of Vitality's entry-turn exception at the Forretress route owner. This completes the traversal-only Pineco step without changing DCI/UDP/AMR, K0/K1, connector, readiness, Ability, or evolution policy.
+`src/trace_engine_v2/core/board_state_policy.inc` owns shared Active-first mutable/const board traversal, prior-turn evolution timing, and the canonical `0 == Active` / `Bench index + 1` board-index conversion primitives. The board-index seam now exists independently of Forretress so card effects can reuse one mapping without importing Exploding Energy policy.
 
-Next mechanical Forretress step: introduce a shared board-index traversal seam before migrating Exploding Energy's remaining Active-versus-Bench source/target index scans. Preserve the existing `0 == Active` and `Bench index + 1` mapping, and keep Exploding Energy selection, attachment distribution, self-Knock-Out, promotion, and route policy at their current owners.
+Next mechanical Forretress step: replace `core/forretress/runtime.inc`'s local `pokemon_at_board_index()`, Regidrago target-index scan, and Forretress source-index scan with the shared board-index primitives. Preserve Exploding Energy selection, attachment distribution, self-Knock-Out, promotion, and route policy at their current owners. After that migration, inventory other effects for equivalent Active-versus-Bench indexing before adding another local mapping.
 
 Board query owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
 Forretress runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/runtime.inc
@@ -195,9 +195,9 @@ Route specifications: https://github.com/FlareZ123/pokemon-sims/issues/1745 http
 
 Keep payload role, DCI/UDP, strict-JIT admission, connector priority, and K0/K1 decisions in Engine strategy. Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
 
-`src/trace_engine_v2/core/garbodor_lock_policy.inc` owns Garbodor scenario-prefix matching and seat-relative activation timing. Preserve Garbotoxin semantics and Rule Box lock interaction at their current policy owners. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
+`src/trace_engine_v2/core/garbodor_lock_policy.inc` owns Garbodor scenario-prefix matching, seat-relative activation timing, and the composed active-lock predicate through `GarbodorScenarioPolicy`. Engine compatibility helpers delegate to that value policy so future callers should reuse the class instead of duplicating label or absolute-turn checks. Preserve Garbotoxin semantics and Rule Box lock interaction at their current policy owners. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
 
-Future policy cleanup should reuse these named seams before adding another payload preference loop or Garbodor scenario-label/timing branch.
+Future policy cleanup should reuse these named seams before adding another payload preference loop, board-index mapping, or Garbodor scenario-label/timing branch.
 
 ## Numbered policy-fragment migration
 
@@ -234,4 +234,4 @@ A cleanup PR is mergeable only when:
 - the paired T2/T3 probability matrix has no unexplained drift;
 - the PR contains no unrelated gameplay behavior change.
 
-Known baseline failures must be identified by their existing issue and shown unchanged before merge. Any new gameplay defect discovered during cleanup must go through the separate bug-confirmation workflow.
+Known baseline failures must be identified by their existing issue and shown unchanged before merge. Any new gameplay defect discovered during cleanup must go through the separate bug-confirmation workflow instead of silently combining it with architecture cleanup.

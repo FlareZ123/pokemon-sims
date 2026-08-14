@@ -7,10 +7,14 @@ import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
-from scripts.summarize_t2_t3_matrix import summarize_matrix
-
 
 DEFAULT_SUMMARY_OUTPUT = Path("trace-t2-t3-summary.txt")
+REQUIRED_SUMMARY_COLUMNS = (
+    "deck",
+    "scenario",
+    "ready_by_t2_pct",
+    "ready_by_t3_pct",
+)
 
 
 # The paired aggregate already contains both registered decks, including the
@@ -60,6 +64,38 @@ def extract_deck_rows(source: Path, destination: Path, deck: str) -> None:
     lock_path = Path(f"{destination}.lock")
     with exclusive_lock(lock_path):
         atomic_write_text(destination, lines[0] + "".join(selected))
+
+
+def render_t2_t3_summary(rows: list[dict[str, str]]) -> str:
+    lines = [
+        "# Generated T2/T3 setup summary\n",
+        "\n",
+        "| Deck | Scenario | Ready by T2 | Ready by T3 |\n",
+        "|---|---|---:|---:|\n",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['deck']} | {row['scenario']} | "
+            f"{float(row['ready_by_t2_pct']):.3f}% | "
+            f"{float(row['ready_by_t3_pct']):.3f}% |\n"
+        )
+    return "".join(lines)
+
+
+def summarize_matrix(source: Path, destination: Path) -> None:
+    with source.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        fieldnames = tuple(reader.fieldnames or ())
+        missing = [column for column in REQUIRED_SUMMARY_COLUMNS if column not in fieldnames]
+        if missing:
+            raise ValueError(f"matrix is missing required columns {missing}: {source}")
+        rows = list(reader)
+    if not rows:
+        raise ValueError(f"empty matrix: {source}")
+
+    lock_path = Path(f"{destination}.lock")
+    with exclusive_lock(lock_path):
+        atomic_write_text(destination, render_t2_t3_summary(rows))
 
 
 def parse_args() -> argparse.Namespace:

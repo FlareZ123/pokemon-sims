@@ -11,12 +11,13 @@
 #include "trainers/hisuian_heavy_ball.hpp"
 #include "trainers/mysterious_treasure.hpp"
 #include "trainers/powerglass.hpp"
+#include "trainers/professor_burnet.hpp"
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 10> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 11> kRegisteredCardDefinitions{
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
     &EvolutionIncense::definition, // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163
@@ -27,6 +28,7 @@ inline constexpr std::array<const CardDefinition*, 10> kRegisteredCardDefinition
     &HisuianHeavyBall::definition, // Exact SWSH 146 metadata: https://api.pokemontcg.io/v2/cards/swsh10-146
     &GuzmaHala::definition, // Exact Cosmic Eclipse 229 Supporter: https://api.pokemontcg.io/v2/cards/sm12-229
     &Powerglass::definition, // Exact Shrouded Fable Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    &ProfessorBurnet::definition, // Exact Trainer Gallery Supporter: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
 };
 
 constexpr const CardDefinition* find_definition(const Card card) {

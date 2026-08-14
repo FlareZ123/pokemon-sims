@@ -7,6 +7,7 @@
 #include "trainers/battle_vip_pass.hpp"
 #include "trainers/brilliant_blender.hpp"
 #include "trainers/chaotic_swell.hpp"
+#include "trainers/channeler.hpp"
 #include "trainers/crispin.hpp"
 #include "trainers/dawn.hpp"
 #include "trainers/evolution_incense.hpp"
@@ -27,11 +28,12 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 21> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 22> kRegisteredCardDefinitions{
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
     &ChaoticSwell::definition, // Exact Cosmic Eclipse Stadium: https://api.pokemontcg.io/v2/cards/sm12-187
+    &Channeler::definition, // Exact Unified Minds Supporter: https://api.pokemontcg.io/v2/cards/sm11-190 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3624
     &Crispin::definition, // Exact Stellar Crown Supporter: https://api.pokemontcg.io/v2/cards/sv7-133 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3580
     &Dawn::definition, // Exact Mega Evolution Supporter: https://api.pokemontcg.io/v2/cards/me2-87
     &EvolutionIncense::definition, // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163

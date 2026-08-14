@@ -21,6 +21,7 @@
 #include "trainers/forest_of_vitality.hpp"
 #include "trainers/forest_seal_stone.hpp"
 #include "trainers/gladion.hpp"
+#include "trainers/grant.hpp"
 #include "trainers/guzma.hpp"
 #include "trainers/guzma_hala.hpp"
 #include "trainers/hisuian_heavy_ball.hpp"
@@ -35,12 +36,15 @@
 #include "trainers/quick_ball.hpp"
 #include "trainers/roseannes_backup.hpp"
 #include "trainers/secret_box.hpp"
+#include "trainers/serena.hpp"
+#include "trainers/stevens_resolve.hpp"
+#include "trainers/tate_liza.hpp"
 #include "trainers/team_yells_cheer.hpp"
 #include "trainers/wishful_baton.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 34> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 38> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
     &MawileGX::definition, // Exact Unified Minds Basic Metal Pokémon-GX: https://api.pokemontcg.io/v2/cards/sm11-141 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3704
     &Oricorio::definition, // Exact Guardians Rising Basic Psychic Pokémon: https://api.pokemontcg.io/v2/cards/sm2-55 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3712
@@ -59,6 +63,7 @@ inline constexpr std::array<const CardDefinition*, 34> kRegisteredCardDefinition
     &ForestOfVitality::definition, // Exact Mega Evolution Stadium: https://api.pokemontcg.io/v2/cards/me1-117 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3639
     &ForestSealStone::definition, // Exact Silver Tempest Pokémon Tool: https://api.pokemontcg.io/v2/cards/swsh12-156 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3612
     &Gladion::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-95 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3604
+    &Grant::definition, // Exact Astral Radiance Supporter: https://api.pokemontcg.io/v2/cards/swsh10-144 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3589
     &Guzma::definition, // Exact Burning Shadows Supporter: https://api.pokemontcg.io/v2/cards/sm3-115 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3618
     &QuickBall::definition,
     &ProfessorsLetter::definition, // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123
@@ -71,6 +76,9 @@ inline constexpr std::array<const CardDefinition*, 34> kRegisteredCardDefinition
     &ProfessorTuroScenario::definition, // Exact Paradox Rift Supporter: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
     &RoseannesBackup::definition, // Exact Brilliant Stars Supporter: https://api.pokemontcg.io/v2/cards/swsh9-148 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3629
     &SecretBox::definition, // Exact Twilight Masquerade ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv6-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3541
+    &Serena::definition, // Exact Silver Tempest Supporter: https://api.pokemontcg.io/v2/cards/swsh12-164 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3585
+    &StevensResolve::definition, // Exact Celestial Storm Supporter: https://api.pokemontcg.io/v2/cards/sm7-145 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3595
+    &TateLiza::definition, // Exact Celestial Storm Supporter: https://api.pokemontcg.io/v2/cards/sm7-148 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3562
     &Lusamine::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
     &Klara::definition, // Exact Chilling Reign Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
     &TeamYellsCheer::definition, // Exact Brilliant Stars Supporter: https://api.pokemontcg.io/v2/cards/swsh9-149 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3620
@@ -178,5 +186,14 @@ static_assert(definition_matches_registration(Gladion::definition, Card::Gladion
                                               "sm4-95", "Gladion")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm4-95 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3604
 static_assert(definition_matches_registration(Guzma::definition, Card::Guzma,
                                               "sm3-115", "Guzma")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm3-115 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3618
+static_assert(definition_matches_registration(Grant::definition, Card::Grant,
+                                              "swsh10-144", "Grant")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh10-144 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3589
+static_assert(definition_matches_registration(Serena::definition, Card::Serena,
+                                              "swsh12-164", "Serena")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh12-164 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3585
+static_assert(definition_matches_registration(StevensResolve::definition,
+                                              Card::StevensResolve, "sm7-145",
+                                              "Steven's Resolve")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm7-145 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3595
+static_assert(definition_matches_registration(TateLiza::definition, Card::TateLiza,
+                                              "sm7-148", "Tate & Liza")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm7-148 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3562
 
 }  // namespace sim::cards

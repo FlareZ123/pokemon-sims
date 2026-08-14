@@ -166,7 +166,6 @@ constexpr bool is_supporter(const Card card) {
     case Card::Channeler:
     case Card::Gladion:
     case Card::ErikasInvitation:
-    case Card::Lusamine:
     case Card::TeamYellsCheer:
     case Card::RoseannesBackup:
     case Card::Klara:

@@ -23,6 +23,7 @@ CARD_SOURCE_TRAILING_PUNCTUATION = ".,;:!?`"
 # https://github.com/PokemonTCG/pokemon-tcg-data
 # Correct Mega Dragonite ex record: https://api.pokemontcg.io/v2/cards/me2pt5-152
 # Professor's Letter supplied-corpus record: https://api.pokemontcg.io/v2/cards/xy1-123
+# Battle Compressor / VS Seeker supplied-corpus records: https://api.pokemontcg.io/v2/cards/xy4-92 https://api.pokemontcg.io/v2/cards/xy4-109
 # Confirmed source-traceability bug: https://github.com/FlareZ123/pokemon-sims/issues/1696
 CANONICAL_SOURCE_CARD_IDS = {
     "base1-99", "me1-117", "me2-87", "me2pt5-16", "me2pt5-152",
@@ -36,7 +37,7 @@ CANONICAL_SOURCE_CARD_IDS = {
     "swsh8-225", "swsh9-148", "swsh9-149", "swsh10-144",
     "swsh10-146", "swsh11-136", "swsh12-135", "swsh12-136",
     "swsh12-156", "swsh12-164", "swsh12pt5-146", "swsh12tg-TG26",
-    "xy1-123", "xy6-97", "xy9-57",  # Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 ; https://github.com/FlareZ123/pokemon-sims/issues/2931
+    "xy1-123", "xy4-92", "xy4-109", "xy6-97", "xy9-57",  # Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 ; https://github.com/FlareZ123/pokemon-sims/issues/2931
 }
 SCRIPT_PATH = REPO_ROOT / "scripts" / "audit_card_data.py"
 UPSTREAM_COMMIT_URL = (

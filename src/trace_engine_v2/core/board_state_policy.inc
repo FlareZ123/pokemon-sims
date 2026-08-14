@@ -12,7 +12,7 @@
     return find_board_pokemon_matching(predicate) != nullptr;
   }
 
-  [[nodiscard]] static bool pokemon_has_open_v_tool_slot(
+  [[nodiscard]] static constexpr bool pokemon_has_open_v_tool_slot(
       const Pokemon& pokemon) {
     return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
   }
@@ -24,16 +24,17 @@
     return board_has_pokemon_matching(pokemon_has_open_v_tool_slot);
   }
 
-  [[nodiscard]] bool pokemon_can_evolve_into_regidrago_vstar(
-      const Pokemon& pokemon) const {
+  [[nodiscard]] static constexpr bool pokemon_can_evolve_into_regidrago_vstar(
+      const Pokemon& pokemon, const int current_turn) {
     // A Basic Pokémon cannot evolve on the turn it was put into play:
     // https://www.pokemon.com/us/pokemon-tcg/rules
     // Regidrago VSTAR evolves from Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-136
-    return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn;
+    return pokemon.card == Card::RegidragoV && pokemon.entered_turn < current_turn;
   }
 
   [[nodiscard]] bool board_has_evolvable_regidrago_v() const {
-    return board_has_pokemon_matching([this](const Pokemon& pokemon) {
-      return pokemon_can_evolve_into_regidrago_vstar(pokemon);
+    const int current_turn = state_.turn;
+    return board_has_pokemon_matching([current_turn](const Pokemon& pokemon) {
+      return pokemon_can_evolve_into_regidrago_vstar(pokemon, current_turn);
     });
   }

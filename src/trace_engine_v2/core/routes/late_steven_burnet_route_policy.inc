@@ -1,3 +1,15 @@
+  bool late_steven_burnet_route_has_turn_window() const {
+    // The route requires known Prizes, one later modeled turn, same-ready-turn JIT,
+    // and an unused legal Supporter action on the current turn.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Advanced turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Same-ready-turn JIT profiles: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Action-specific lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    return prizes_known() && state_.turn < scenario_.max_turn &&
+           strict_payload_timing() && supporter_allowed();
+  }
+
   bool late_steven_burnet_route_available() const {
     // This route uses Steven's Resolve on the current turn, then ordinary evolution,
     // one manual Energy attachment, and the already-held Professor Burnet next turn.
@@ -8,13 +20,9 @@
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Supporter, evolution, attachment, search, discard, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Advanced turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-    // Same-ready-turn JIT profiles: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // Action-specific lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
-    // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed semantic-profile/lock bug: https://github.com/FlareZ123/pokemon-sims/issues/3223
     // Confirmed Burnet payload-zone bug: https://github.com/FlareZ123/pokemon-sims/issues/3302
-    if (!prizes_known() || state_.turn >= scenario_.max_turn ||
-        !strict_payload_timing() || !supporter_allowed() ||
+    if (!late_steven_burnet_route_has_turn_window() ||
         !state_.active || state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
         state_.active->grass != 1 || state_.active->fire < 1 ||

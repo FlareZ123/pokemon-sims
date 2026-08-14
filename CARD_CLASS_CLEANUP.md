@@ -167,9 +167,9 @@ Future retirement of either shim requires migrating every raw-source reader and 
 
 `src/trace_engine_v2/part_forretress_ex_combo.inc` owns the Garbodor scenario extension directly beside the `core/forretress/runtime.inc` include. Preserve the local `ScenarioExtension` value ownership and the same `std::optional<Scenario>` lookup shape as the public registry.
 
-`src/trace_engine_v2/core/board_state_policy.inc` owns the shared Active-first mutable/const board traversal, prior-turn evolution timing predicate, and canonical `BoardIndex` / `OptionalBoardIndex` vocabulary. It now also owns the shared `0 == Active`, `Bench index + 1` lookup and index-discovery seams. `src/trace_engine_v2/core/forretress/contract.inc` consumes that vocabulary rather than redeclaring it, while `src/trace_engine_v2/core/forretress/runtime.inc` continues to own Exploding Energy strategy and resolution. This cleanup changes structure only; DCI/UDP/AMR, K0/K1, connector, readiness, Ability, and evolution policy remain at their prior owners.
+`src/trace_engine_v2/core/board_state_policy.inc` owns the shared Active-first mutable/const board traversal, prior-turn evolution timing predicate, canonical `BoardIndex` / `OptionalBoardIndex` vocabulary, shared `0 == Active` / `Bench index + 1` mapping, and exact-pointer `board_index_of()` lookup. `src/trace_engine_v2/core/forretress/contract.inc` consumes that vocabulary rather than redeclaring it, while `src/trace_engine_v2/core/forretress/runtime.inc` continues to own Exploding Energy strategy and resolution. This cleanup changes structure only; DCI/UDP/AMR, K0/K1, connector, readiness, Ability, and evolution policy remain at their prior owners.
 
-Next mechanical Forretress step: migrate Exploding Energy's remaining Active-versus-Bench source/target scans in `core/forretress/runtime.inc` through `board_pokemon_at_index()` and `board_index_matching()`. Preserve selection, attachment distribution, self-Knock-Out, promotion, and route policy at the Forretress owner.
+Next mechanical Forretress step: migrate Exploding Energy's remaining Active-versus-Bench source/target scans in `core/forretress/runtime.inc` through `board_pokemon_at_index()`, `board_index_matching()`, and `board_index_of()`. Preserve selection, attachment distribution, self-Knock-Out, promotion, and route policy at the Forretress owner.
 
 Board query owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
 Forretress runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/runtime.inc
@@ -197,7 +197,9 @@ Keep payload role, DCI/UDP, strict-JIT admission, connector priority, and K0/K1 
 
 `src/trace_engine_v2/core/garbodor_lock_policy.inc` owns Garbodor scenario-prefix matching and seat-relative activation timing. Preserve Garbotoxin semantics and Rule Box lock interaction at their current policy owners. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
 
-Future policy cleanup should reuse these named seams before adding another payload preference loop or Garbodor scenario-label/timing branch.
+`src/trace_engine_v2/core/routes/oricorio_connector_policy.inc` now keeps its Grass/Fire missing-component preflight in one function instead of a one-line card-and-count wrapper. Preserve the target-aware Vital Dance search, K0/K1 visibility policy, and connector admission there. Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+
+Future policy cleanup should reuse these named seams before adding another payload preference loop, board-index scan, Garbodor scenario-label/timing branch, or Oricorio missing-Energy wrapper.
 
 ## Numbered policy-fragment migration
 

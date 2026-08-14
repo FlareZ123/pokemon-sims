@@ -185,6 +185,7 @@ constexpr bool is_special_energy(const Card card) {
 }
 constexpr bool is_supporter(const Card card) {
   // Registered Supporters own intrinsic subtype classification in CardDefinition.
+  // Guzma exact Supporter print: https://api.pokemontcg.io/v2/cards/sm3-115 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3618
   // Gladion exact Supporter print: https://api.pokemontcg.io/v2/cards/sm4-95 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3604
   // Team Yell's Cheer exact Supporter print: https://api.pokemontcg.io/v2/cards/swsh9-149 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3620
   // Advanced Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
@@ -195,7 +196,6 @@ constexpr bool is_supporter(const Card card) {
     case Card::Serena:
     case Card::TateLiza:
     case Card::StevensResolve:
-    case Card::Guzma:
     case Card::ErikasInvitation:
       return true;
     default:

@@ -34,14 +34,19 @@ class ScenarioExtension {
     return result;
   }
 
-  [[nodiscard]] const Scenario* find(const std::string& label) const {
+  [[nodiscard]] std::optional<Scenario> find(const std::string& label) const {
     // Keep extension lookup traversal beside append ownership so future scenario
     // ranges reuse one abstraction instead of adding another forwarding .inc file.
+    // Return the same optional value shape as scenario_by_label() instead of
+    // exposing a pointer tied to the extension range's storage lifetime.
     // C++ find_if semantics: https://eel.is/c++draft/alg.find
+    // C++ optional semantics: https://eel.is/c++draft/optional
     const auto match = std::find_if(
         scenarios_.begin(), scenarios_.end(),
         [&label](const Scenario& scenario) { return scenario.label == label; });
-    return match == scenarios_.end() ? nullptr : &*match;
+    return match == scenarios_.end()
+        ? std::nullopt
+        : std::optional<Scenario>{*match};
   }
 
  private:
@@ -63,8 +68,8 @@ ScenarioList all_scenarios_with_garbodor() {
 }
 
 std::optional<Scenario> scenario_by_label_with_garbodor(const std::string& label) {
-  if (const Scenario* match = kGarbodorScenarioExtension.find(label)) {
-    return *match;
+  if (const auto match = kGarbodorScenarioExtension.find(label)) {
+    return match;
   }
   return scenario_by_label(label);
 }

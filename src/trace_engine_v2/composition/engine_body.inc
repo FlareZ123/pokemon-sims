@@ -114,6 +114,7 @@
 #undef choose_supporter
 #undef play_items_until_stable_issue3545
 #include "../core/battle_compressor_hidden_routes.inc"
+#include "../core/battle_compressor_steven_route.inc"
 
 #undef play_field_blower
 #undef play_chaotic_swell
@@ -125,16 +126,20 @@
 
 // Ordered late turn-execution, scenario-registry, and reporting composition is kept
 // directly on the canonical body now that it has a single owner. Preserve these
-// aliases through part_016 exactly as the historical wrapper did.
+// aliases through part_016 exactly as the historical wrapper did. Route the production
+// Supporter decision through the issue-3545 wrapper so the proved BC-Powerglass
+// Steven package can preempt a Supporter-contending Burnet search.
 #if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || \
-    defined(play_items_until_stable)
+    defined(play_items_until_stable) || defined(choose_supporter)
 #error "Late-turn composition requires execution aliases to be undefined on entry"
 #endif
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #define hand_count hand_count_issue_3057
 #define play_items_until_stable play_items_until_stable_issue3545
+#define choose_supporter choose_supporter_issue3545_actual
 #include "../part_014c.inc"
+#undef choose_supporter
 #undef play_items_until_stable
 #undef hand_count
 #undef ability_available_for_pokemon
@@ -168,7 +173,7 @@
 #undef play_field_blower
 
 #if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || \
-    defined(play_items_until_stable) || defined(all_scenarios) || \
-    defined(scenario_by_label)
+    defined(play_items_until_stable) || defined(choose_supporter) || \
+    defined(all_scenarios) || defined(scenario_by_label)
 #error "Canonical engine composition leaked a late alias"
 #endif

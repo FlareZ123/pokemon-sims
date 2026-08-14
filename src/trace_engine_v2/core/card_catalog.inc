@@ -52,6 +52,9 @@ static_assert(cards::Dawn::definition.name == "Dawn");
 static_assert(cards::Powerglass::definition.id == Card::Powerglass); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
 static_assert(cards::Powerglass::definition.canonical_id == "sv6pt5-63");
 static_assert(cards::Powerglass::definition.name == "Powerglass");
+static_assert(cards::Lusamine::definition.id == Card::Lusamine); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
+static_assert(cards::Lusamine::definition.canonical_id == "sm4-96");
+static_assert(cards::Lusamine::definition.name == "Lusamine");
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},         {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
@@ -99,7 +102,6 @@ constexpr std::string_view name(const Card card) {
     case Card::Guzma: return "Guzma";
     case Card::Channeler: return "Channeler";
     case Card::Gladion: return "Gladion";
-    case Card::Lusamine: return "Lusamine";
     case Card::TeamYellsCheer: return "Team Yell's Cheer";
     case Card::RoseannesBackup: return "Roseanne's Backup";
     case Card::Klara: return "Klara";
@@ -122,6 +124,7 @@ constexpr std::string_view name(const Card card) {
     case Card::FieldBlower:
     case Card::GuzmaHala:
     case Card::HisuianHeavyBall:
+    case Card::Lusamine:
     case Card::MysteriousTreasure:
     case Card::PokemonCommunication:
     case Card::Powerglass:
@@ -129,7 +132,7 @@ constexpr std::string_view name(const Card card) {
     case Card::ProfessorsLetter:
     case Card::QuickBall:
     case Card::SecretBox:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Pokémon Communication data: https://api.pokemontcg.io/v2/cards/sm9-152
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Lusamine data: https://api.pokemontcg.io/v2/cards/sm4-96
   }
   return "Unknown";
 }

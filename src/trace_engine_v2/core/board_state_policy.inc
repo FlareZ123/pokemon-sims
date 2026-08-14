@@ -47,7 +47,7 @@
   }
 
   template <typename ActiveZone, typename BenchZone, typename Predicate>
-  [[nodiscard]] static OptionalBoardIndex find_board_index_matching_in_zones(
+  [[nodiscard]] static OptionalBoardIndex board_index_matching_in_zones(
       const ActiveZone& active, const BenchZone& bench, Predicate predicate) {
     // Keep index discovery on the same Active-first mapping used by lookup.
     // C++ container indexing semantics: https://eel.is/c++draft/vector.capacity
@@ -83,7 +83,7 @@
   template <typename Predicate>
   [[nodiscard]] OptionalBoardIndex board_index_matching(
       Predicate predicate) const {
-    return find_board_index_matching_in_zones(
+    return board_index_matching_in_zones(
         state_.active, state_.bench, predicate);
   }
 

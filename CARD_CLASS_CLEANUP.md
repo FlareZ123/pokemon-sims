@@ -424,9 +424,18 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - The current Forretress implementation owner is `src/trace_engine_v2/core/forretress/runtime.inc`; the older `part_forretress_ex_combo_legacy.inc` path referenced by the 2026-08-13 checkpoint is retired. Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1 Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2 Current runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/runtime.inc
 - This wave changes ownership and lookup structure only. Exploding Energy resolution, route admission, DCI/UDP/AMR, K0/K1 knowledge, connector domination, lock behavior, and readiness policy remain at their existing owners. Advanced rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
-
 ## Cleanup wave 2026-08-14 setup lifecycle ownership
 
-- src/trace_engine_v2/core/setup_lifecycle.inc owns the opening-hand and starting-Prize counts as named constants, matching the advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- `src/trace_engine_v2/core/setup_lifecycle.inc` owns the opening-hand and starting-Prize counts as named constants, matching the advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 - Recipe expansion and K0 setup-knowledge reset are isolated behind setup-lifecycle helpers. The refactor preserves deck order, shuffle timing, mulligan handling, Prize placement, DCI/UDP/AMR, connector domination, K0/K1 transitions, and route selection.
 - Keep future setup cleanup mechanical at this owner; printed card resolution and gameplay strategy stay outside the setup lifecycle. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/setup_lifecycle.inc
+
+## Cleanup wave 2026-08-14 Ultra Ball metadata checkpoint
+
+- Enhancement #3517 was reclaimed after its prior branch and PR became stale against the expanded registry: https://github.com/FlareZ123/pokemon-sims/issues/3517 https://github.com/FlareZ123/pokemon-sims/pull/3584
+- `src/cards/trainers/ultra_ball.hpp` and `kRegisteredCardDefinitions` own Ultra Ball's exact `sv1-196` identity, display name, Trainer kind, Item subtype, and printed two-other-card discard cost. Exact card data: https://api.pokemontcg.io/v2/cards/sv1-196
+- The registry now uses `std::array` class template argument deduction, so concurrent card migrations cannot invalidate a manually maintained element count. C++ deduction guides: https://eel.is/c++draft/array.cons
+- `is_item()` resolves Ultra Ball through registered metadata. Earthen Vessel is the remaining legacy Item fallback, with its separate migration tracked by https://github.com/FlareZ123/pokemon-sims/issues/3475
+- Ultra Ball route admission, DCI/UDP discard valuation, discard selection, Pokémon target choice, K0/K1 transitions, search resolution, connector domination, and readiness policy remain at their existing Engine owners. Architecture contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#card-module-contract
+- `src/trace_engine_v2/part_001.inc` no longer keeps an inactive `#if 0` mirror of `is_payload()`. `src/trace_engine_v2/core/card_classification.inc` remains the single payload predicate owner while historical source-anchor comments stay in the wrapper.
+- Validation requires strict Release compilation, focused metadata coverage, representative `--simulate-this` action ordering, and the paired T2/T3 probability matrix with no unexplained drift.

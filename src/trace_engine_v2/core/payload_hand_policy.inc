@@ -15,6 +15,12 @@
       return static_cast<int>(std::count_if(zone.begin(), zone.end(), is_payload));
     }
 
+    [[nodiscard]] static std::optional<Card> first_in_zone(
+        const std::vector<Card>& zone) {
+      const auto found = std::find_if(zone.begin(), zone.end(), is_payload);
+      return found == zone.end() ? std::nullopt : std::optional<Card>{*found};
+    }
+
     template <typename Predicate>
     [[nodiscard]] static std::optional<Card> first(const Predicate& present) {
       for (const Card card : kOrder) {
@@ -34,6 +40,15 @@
 
   [[nodiscard]] static int payload_card_count(const std::vector<Card>& zone) {
     return PayloadPreferencePolicy::count(zone);
+  }
+
+  [[nodiscard]] static std::optional<Card> first_payload_card_in_zone(
+      const std::vector<Card>& zone) {
+    // Preserve physical zone order when a route needs the same first Dragon payload
+    // that its historical std::find_if scan would have selected:
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    return PayloadPreferencePolicy::first_in_zone(zone);
   }
 
   [[nodiscard]] int payload_cards_in_hand_count() const {

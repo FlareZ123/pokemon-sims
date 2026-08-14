@@ -81,8 +81,8 @@
   bool play_issue_1772_steven_t3_package() {
     if (!issue_1772_steven_t3_package_available()) return false;
 
-    const auto payload = std::find_if(state_.deck.begin(), state_.deck.end(), is_payload);
-    if (payload == state_.deck.end()) {
+    const auto payload = first_payload_card_in_zone(state_.deck);
+    if (!payload) {
       throw std::logic_error("Issue-1772 payload disappeared");
     }
     const Card selected_payload = *payload;

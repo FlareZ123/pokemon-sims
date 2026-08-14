@@ -153,11 +153,13 @@ constexpr bool is_special_energy(const Card card) {
   return is_energy(card) && !is_basic_energy(card);
 }
 constexpr bool is_supporter(const Card card) {
+  // Registered Supporters own intrinsic Trainer subtype in CardDefinition.
+  // Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+  // Arven exact print: https://api.pokemontcg.io/v2/cards/sv1-166 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3577
   if (cards::has_definition(card)) return cards::registered_is_supporter(card);
 
   switch (card) {
     case Card::Grant:
-    case Card::Arven:
     case Card::Crispin:
     case Card::ProfessorBurnet:
     case Card::Serena:

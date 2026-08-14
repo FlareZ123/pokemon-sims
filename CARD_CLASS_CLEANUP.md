@@ -307,8 +307,9 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 ## Cleanup wave 2026-08-13 late-Supporter route consolidation
 
 - Completed: the issue-3040 Professor Turo staging implementation now lives at `src/trace_engine_v2/core/routes/professor_turo_regidrago_staging_policy.inc`; the former root-level `part_issue_3040_turo_regidrago_staging_override.inc` fragment is retired. Canonical route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/professor_turo_regidrago_staging_policy.inc Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
-- The issue-1070 late-Supporter selector composition now lives beside that route at `src/trace_engine_v2/core/routes/tate_after_vstar_search_selector.inc`. Its historical `part_issue_1070_tate_after_vstar_search_override.inc` path is intentionally a thin boundary forwarder while `composition/post_014a_overrides.inc` still consumes that compatibility name. Canonical selector: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/tate_after_vstar_search_selector.inc
-- Preserve the existing `choose_supporter` macro lifetime and the selector's final-fallback ordering. A later cleanup may include the canonical selector directly from `composition/post_014a_overrides.inc` and retire the remaining forwarder only after that class-member boundary is revalidated. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+- Completed 2026-08-14: `composition/post_014a_overrides.inc` includes `core/routes/tate_after_vstar_search_selector.inc` directly at the same `choose_supporter_issue1209_original` boundary, and the former `part_issue_1070_tate_after_vstar_search_override.inc` forwarding shim is retired. Canonical selector: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/tate_after_vstar_search_selector.inc
+- The direct Tate composition preserves the existing `choose_supporter` macro lifetime and final-fallback ordering. This is a textual-include cleanup only; card resolution, Supporter strategy, DCI/UDP/AMR, connector domination, K0/K1 state, and ready-turn behavior remain at their existing owners. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+- Completed 2026-08-14: the unused `part_k0_ultra_ball_target_override.inc` compatibility forwarder is retired. Late-search composition already includes `core/ultra_ball_target_policy.inc` directly, so Ultra Ball target policy remains solely owned by that canonical core module. Canonical policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/ultra_ball_target_policy.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 ## Crispin metadata migration
 
@@ -357,12 +358,12 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - This wave preserves Klara's printed discard recovery, strategic target choice, Supporter contention, DCI/UDP/AMR, connector domination, K0/K1 state, and route behavior at their existing Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/swsh6-145
 - A later resolver migration must first locate the single live Klara recovery boundary and preserve the independent up-to-two Pokémon and up-to-two basic-Energy recovery choices through `CardContext` without moving strategic recovery choice into card code. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
-## Channeler metadata migration
+## Wishful Baton metadata migration
 
-- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3624
-- Canonical print: `sm11-190`; exact card data: https://api.pokemontcg.io/v2/cards/sm11-190
-- `src/cards/trainers/channeler.hpp` and `kRegisteredCardDefinitions` own Channeler identity, display name, Trainer kind, and Supporter subtype.
-- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Channeler's intrinsic facts; both source registered metadata before unmigrated fallbacks.
-- Focused registration coverage: `tests/channeler_card_class_tests.cpp`.
-- This wave preserves Channeler's setup strategy, DCI/UDP/AMR, connector domination, K0/K1, Supporter contention, and route policy at existing Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm11-190
-- A later resolver migration must locate the single live Channeler resolution boundary and preserve attack-effect removal ordering through `CardContext` without moving strategy choice into card code. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3631
+- Canonical print: `sm3-128`; exact card data: https://api.pokemontcg.io/v2/cards/sm3-128
+- `src/cards/trainers/wishful_baton.hpp` and `kRegisteredCardDefinitions` own Wishful Baton identity, display name, Trainer kind, and Pokémon Tool subtype.
+- Legacy `name()` and `is_tool()` compatibility tables no longer duplicate Wishful Baton's intrinsic facts; registered metadata is the sole owner.
+- Focused registration coverage: `tests/wishful_baton_card_class_tests.cpp`.
+- This wave preserves holder selection, Knock Out and Energy-transfer resolution, DCI/UDP/AMR, connector domination, K0/K1 state, lock handling, and route strategy at their existing Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm3-128
+- A later resolver migration must preserve the opponent-attack damage Knock Out trigger and the printed choice to move up to 3 Basic Energy cards from the attached Active Pokémon to 1 Benched Pokémon through `CardContext`, while strategic target selection stays in Engine. Rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

@@ -24,10 +24,11 @@
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
 #include "trainers/secret_box.hpp"
+#include "trainers/wishful_baton.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 21> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 22> kRegisteredCardDefinitions{
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -49,6 +50,7 @@ inline constexpr std::array<const CardDefinition*, 21> kRegisteredCardDefinition
     &SecretBox::definition, // Exact Twilight Masquerade ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv6-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3541
     &Lusamine::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
     &Klara::definition, // Exact Chilling Reign Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
+    &WishfulBaton::definition, // Exact Burning Shadows Pokémon Tool: https://api.pokemontcg.io/v2/cards/sm3-128 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3631
 };
 
 constexpr const CardDefinition* find_definition(const Card card) {

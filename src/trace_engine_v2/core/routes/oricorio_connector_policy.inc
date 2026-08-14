@@ -1,17 +1,15 @@
 #pragma once
 
-// Canonical Oricorio energy-connector policy. Keep the compatibility include at
-// core/oricorio_connector_policy.inc until its parent member boundary can include
-// this route owner directly.
+// Canonical Oricorio energy-connector policy.
 // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
 // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
 
-  bool needed_basic_energy_might_be_in_deck(const Card energy,
-                                            const int amount_needed) const {
+  [[nodiscard]] bool oricorio_needed_basic_energy_might_be_in_deck(
+      const Card energy, const int amount_needed) const {
     return amount_needed > 0 && might_be_unseen(energy);
   }
 
-  bool needed_oricorio_energy_might_be_in_deck() const {
+  [[nodiscard]] bool needed_oricorio_energy_might_be_in_deck() const {
     // Vital Dance can search Basic Energy, while Apex Dragon specifically requires
     // two Grass and one Fire. At K1, an off-type Energy cannot advance the missing
     // component; K0 keeps using public fixed-list plausibility through might_be_unseen():
@@ -19,11 +17,13 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    return needed_basic_energy_might_be_in_deck(Card::Grass, grass_needed()) ||
-           needed_basic_energy_might_be_in_deck(Card::Fire, fire_needed());
+    return oricorio_needed_basic_energy_might_be_in_deck(
+               Card::Grass, grass_needed()) ||
+           oricorio_needed_basic_energy_might_be_in_deck(
+               Card::Fire, fire_needed());
   }
 
-  bool needs_oricorio_connector() const {
+  [[nodiscard]] bool needs_oricorio_connector() const {
     // The original #180 predicate covers hands with no payload. #616 extends the
     // same final-slot policy to an in-hand payload that has no legal Item discard
     // outlet, while preserving Tapu Lele-GX when such an outlet is live:

@@ -30,12 +30,13 @@
 #include "trainers/professor_turo_scenario.hpp"
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
+#include "trainers/roseannes_backup.hpp"
 #include "trainers/secret_box.hpp"
 #include "trainers/wishful_baton.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 29> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 30> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
     &MawileGX::definition, // Exact Unified Minds Basic Metal Pokémon-GX: https://api.pokemontcg.io/v2/cards/sm11-141 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3704
     &Oricorio::definition, // Exact Guardians Rising Basic Psychic Pokémon: https://api.pokemontcg.io/v2/cards/sm2-55 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3712
@@ -61,6 +62,7 @@ inline constexpr std::array<const CardDefinition*, 29> kRegisteredCardDefinition
     &Powerglass::definition, // Exact Shrouded Fable Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
     &ProfessorBurnet::definition, // Exact Trainer Gallery Supporter: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     &ProfessorTuroScenario::definition, // Exact Paradox Rift Supporter: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
+    &RoseannesBackup::definition, // Exact Brilliant Stars Supporter: https://api.pokemontcg.io/v2/cards/swsh9-148 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3629
     &SecretBox::definition, // Exact Twilight Masquerade ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv6-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3541
     &Lusamine::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
     &Klara::definition, // Exact Chilling Reign Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
@@ -155,5 +157,8 @@ static_assert(definition_matches_registration(MawileGX::definition, Card::Mawile
                                               "sm11-141", "Mawile-GX")); // Exact Basic Metal Pokémon-GX: https://api.pokemontcg.io/v2/cards/sm11-141 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3704
 static_assert(definition_matches_registration(Oricorio::definition, Card::Oricorio,
                                               "sm2-55", "Oricorio GRI 55")); // Exact Basic Psychic Pokémon: https://api.pokemontcg.io/v2/cards/sm2-55 ; compatibility trace: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/issue_2310_turo_oricorio_trace_order_tests.cpp ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3712
+static_assert(definition_matches_registration(RoseannesBackup::definition,
+                                              Card::RoseannesBackup, "swsh9-148",
+                                              "Roseanne's Backup")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh9-148 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3629
 
 }  // namespace sim::cards

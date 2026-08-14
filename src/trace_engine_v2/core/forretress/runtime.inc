@@ -80,19 +80,19 @@ bool Engine::evolve_forretress_ex() {
   return true;
 }
 
-Pokemon* Engine::pokemon_at_board_index(const std::size_t index) {
+Pokemon* Engine::pokemon_at_board_index(const BoardIndex index) {
   if (index == 0U) {
     return state_.active ? &*state_.active : nullptr;
   }
-  const std::size_t bench_index = index - 1U;
+  const BoardIndex bench_index = index - 1U;
   return bench_index < state_.bench.size() ? &state_.bench[bench_index] : nullptr;
 }
 
-std::optional<std::size_t> Engine::exploding_energy_regidrago_target_index() const {
+Engine::OptionalBoardIndex Engine::exploding_energy_regidrago_target_index() const {
   const Pokemon* target = target_regi();
   if (target == nullptr) return std::nullopt;
   if (state_.active && target == &*state_.active) return 0U;
-  for (std::size_t index = 0; index < state_.bench.size(); ++index) {
+  for (BoardIndex index = 0; index < state_.bench.size(); ++index) {
     if (target == &state_.bench[index]) return index + 1U;
   }
   return std::nullopt;
@@ -115,7 +115,7 @@ void Engine::discard_forretress_ex_stack(const Pokemon& knocked_out) {
 }
 
 bool Engine::resolve_exploding_energy(
-    const std::vector<std::size_t>& attachment_destinations) {
+    const AttachmentDestinations& attachment_destinations) {
   // Ability effects using "up to X" require a choice from 1 through X.
   // Reject an empty destination list before mutating knowledge or the board:
   // Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
@@ -130,9 +130,9 @@ bool Engine::resolve_exploding_energy(
 
   const bool source_is_active =
       state_.active && state_.active->card == Card::ForretressEx;
-  std::optional<std::size_t> source_bench_index;
+  OptionalBoardIndex source_bench_index;
   if (!source_is_active) {
-    for (std::size_t index = 0; index < state_.bench.size(); ++index) {
+    for (BoardIndex index = 0; index < state_.bench.size(); ++index) {
       if (state_.bench[index].card == Card::ForretressEx) {
         source_bench_index = index;
         break;
@@ -141,7 +141,7 @@ bool Engine::resolve_exploding_energy(
   }
   if (!source_is_active && !source_bench_index) return false;
 
-  for (const std::size_t destination : attachment_destinations) {
+  for (const BoardIndex destination : attachment_destinations) {
     if (pokemon_at_board_index(destination) == nullptr) return false;
   }
   if (deck_count_after_search_started(Card::Grass) <
@@ -158,7 +158,7 @@ bool Engine::resolve_exploding_energy(
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1587
   record_deck_search_knowledge("Exploding Energy");
   outcome_.used_exploding_energy = true;
-  for (const std::size_t destination : attachment_destinations) {
+  for (const BoardIndex destination : attachment_destinations) {
     if (!remove_one(state_.deck, Card::Grass)) {
       throw std::logic_error(
           "Exploding Energy preflight diverged from deck state");
@@ -266,7 +266,7 @@ bool Engine::use_exploding_energy_for_setup() {
     return resolve_exploding_energy({*target_index});
   }
 
-  std::vector<std::size_t> destinations;
+  AttachmentDestinations destinations;
   const bool source_is_active =
       state_.active && state_.active->card == Card::ForretressEx;
   const bool active_blocks_regi = !source_is_active && state_.active &&

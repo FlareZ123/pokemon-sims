@@ -23,23 +23,33 @@ const GarbodorScenarioSet kGarbodorScenarios{{
 }};
 
 template <typename ScenarioRange>
-[[nodiscard]] ScenarioList with_appended_scenarios(
-    ScenarioList result, const ScenarioRange& scenarios) {
-  result.reserve(result.size() + scenarios.size());
-  result.insert(result.end(), scenarios.begin(), scenarios.end());
-  return result;
-}
+class ScenarioExtension {
+ public:
+  explicit ScenarioExtension(const ScenarioRange& scenarios)
+      : scenarios_(scenarios) {}
 
-template <typename ScenarioRange>
-[[nodiscard]] const Scenario* find_scenario_by_label(
-    const ScenarioRange& scenarios, const std::string& label) {
-  // Keep extension lookup traversal generic for any future scenario range.
-  // C++ find_if semantics: https://eel.is/c++draft/alg.find
-  const auto match = std::find_if(
-      scenarios.begin(), scenarios.end(),
-      [&label](const Scenario& scenario) { return scenario.label == label; });
-  return match == scenarios.end() ? nullptr : &*match;
-}
+  [[nodiscard]] ScenarioList append_to(ScenarioList result) const {
+    result.reserve(result.size() + scenarios_.size());
+    result.insert(result.end(), scenarios_.begin(), scenarios_.end());
+    return result;
+  }
+
+  [[nodiscard]] const Scenario* find(const std::string& label) const {
+    // Keep extension lookup traversal beside append ownership so future scenario
+    // ranges reuse one abstraction instead of adding another forwarding .inc file.
+    // C++ find_if semantics: https://eel.is/c++draft/alg.find
+    const auto match = std::find_if(
+        scenarios_.begin(), scenarios_.end(),
+        [&label](const Scenario& scenario) { return scenario.label == label; });
+    return match == scenarios_.end() ? nullptr : &*match;
+  }
+
+ private:
+  const ScenarioRange& scenarios_;
+};
+
+const ScenarioExtension<GarbodorScenarioSet> kGarbodorScenarioExtension{
+    kGarbodorScenarios};
 
 ScenarioList all_scenarios_with_garbodor() {
   // Garbodor BKP 57 suppresses Pokemon Abilities while it has a Tool. Boost Shake
@@ -49,11 +59,11 @@ ScenarioList all_scenarios_with_garbodor() {
   // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
   // Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
   // Scenario model: https://github.com/FlareZ123/pokemon-sims/issues/2808
-  return with_appended_scenarios(all_scenarios(), kGarbodorScenarios);
+  return kGarbodorScenarioExtension.append_to(all_scenarios());
 }
 
 std::optional<Scenario> scenario_by_label_with_garbodor(const std::string& label) {
-  if (const Scenario* match = find_scenario_by_label(kGarbodorScenarios, label)) {
+  if (const Scenario* match = kGarbodorScenarioExtension.find(label)) {
     return *match;
   }
   return scenario_by_label(label);

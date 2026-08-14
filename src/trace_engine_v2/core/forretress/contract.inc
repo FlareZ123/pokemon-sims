@@ -1,3 +1,5 @@
+#pragma once
+
   // Test-variant combo support. Definitions are emitted after Engine closes so
   // these declarations are visible to opening setup, connector policy, and the
   // active turn composition without disturbing the split translation unit.

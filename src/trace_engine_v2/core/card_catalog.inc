@@ -46,6 +46,8 @@ static_assert(cards::Dawn::definition.name == "Dawn");
 static_assert(cards::Powerglass::definition.id == Card::Powerglass); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
 static_assert(cards::Powerglass::definition.canonical_id == "sv6pt5-63");
 static_assert(cards::Powerglass::definition.name == "Powerglass");
+static_assert(cards::BattleCompressor::definition.id == Card::BattleCompressor); // https://api.pokemontcg.io/v2/cards/xy4-92
+static_assert(cards::VsSeeker::definition.id == Card::VsSeeker); // https://api.pokemontcg.io/v2/cards/xy4-109
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},         {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
@@ -111,6 +113,7 @@ constexpr std::string_view name(const Card card) {
     case Card::DoubleDragonEnergy: return "Double Dragon Energy";  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
+    case Card::BattleCompressor:
     case Card::BattleVipPass:
     case Card::BrilliantBlender:
     case Card::ChaoticSwell:
@@ -123,6 +126,7 @@ constexpr std::string_view name(const Card card) {
     case Card::Powerglass:
     case Card::ProfessorsLetter:
     case Card::QuickBall:
+    case Card::VsSeeker:
       break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
   }
   return "Unknown";

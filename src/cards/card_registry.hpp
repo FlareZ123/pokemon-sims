@@ -27,11 +27,12 @@
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
 #include "trainers/secret_box.hpp"
+#include "trainers/stevens_resolve.hpp"
 #include "trainers/wishful_baton.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 25> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 26> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
@@ -54,6 +55,7 @@ inline constexpr std::array<const CardDefinition*, 25> kRegisteredCardDefinition
     &ProfessorBurnet::definition, // Exact Trainer Gallery Supporter: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     &ProfessorTuroScenario::definition, // Exact Paradox Rift Supporter: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
     &SecretBox::definition, // Exact Twilight Masquerade ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv6-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3541
+    &StevensResolve::definition, // Exact Celestial Storm Supporter: https://api.pokemontcg.io/v2/cards/sm7-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3595
     &Lusamine::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
     &Klara::definition, // Exact Chilling Reign Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
     &WishfulBaton::definition, // Exact Burning Shadows Pokémon Tool: https://api.pokemontcg.io/v2/cards/sm3-128 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3631
@@ -121,5 +123,8 @@ static_assert(definition_matches_registration(Channeler::definition, Card::Chann
 static_assert(definition_matches_registration(ProfessorTuroScenario::definition,
                                               Card::ProfessorTuro, "sv4-171",
                                               "Professor Turo's Scenario")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
+static_assert(definition_matches_registration(StevensResolve::definition,
+                                              Card::StevensResolve, "sm7-145",
+                                              "Steven's Resolve")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm7-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3595
 
 }  // namespace sim::cards

@@ -136,6 +136,12 @@ def require_valid_card_source_urls() -> None:
 
 
 def main() -> int:
+    # Reject nonexistent direct card records before they can be used as executable
+    # policy evidence. The contract is corpus-backed and keeps all tracked source
+    # URLs independently auditable:
+    # https://github.com/PokemonTCG/pokemon-tcg-data
+    # https://api.pokemontcg.io/v2/cards/me2pt5-152
+    # https://github.com/FlareZ123/pokemon-sims/issues/1696
     require_valid_card_source_urls()
 
     audit = load_audit_module()
@@ -143,6 +149,10 @@ def main() -> int:
     rule_sources = RULE_SOURCES_PATH.read_text(encoding="utf-8")
     source_wrapper = SOURCE_WRAPPER_PATH.read_text(encoding="utf-8")
 
+    # Erika's printed opponent-hand condition is the source for its deliberately inert
+    # single-player treatment. Keep that exact print in both declared registries:
+    # https://api.pokemontcg.io/v2/cards/sv3pt5-160
+    # https://github.com/FlareZ123/pokemon-sims/issues/856
     for registry_name, registry in (("docs/RULE_SOURCES.md", rule_sources),
                                      ("src/regidrago_sim.cpp", source_wrapper)):
         if ERIKA_SOURCE_URL not in registry:
@@ -151,16 +161,26 @@ def main() -> int:
     if sum(copies for _, copies in audit.REQUESTED.values()) != 60:
         raise AssertionError("The audit request no longer represents a 60-card deck.")
 
+    # Steven's Resolve searches for up to three cards. Keep the card-audit table
+    # aligned with the supplied print instead of implying a mandatory exact fill:
+    # https://api.pokemontcg.io/v2/cards/sm7-145
+    # https://github.com/FlareZ123/pokemon-sims/issues/692
     if "Steven’s Resolve | `sm7-145` | 1 | up to three cards, end turn" not in documented:
         raise AssertionError("CARD_AUDIT.md must describe Steven's Resolve as an up-to-three search.")
     if "exact three cards, end turn" in documented:
         raise AssertionError("CARD_AUDIT.md still describes Steven's Resolve as an exact-three search.")
 
+    # The raw JSON is a local reproduction artifact because its source field records the
+    # caller-provided path. Documentation must not claim that file is tracked:
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/audit_card_data.py#L135-L166
     if "intentionally untracked" not in documented:
         raise AssertionError("CARD_AUDIT.md must state that data/card_audit.json is untracked.")
     if "The reproducible raw audit is `data/card_audit.json`" in documented:
         raise AssertionError("CARD_AUDIT.md still claims that the raw audit is tracked.")
 
+    # Pin the exact retrievable upstream snapshot and the supplied archive digest so the
+    # accepted evidence source cannot silently drift:
+    # https://github.com/PokemonTCG/pokemon-tcg-data/commit/0af6250a22495e4a3e9f60ff45fc3fedc2e0563d
     if UPSTREAM_COMMIT_URL not in documented:
         raise AssertionError("CARD_AUDIT.md must pin the accepted upstream commit.")
     if ARCHIVE_SHA256 not in documented:
@@ -169,6 +189,10 @@ def main() -> int:
     if r"--out data\card_audit.json" not in documented:
         raise AssertionError("CARD_AUDIT.md must retain the local reproduction command.")
 
+    # Keep the status page and both fixture indexes synchronized with the executable
+    # runner tables instead of a manually remembered historical count:
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L191
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/tests/tier2_parts/part_003b.inc#L40-L73
     core_count = fixture_count(CORE_RUNNER_PATH)
     tier2_count = fixture_count(TIER2_RUNNER_PATH)
     audit_status = AUDIT_STATUS_PATH.read_text(encoding="utf-8")
@@ -180,8 +204,20 @@ def main() -> int:
     require_documented_count(core_index, "executes", core_count)
     require_documented_count(tier2_index, "executes", tier2_count)
 
+    # Every production R-* token emitted into a readable trace must have a register
+    # row. Guzma's second switch is conditional on its opponent switch occurring, and
+    # the repository exposes that prerequisite through an explicit opponent-Bench state:
+    # https://api.pokemontcg.io/v2/cards/sm3-115
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#opponent-actions
+    # https://github.com/FlareZ123/pokemon-sims/issues/1033
     register = TRACE_REGISTER_PATH.read_text(encoding="utf-8")
 
+    # Steven's Resolve has no turn-one-only clause. Keep the traceability register
+    # aligned with the printed effect and the production late-turn route policy:
+    # https://api.pokemontcg.io/v2/cards/sm7-145
+    # https://www.pokemon.com/us/pokemon-tcg/rules
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010_late_steven_override.inc#L162-L166
+    # https://github.com/FlareZ123/pokemon-sims/issues/1181
     if "It is used only going second on turn 1" in register:
         raise AssertionError("R-STEVEN-01 still incorrectly limits Steven's Resolve to turn one.")
     if "On later Supporter-legal turns, the policy also uses source-bounded continuations" not in register:

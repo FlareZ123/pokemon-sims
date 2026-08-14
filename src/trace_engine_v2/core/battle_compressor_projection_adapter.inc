@@ -29,7 +29,9 @@
     TraceLog projection_trace{true};
     TraceLog* const prior_trace = trace_;
     trace_ = &projection_trace;
-    choose_supporter_issue_1152();
+    if (!play_steven_issue3545_powerglass_treasure()) {
+      choose_supporter_issue_1152();
+    }
     trace_ = prior_trace;
 
     const auto trace_contains = [&projection_trace](const std::string_view text) {

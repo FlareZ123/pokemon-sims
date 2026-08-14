@@ -12,6 +12,17 @@
     }
   }
 
+  void add_recipe_cards_to_deck() {
+    for (const auto& [card, copies] : recipe_) {
+      for (int copy = 0; copy < copies; ++copy) state_.deck.push_back(card);
+    }
+  }
+
+  void reset_setup_knowledge() {
+    deck_seen_ = false;
+    prizes_revealed_ = false;
+  }
+
   void draw_opening_hand_with_mulligans() {
     while (true) {
       state_.hand.clear();
@@ -43,11 +54,8 @@
   }
 
   void setup() {
-    deck_seen_ = false;
-    prizes_revealed_ = false;
-    for (const auto& [card, copies] : recipe_) {
-      for (int copy = 0; copy < copies; ++copy) state_.deck.push_back(card);
-    }
+    reset_setup_knowledge();
+    add_recipe_cards_to_deck();
     shuffle(state_.deck);
     draw_opening_hand_with_mulligans();
 

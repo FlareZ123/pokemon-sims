@@ -1,0 +1,27 @@
+name: Cleanup plan updater
+
+on:
+  push:
+    branches:
+      - cleanup-1786714381508
+
+permissions:
+  contents: write
+
+jobs:
+  append-plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Append setup lifecycle cleanup checkpoint
+        shell: bash
+        run: |
+          python -c "from pathlib import Path; import os,tempfile,fcntl; p=Path('CARD_CLASS_CLEANUP.md'); l=open('.cleanup-plan.lock','w'); fcntl.flock(l,fcntl.LOCK_EX); s=p.read_text(encoding='utf-8'); h='## Cleanup wave 2026-08-14 setup lifecycle ownership'; a='\n\n'+h+'\n\n- src/trace_engine_v2/core/setup_lifecycle.inc owns the opening-hand and starting-Prize counts as named constants, matching the advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md\n- Recipe expansion and K0 setup-knowledge reset are isolated behind setup-lifecycle helpers. The refactor preserves deck order, shuffle timing, mulligan handling, Prize placement, DCI/UDP/AMR, connector domination, K0/K1 transitions, and route selection.\n- Keep future setup cleanup mechanical at this owner; printed card resolution and gameplay strategy stay outside the setup lifecycle. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/setup_lifecycle.inc\n'; fd,t=tempfile.mkstemp(dir='.',prefix='.CARD_CLASS_CLEANUP.',text=True); os.close(fd); Path(t).write_text(s+(a if h not in s else ''),encoding='utf-8'); os.replace(t,p); fcntl.flock(l,fcntl.LOCK_UN); l.close(); Path('.cleanup-plan.lock').unlink(missing_ok=True)"
+          rm .github/workflows/cleanup-plan-updater.yml
+          git config user.name Zyenith
+          git config user.email 40903650+FlareZ123@users.noreply.github.com
+          git add CARD_CLASS_CLEANUP.md .github/workflows/cleanup-plan-updater.yml
+          git commit -m "Cleanup: advance setup lifecycle cleanup plan"
+          git push origin HEAD:cleanup-1786714381508

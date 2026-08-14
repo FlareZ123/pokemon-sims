@@ -301,7 +301,7 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 ## Cleanup wave 2026-08-13 board and Forretress contract follow-up
 
 - `src/trace_engine_v2/core/board_state_policy.inc` now owns one Active-first `find_board_pokemon_matching()` traversal. Boolean board queries delegate to that finder, preserving the repository's explicit Active-before-Bench short-circuit contract while giving later cleanup one reusable board lookup seam. C++ algorithm semantics: https://eel.is/c++draft/alg.find
-- `src/trace_engine_v2/core/forretress_combo_contract.inc` now names `OptionalBoardIndex` beside `BoardIndex` and `AttachmentDestinations`, and marks pure combo queries `[[nodiscard]]`. This keeps board-index/result vocabulary in the declared contract rather than spreading raw container types through future forwarding `.inc` files. Pineco / Forretress ex sources: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+- `src/trace_engine_v2/core/forretress_combo_contract.inc` now names `OptionalBoardIndex` beside `BoardIndex` and `AttachmentDestinations`, and marks pure combo queries `[[nodiscard]]`. This keeps board-index/result vocabulary in the declared contract rather than spreading raw index container types through future forwarding `.inc` files. Pineco / Forretress ex sources: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
 - Next safe follow-up: migrate the out-of-class Forretress definitions to the existing `BoardIndex`, `OptionalBoardIndex`, and `AttachmentDestinations` aliases only after the declaration boundary is proven in CI. Keep that future edit type-only, preserve Exploding Energy's existing card/ruling URLs beside its resolver, and do not combine it with route-policy changes. Current implementation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_forretress_ex_combo_legacy.inc
 
 ## Cleanup wave 2026-08-13 late-Supporter route consolidation
@@ -367,3 +367,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Focused registration coverage: `tests/wishful_baton_card_class_tests.cpp`.
 - This wave preserves holder selection, Knock Out and Energy-transfer resolution, DCI/UDP/AMR, connector domination, K0/K1 state, lock handling, and route strategy at their existing Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm3-128
 - A later resolver migration must preserve the opponent-attack damage Knock Out trigger and the printed choice to move up to 3 Basic Energy cards from the attached Active Pokémon to 1 Benched Pokémon through `CardContext`, while strategic target selection stays in Engine. Rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+## Professor Turo's Scenario metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3632
+- Canonical print: `sv4-171`; exact card data: https://api.pokemontcg.io/v2/cards/sv4-171
+- `src/cards/trainers/professor_turo_scenario.hpp` and `kRegisteredCardDefinitions` now own Professor Turo's Scenario identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Professor Turo's intrinsic facts; both source registered metadata before unmigrated fallbacks.
+- Focused registration coverage: `tests/professor_turo_card_class_tests.cpp`.
+- This wave preserves Professor Turo's printed pickup-and-attached-card discard resolution, target choice, Supporter contention, DCI/UDP/AMR, connector domination, K0/K1 state, scheduled lock behavior, and route strategy at their existing Engine owners. Exact printed effect: https://api.pokemontcg.io/v2/cards/sv4-171
+- Existing route ownership remains under `src/trace_engine_v2/core/routes/professor_turo_regidrago_staging_policy.inc` and the surrounding Engine resolver. A later printed-resolution migration must first identify the single live state-transition owner and preserve the required attached-card discard when the chosen Pokémon returns to hand. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

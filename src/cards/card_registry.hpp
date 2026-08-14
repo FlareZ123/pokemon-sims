@@ -21,6 +21,7 @@
 #include "trainers/pokemon_communication.hpp"
 #include "trainers/powerglass.hpp"
 #include "trainers/professor_burnet.hpp"
+#include "trainers/professor_turo_scenario.hpp"
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
 #include "trainers/secret_box.hpp"
@@ -28,7 +29,7 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 22> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 23> kRegisteredCardDefinitions{
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -47,6 +48,7 @@ inline constexpr std::array<const CardDefinition*, 22> kRegisteredCardDefinition
     &PokemonCommunication::definition, // Exact Team Up Item: https://api.pokemontcg.io/v2/cards/sm9-152 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3552
     &Powerglass::definition, // Exact Shrouded Fable Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
     &ProfessorBurnet::definition, // Exact Trainer Gallery Supporter: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    &ProfessorTuroScenario::definition, // Exact Paradox Rift Supporter: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
     &SecretBox::definition, // Exact Twilight Masquerade ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv6-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3541
     &Lusamine::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
     &Klara::definition, // Exact Chilling Reign Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625

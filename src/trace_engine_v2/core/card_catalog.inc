@@ -64,6 +64,9 @@ static_assert(cards::WishfulBaton::definition.name == "Wishful Baton");
 static_assert(cards::Channeler::definition.id == Card::Channeler); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm11-190 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3624
 static_assert(cards::Channeler::definition.canonical_id == "sm11-190");
 static_assert(cards::Channeler::definition.name == "Channeler");
+static_assert(cards::ProfessorTuroScenario::definition.id == Card::ProfessorTuro); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
+static_assert(cards::ProfessorTuroScenario::definition.canonical_id == "sv4-171");
+static_assert(cards::ProfessorTuroScenario::definition.name == "Professor Turo's Scenario");
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},         {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
@@ -112,7 +115,6 @@ constexpr std::string_view name(const Card card) {
     case Card::Gladion: return "Gladion";
     case Card::TeamYellsCheer: return "Team Yell's Cheer";
     case Card::RoseannesBackup: return "Roseanne's Backup";
-    case Card::ProfessorTuro: return "Professor Turo's Scenario";
     case Card::ErikasInvitation: return "Erika's Invitation";
     case Card::ForestOfVitality: return "Forest of Vitality";
     case Card::PathToPeak: return "Path to the Peak";
@@ -137,6 +139,7 @@ constexpr std::string_view name(const Card card) {
     case Card::PokemonCommunication:
     case Card::Powerglass:
     case Card::ProfessorBurnet:
+    case Card::ProfessorTuro: // Exact registered name: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
     case Card::ProfessorsLetter:
     case Card::QuickBall:
     case Card::SecretBox:

@@ -60,28 +60,39 @@ sim::State stochastic_supporter_state() {
   return state;
 }
 
-void test_bc_vs_supporter_choice_is_rng_invariant() {
+void test_bc_vs_route_is_rng_invariant() {
   // Battle Compressor establishes K1 by legally inspecting the deck. The decision
   // may use the resulting public card identities, while the future shuffled order
   // and a later Tate & Liza / Serena draw remain unknown. Holding the complete public
-  // state fixed must therefore hold the BC->VS Supporter target fixed as well.
+  // state fixed must therefore hold the Supporter choice, base BC vector, and every
+  // hidden-route refinement fixed as well.
   // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
   // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
   // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
   // Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
-  std::optional<sim::Card> expected;
+  std::optional<sim::Card> expected_supporter;
+  std::vector<sim::Card> expected_base;
+  std::vector<sim::Card> expected_hidden;
   bool initialized = false;
   for (std::uint64_t seed = 1; seed <= 64; ++seed) {
     std::mt19937_64 rng{seed};
     sim::Engine engine{scenario(), sim::baseline_recipe(), rng};
     sim::EngineTestAccess::set_state(engine, stochastic_supporter_state(), false);
-    const auto target = sim::EngineTestAccess::compressor_supporter(engine);
+    const auto supporter = sim::EngineTestAccess::compressor_supporter(engine);
+    const auto base = sim::EngineTestAccess::base_targets(engine);
+    const auto hidden = sim::EngineTestAccess::hidden_targets(engine);
     if (!initialized) {
-      expected = target;
+      expected_supporter = supporter;
+      expected_base = base;
+      expected_hidden = hidden;
       initialized = true;
     } else {
-      expect(target == expected,
+      expect(supporter == expected_supporter,
              "BC->VS Supporter selection depended on a future shuffled draw.");
+      expect(base == expected_base,
+             "Base Battle Compressor targets depended on a future shuffled draw.");
+      expect(hidden == expected_hidden,
+             "Hidden Battle Compressor targets depended on a future shuffled draw.");
     }
   }
 }
@@ -124,7 +135,7 @@ void test_two_vs_bank_does_not_spend_redundant_supporter_slot() {
 
 int main() {
   try {
-    test_bc_vs_supporter_choice_is_rng_invariant();
+    test_bc_vs_route_is_rng_invariant();
     test_two_vs_bank_does_not_spend_redundant_supporter_slot();
     std::cout << "issue 3545 hidden-route tests passed\n";
   } catch (const std::exception& error) {

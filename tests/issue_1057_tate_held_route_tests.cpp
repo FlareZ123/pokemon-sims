@@ -117,7 +117,8 @@ void test_negative_boundaries() {
 }  // namespace
 
 int main() {
-  expect_seed_holds_tate("matchup-flex-jit/go-first", 185, 3,
+  // Refined deterministic witness: https://github.com/FlareZ123/pokemon-sims/issues/3753
+  expect_seed_holds_tate("matchup-flex-jit/go-first", 250, 3,
                          "Searched and discarded: Mega Dragonite ex");
   expect_seed_holds_tate("strict-jit/go-second", 13, 2,
                          "Mega Dragonite ex (Mysterious Treasure cost)");

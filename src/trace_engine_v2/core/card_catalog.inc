@@ -89,7 +89,6 @@ constexpr std::string_view name(const Card card) {
     case Card::Grant: return "Grant";
     case Card::Arven: return "Arven";
     case Card::Crispin: return "Crispin";
-    case Card::ProfessorBurnet: return "Professor Burnet";
     case Card::Serena: return "Serena";
     case Card::TateLiza: return "Tate & Liza";
     case Card::StevensResolve: return "Steven's Resolve";
@@ -118,6 +117,7 @@ constexpr std::string_view name(const Card card) {
     case Card::HisuianHeavyBall:
     case Card::MysteriousTreasure:
     case Card::Powerglass:
+    case Card::ProfessorBurnet:
     case Card::ProfessorsLetter:
     case Card::QuickBall:
       break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp

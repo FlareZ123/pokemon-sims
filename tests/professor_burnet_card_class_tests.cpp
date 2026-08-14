@@ -32,7 +32,7 @@ void test_registry_metadata_and_supporter_classification() {
   require(definition->name == "Professor Burnet",
           "Professor Burnet name changed.");
   require(definition->kind == sim::cards::CardKind::Trainer,
-          "Professor Burnet must remain a Trainer."); // Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#b-03-supporters
+          "Professor Burnet must remain a Trainer."); // Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   require(definition->trainer_kind == sim::cards::TrainerKind::Supporter,
           "Professor Burnet must remain a Supporter."); // Card data: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   require(sim::is_supporter(sim::Card::ProfessorBurnet),

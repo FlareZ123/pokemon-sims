@@ -197,8 +197,13 @@ constexpr bool is_item(const Card card) {
 }
 
 constexpr bool is_tool(const Card card) {
-  return card == Card::ForestSealStone || card == Card::WishfulBaton ||
-         card == Card::Powerglass;
+  // Registered Tools own their intrinsic Trainer subtype in CardDefinition.
+  // Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+  // Powerglass exact print: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+  if (cards::has_definition(card)) {
+    return cards::registered_is_trainer_kind(card, cards::TrainerKind::Tool);
+  }
+  return card == Card::ForestSealStone || card == Card::WishfulBaton;
 }
 
 constexpr bool is_stadium(const Card card) {

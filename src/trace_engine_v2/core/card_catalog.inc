@@ -40,6 +40,9 @@ static_assert(cards::QuickBall::definition.name == "Quick Ball");
 static_assert(cards::GuzmaHala::definition.id == Card::GuzmaHala);
 static_assert(cards::GuzmaHala::definition.canonical_id == "sm12-229");
 static_assert(cards::GuzmaHala::definition.name == "Guzma & Hala");
+static_assert(cards::Powerglass::definition.id == Card::Powerglass); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+static_assert(cards::Powerglass::definition.canonical_id == "sv6pt5-63");
+static_assert(cards::Powerglass::definition.name == "Powerglass");
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},         {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
@@ -101,7 +104,6 @@ constexpr std::string_view name(const Card card) {
     case Card::ErikasInvitation: return "Erika's Invitation";
     case Card::ForestSealStone: return "Forest Seal Stone";
     case Card::WishfulBaton: return "Wishful Baton";
-    case Card::Powerglass: return "Powerglass";
     case Card::ChaoticSwell: return "Chaotic Swell";
     case Card::ForestOfVitality: return "Forest of Vitality";
     case Card::PathToPeak: return "Path to the Peak";
@@ -115,6 +117,7 @@ constexpr std::string_view name(const Card card) {
     case Card::GuzmaHala:
     case Card::HisuianHeavyBall:
     case Card::MysteriousTreasure:
+    case Card::Powerglass:
     case Card::ProfessorsLetter:
     case Card::QuickBall:
       break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp

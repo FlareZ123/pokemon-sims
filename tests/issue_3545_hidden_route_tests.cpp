@@ -24,6 +24,9 @@ struct EngineTestAccess {
   static std::vector<Card> hidden_targets(const Engine& engine) {
     return engine.issue_3545_hidden_battle_compressor_targets();
   }
+  static std::vector<Card> refined_targets(const Engine& engine) {
+    return engine.issue_3545_refined_battle_compressor_targets();
+  }
 };
 }  // namespace sim
 
@@ -64,8 +67,7 @@ void test_bc_vs_route_is_rng_invariant() {
   // Battle Compressor establishes K1 by legally inspecting the deck. The decision
   // may use the resulting public card identities, while the future shuffled order
   // and a later Tate & Liza / Serena draw remain unknown. Holding the complete public
-  // state fixed must therefore hold the Supporter choice, base BC vector, and every
-  // hidden-route refinement fixed as well.
+  // state fixed must therefore hold every BC target layer fixed as well.
   // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
   // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
   // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
@@ -73,6 +75,7 @@ void test_bc_vs_route_is_rng_invariant() {
   std::optional<sim::Card> expected_supporter;
   std::vector<sim::Card> expected_base;
   std::vector<sim::Card> expected_hidden;
+  std::vector<sim::Card> expected_refined;
   bool initialized = false;
   for (std::uint64_t seed = 1; seed <= 64; ++seed) {
     std::mt19937_64 rng{seed};
@@ -81,10 +84,12 @@ void test_bc_vs_route_is_rng_invariant() {
     const auto supporter = sim::EngineTestAccess::compressor_supporter(engine);
     const auto base = sim::EngineTestAccess::base_targets(engine);
     const auto hidden = sim::EngineTestAccess::hidden_targets(engine);
+    const auto refined = sim::EngineTestAccess::refined_targets(engine);
     if (!initialized) {
       expected_supporter = supporter;
       expected_base = base;
       expected_hidden = hidden;
+      expected_refined = refined;
       initialized = true;
     } else {
       expect(supporter == expected_supporter,
@@ -93,6 +98,8 @@ void test_bc_vs_route_is_rng_invariant() {
              "Base Battle Compressor targets depended on a future shuffled draw.");
       expect(hidden == expected_hidden,
              "Hidden Battle Compressor targets depended on a future shuffled draw.");
+      expect(refined == expected_refined,
+             "Refined Battle Compressor targets depended on a future shuffled draw.");
     }
   }
 }
@@ -131,12 +138,56 @@ void test_two_vs_bank_does_not_spend_redundant_supporter_slot() {
   expect(supporter_count(hidden) <= 1,
          "BC spent two slots on Supporters even though the second VS can re-bank the first.");
 }
+
+void test_strict_and_flex_can_reserve_steven_powerglass_package() {
+  // With a held Dragon, VS Seeker, Powerglass, and the exact public deck resources,
+  // Steven + Grass is the complete BC package. Steven then reserves VSTAR, Crispin,
+  // and Mysterious Treasure for a deterministic next-turn same-JIT Dragon discard.
+  // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+  // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+  for (const sim::DciProfile dci : {sim::DciProfile::StrictJit,
+                                    sim::DciProfile::MatchupFlexJit}) {
+    std::mt19937_64 rng{3545003};
+    sim::Engine engine{scenario(dci), sim::baseline_recipe(), rng};
+    sim::EngineTestAccess::set_state(engine, stochastic_supporter_state(), false);
+    const auto targets = sim::EngineTestAccess::refined_targets(engine);
+    expect(targets.size() == 2,
+           "Strict/flex BC did not reserve the two-card Steven-Powerglass package.");
+    expect(targets[0] == sim::Card::StevensResolve &&
+               targets[1] == sim::Card::Grass,
+           "Strict/flex BC chose a weaker target vector than Steven plus Grass.");
+  }
+}
+
+void test_no_control_powerglass_competes_with_surplus_payload() {
+  // No-control needs only one early Dragon to establish a payload bank. When the
+  // same BC can seed Powerglass, the deterministic Energy-axis improvement outranks
+  // a second early Dragon with no additional setup-axis value.
+  // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+  // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+  // DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  std::mt19937_64 rng{3545004};
+  sim::Engine engine{scenario(sim::DciProfile::NoDiscardControl),
+                     sim::baseline_recipe(), rng};
+  sim::EngineTestAccess::set_state(engine, stochastic_supporter_state(), false);
+  const auto targets = sim::EngineTestAccess::refined_targets(engine);
+  const int payloads = static_cast<int>(std::count_if(
+      targets.begin(), targets.end(), sim::is_payload));
+  expect(std::find(targets.begin(), targets.end(), sim::Card::Grass) != targets.end(),
+         "No-control BC failed to seed the proven Powerglass Energy improvement.");
+  expect(payloads == 1,
+         "No-control BC spent a surplus slot on another early Dragon payload.");
+}
 }  // namespace
 
 int main() {
   try {
     test_bc_vs_route_is_rng_invariant();
     test_two_vs_bank_does_not_spend_redundant_supporter_slot();
+    test_strict_and_flex_can_reserve_steven_powerglass_package();
+    test_no_control_powerglass_competes_with_surplus_payload();
     std::cout << "issue 3545 hidden-route tests passed\n";
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

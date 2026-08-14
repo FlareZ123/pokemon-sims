@@ -108,7 +108,7 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - `src/cards/trainers/forest_of_vitality.hpp` and `kRegisteredCardDefinitions` own Forest of Vitality identity, display name, Trainer kind, and Stadium subtype.
 - Legacy `name()` and `is_stadium()` compatibility paths no longer duplicate Forest of Vitality intrinsic metadata. Focused coverage: `tests/forest_of_vitality_card_class_tests.cpp`.
 - Existing automatic Grass evolution timing, first-turn restriction, Stadium placement/replacement rules, DCI/UDP/AMR, connector domination, K0/K1 state, and route behavior remain at their current Engine/rules owners. Advanced Stadium procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-- A later printed-effect migration must preserve automatic-effect semantics and keep route choice outside intrinsic card metadata. Printed effect: https://api.pokemontcg.io/v2/cards/me1-117
+- A later printed-effect migration must preserve automatic-effect semantics and keep route choice outside intrinsic metadata. Printed effect: https://api.pokemontcg.io/v2/cards/me1-117
 
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
@@ -117,7 +117,6 @@ These staged entries advance the card-class plan without changing the simulator'
 - Registered display names for Battle VIP Pass, Brilliant Blender, Field Blower, Hisuian Heavy Ball, Professor's Letter, Evolution Incense, Mysterious Treasure, Quick Ball, and Guzma & Hala now flow through `CardDefinition`; their legacy `name()` branches no longer duplicate those strings. Canonical registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 - `is_item()` delegates every registered Item to registry metadata. Its legacy switch now contains only unmigrated Items: Secret Box, Ultra Ball, Pokémon Communication, and Earthen Vessel. Exact migrated Item prints: https://api.pokemontcg.io/v2/cards/swsh8-225 https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/swsh10-146 https://api.pokemontcg.io/v2/cards/xy1-123 https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
 - This wave is mechanical ownership cleanup only. Printed resolution, strategy, DCI/UDP/AMR, connector priority, and K0/K1 transitions remain at their existing owners. The next resolver migration must still locate the single live resolution boundary before moving state transitions. Architecture contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#card-module-contract
-
 ## Composition consolidation status
 
 The canonical Engine composition owner is `src/trace_engine_v2/composition/engine_body.inc`.
@@ -240,9 +239,7 @@ When a legacy function mixes these responsibilities, leave route admission and s
 8. Keep strategy in Engine.
 9. Add focused tests for exact metadata and printed legality/effect boundaries as each phase becomes active.
 10. Run the full CI matrix and representative `--simulate-this` traces before merge.
-
 If migration reveals a gameplay defect, file it through the normal bug workflow. Do not silently combine the behavior correction with architecture cleanup.
-
 ## Validation gate
 
 A cleanup PR is mergeable only when:
@@ -413,3 +410,10 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - This wave preserves payload strategy, DCI/UDP/AMR, connector domination, K0/K1, attack selection, ready-turn behavior, and live route/state transitions at their current Engine owners.
 - Live retreat behavior is tracked separately by confirmed bug https://github.com/FlareZ123/pokemon-sims/issues/3643 and fix PR https://github.com/FlareZ123/pokemon-sims/pull/3648.
 - A later resolver migration must preserve the advanced manual's retreat procedure and keep route timing outside intrinsic metadata. Rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+## Cleanup wave 2026-08-14 route-owner follow-up
+
+- `src/trace_engine_v2/core/routes/banked_tapu_retreat_policy.inc` now owns the substantive paid-retreat continuation for a banked Tapu Lele-GX Active. `core/banked_tapu_retreat_policy.inc` remains a compatibility forwarder at the proven post-search class-member boundary. Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60 Advanced Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/banked_tapu_retreat_policy.inc
+- `src/trace_engine_v2/core/routes/oricorio_connector_policy.inc` now owns the substantive Oricorio energy-connector policy. `core/oricorio_connector_policy.inc` remains a compatibility forwarder so declaration order and legacy aliases stay unchanged. Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/oricorio_connector_policy.inc
+- These moves preserve the existing function bodies and inline card, rule, policy, and issue URLs. DCI/UDP/AMR, connector domination, K0/K1 timing, route priority, lock admission, action ordering, and readiness behavior stay at their existing owners.
+- Next safe follow-up: after CI re-proves both parent boundaries, switch those parents directly to the canonical `core/routes/` includes and retire the compatibility forwarders. C++ textual-include semantics: https://eel.is/c++draft/cpp.include

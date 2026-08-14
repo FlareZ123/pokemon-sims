@@ -92,6 +92,15 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Focused registration coverage: `tests/field_blower_card_class_tests.cpp`.
 - Follow-up must locate the single live Field Blower printed-resolution owner before moving state transitions. Preserve target choice and all lock-removal policy in Engine until a reusable `CardContext` boundary exists.
 
+### Professor Burnet
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3569
+- Canonical print: `swsh12tg-TG26`; exact card data: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+- `src/cards/trainers/professor_burnet.hpp` and `kRegisteredCardDefinitions` now own Professor Burnet identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Burnet's intrinsic metadata. Focused coverage: `tests/professor_burnet_card_class_tests.cpp`.
+- Existing search-for-up-to-two-cards discard resolution, payload selection, DCI/UDP/AMR, connector domination, K0/K1 timing, Supporter contention, and route policy remain in Engine. Printed effect: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+- A later resolver migration must first locate the single live Professor Burnet resolution owner and preserve deck inspection, selected discards, final shuffle, and knowledge transitions through `CardContext`. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#b-03-supporters
+
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ### Cleanup wave 2026-08-13 checkpoint

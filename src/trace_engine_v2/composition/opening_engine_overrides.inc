@@ -216,10 +216,11 @@
 #undef wonder_tag_crispin_is_redundant_with_held_complete_route
 #undef bench_tapu_if_useful
 
-// Canonical Wonder Tag route policy lives directly under core/.
+// Canonical Wonder Tag route policy is composed directly from core/routes/.
 // Tapu Lele-GX / Wonder Tag card data: https://api.pokemontcg.io/v2/cards/sm2-60
+// Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/tapu_wonder_tag_route_policy.inc
 // Confirmed route ownership: https://github.com/FlareZ123/pokemon-sims/issues/2270
-#include "../core/tapu_wonder_tag_route_policy.inc"
+#include "../core/routes/tapu_wonder_tag_route_policy.inc"
 
 #define play_ultra_ball play_ultra_ball_empty_deck_original
 #define play_evolution_incense play_evolution_incense_empty_deck_original

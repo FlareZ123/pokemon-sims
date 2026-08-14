@@ -35,6 +35,25 @@ inline constexpr std::array<const CardDefinition*, 13> kRegisteredCardDefinition
     &Powerglass::definition, // Exact Shrouded Fable Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
 };
 
+// Keep migrated card metadata tied to the stable legacy Card ids while the trace
+// engine still contains legacy switch-based fallbacks. The card registry owns this
+// bridge contract so consumers do not need to duplicate metadata assertions.
+static_assert(QuickBall::definition.id == Card::QuickBall); // Exact Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+static_assert(QuickBall::definition.canonical_id == "swsh1-179");
+static_assert(QuickBall::definition.name == "Quick Ball");
+static_assert(GuzmaHala::definition.id == Card::GuzmaHala); // Exact Guzma & Hala: https://api.pokemontcg.io/v2/cards/sm12-229
+static_assert(GuzmaHala::definition.canonical_id == "sm12-229");
+static_assert(GuzmaHala::definition.name == "Guzma & Hala");
+static_assert(Arven::definition.id == Card::Arven); // Exact Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+static_assert(Arven::definition.canonical_id == "sv1-166");
+static_assert(Arven::definition.name == "Arven");
+static_assert(Dawn::definition.id == Card::Dawn); // Exact Dawn: https://api.pokemontcg.io/v2/cards/me2-87
+static_assert(Dawn::definition.canonical_id == "me2-87");
+static_assert(Dawn::definition.name == "Dawn");
+static_assert(Powerglass::definition.id == Card::Powerglass); // Exact Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+static_assert(Powerglass::definition.canonical_id == "sv6pt5-63");
+static_assert(Powerglass::definition.name == "Powerglass");
+
 constexpr const CardDefinition* find_definition(const Card card) {
   for (const CardDefinition* definition : kRegisteredCardDefinitions) {
     if (definition->id == card) return definition;

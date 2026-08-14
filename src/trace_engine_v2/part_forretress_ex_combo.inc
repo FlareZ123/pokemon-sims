@@ -23,20 +23,25 @@ const GarbodorScenarioSet kGarbodorScenarios{{
 }};
 
 template <typename ScenarioRange>
-void append_scenarios(ScenarioList& result, const ScenarioRange& scenarios) {
+[[nodiscard]] ScenarioList with_appended_scenarios(
+    ScenarioList result, const ScenarioRange& scenarios) {
   result.reserve(result.size() + scenarios.size());
   result.insert(result.end(), scenarios.begin(), scenarios.end());
+  return result;
 }
 
-const Scenario* find_garbodor_scenario(const std::string& label) {
+template <typename ScenarioRange>
+[[nodiscard]] const Scenario* find_scenario_by_label(
+    const ScenarioRange& scenarios, const std::string& label) {
+  // Keep extension lookup traversal generic for any future scenario range.
+  // C++ find_if semantics: https://eel.is/c++draft/alg.find
   const auto match = std::find_if(
-      kGarbodorScenarios.begin(), kGarbodorScenarios.end(),
+      scenarios.begin(), scenarios.end(),
       [&label](const Scenario& scenario) { return scenario.label == label; });
-  return match == kGarbodorScenarios.end() ? nullptr : &*match;
+  return match == scenarios.end() ? nullptr : &*match;
 }
 
 ScenarioList all_scenarios_with_garbodor() {
-  ScenarioList result = all_scenarios();
   // Garbodor BKP 57 suppresses Pokemon Abilities while it has a Tool. Boost Shake
   // establishes Garbodor during the opponent's first turn, producing different
   // Regidrago T1 timing by seat. Append these rows so existing scenario indexes and
@@ -44,11 +49,12 @@ ScenarioList all_scenarios_with_garbodor() {
   // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
   // Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
   // Scenario model: https://github.com/FlareZ123/pokemon-sims/issues/2808
-  append_scenarios(result, kGarbodorScenarios);
-  return result;
+  return with_appended_scenarios(all_scenarios(), kGarbodorScenarios);
 }
 
 std::optional<Scenario> scenario_by_label_with_garbodor(const std::string& label) {
-  if (const Scenario* match = find_garbodor_scenario(label)) return *match;
+  if (const Scenario* match = find_scenario_by_label(kGarbodorScenarios, label)) {
+    return *match;
+  }
   return scenario_by_label(label);
 }

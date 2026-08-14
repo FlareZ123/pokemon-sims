@@ -4,11 +4,14 @@
   // stay beside the namespace-scope runtime and scenario owners rather than being
   // duplicated across legacy part_*.inc files.
   // Canonical runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/runtime.inc
-  // Canonical scenarios: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/scenarios.inc
+  // Canonical scenarios: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_forretress_ex_combo.inc
   // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
   // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/972
 
+  // Board index 0 is Active; subsequent indexes map to Bench positions. Keep these
+  // spellings centralized so runtime code can migrate away from raw container types
+  // without changing the established Exploding Energy destination representation.
   using BoardIndex = std::size_t;
   using OptionalBoardIndex = std::optional<BoardIndex>;
   using AttachmentDestinations = std::vector<BoardIndex>;
@@ -17,7 +20,7 @@
   [[nodiscard]] bool forretress_combo_enabled() const;
   [[nodiscard]] bool needs_pineco_connector() const;
   [[nodiscard]] bool needs_forretress_connector() const;
-  Pokemon* pokemon_at_board_index(BoardIndex index);
+  [[nodiscard]] Pokemon* pokemon_at_board_index(BoardIndex index);
   [[nodiscard]] OptionalBoardIndex exploding_energy_regidrago_target_index() const;
   [[nodiscard]] Card fallback_combo_basic_after_search_started() const;
   [[nodiscard]] Card fallback_combo_pokemon_after_search_started() const;

@@ -22,25 +22,31 @@
   // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
   using AttachmentDestinations = std::vector<BoardIndex>;
 
-  // Board and route-state queries.
+  // Combo availability and board setup. Keep this order aligned with runtime.inc
+  // so declaration ownership is easy to audit across the textual class boundary.
   [[nodiscard]] bool forretress_combo_enabled() const;
   [[nodiscard]] bool needs_pineco_connector() const;
   [[nodiscard]] bool needs_forretress_connector() const;
-  [[nodiscard]] Pokemon* pokemon_at_board_index(BoardIndex index);
-  [[nodiscard]] OptionalBoardIndex exploding_energy_regidrago_target_index() const;
-  [[nodiscard]] Card fallback_combo_basic_after_search_started() const;
-  [[nodiscard]] Card fallback_combo_pokemon_after_search_started() const;
-
-  // Board mutation and Exploding Energy resolution.
   bool bench_pineco_if_useful();
   bool evolve_forretress_ex();
+
+  // Exploding Energy board lookup and printed-effect resolution. BoardIndex and
+  // OptionalBoardIndex are supplied by board_state_policy.inc rather than a
+  // card-local index vocabulary.
+  // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // Board policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+  [[nodiscard]] Pokemon* pokemon_at_board_index(BoardIndex index);
+  [[nodiscard]] OptionalBoardIndex exploding_energy_regidrago_target_index() const;
   void discard_forretress_ex_stack(const Pokemon& knocked_out);
   bool resolve_exploding_energy(
       const AttachmentDestinations& attachment_destinations);
   bool use_exploding_energy_for_setup();
   bool advance_forretress_combo();
 
-  // Search connectors used by the combo pipeline.
+  // Search connectors used by the combo pipeline. Hidden-information fallbacks
+  // remain beside their callers instead of being mixed into board mutation.
+  [[nodiscard]] Card fallback_combo_basic_after_search_started() const;
+  [[nodiscard]] Card fallback_combo_pokemon_after_search_started() const;
   bool play_quick_ball_for_pineco();
   bool play_ultra_ball_for_forretress_combo();
   bool play_evolution_incense_for_forretress();

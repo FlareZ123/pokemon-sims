@@ -147,7 +147,16 @@
 #include "../core/battle_compressor_hidden_routes.inc"
 #undef play_items_until_stable_issue3545
 #undef play_battle_compressor_hidden_routes
+
+// Preserve the complete cross-profile scheduler as the comparison/delegation base.
+// The Lusamine layer may consume BC + one VS only when its deterministic public
+// continuation strictly dominates this entire scheduler; otherwise it delegates
+// without changing any established target or Item ordering.
+#define play_items_until_stable_issue3545 \
+    play_items_until_stable_issue3545_refined_base
 #include "../core/battle_compressor_route_refinements.inc"
+#undef play_items_until_stable_issue3545
+#include "../core/battle_compressor_lusamine_routes.inc"
 
 #undef play_field_blower
 #undef play_chaotic_swell

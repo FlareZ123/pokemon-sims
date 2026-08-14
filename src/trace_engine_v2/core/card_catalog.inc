@@ -55,6 +55,9 @@ static_assert(cards::Powerglass::definition.name == "Powerglass");
 static_assert(cards::Lusamine::definition.id == Card::Lusamine); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
 static_assert(cards::Lusamine::definition.canonical_id == "sm4-96");
 static_assert(cards::Lusamine::definition.name == "Lusamine");
+static_assert(cards::TeamYellsCheer::definition.id == Card::TeamYellsCheer); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh9-149 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3620
+static_assert(cards::TeamYellsCheer::definition.canonical_id == "swsh9-149");
+static_assert(cards::TeamYellsCheer::definition.name == "Team Yell's Cheer");
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},         {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
@@ -102,7 +105,6 @@ constexpr std::string_view name(const Card card) {
     case Card::Guzma: return "Guzma";
     case Card::Channeler: return "Channeler";
     case Card::Gladion: return "Gladion";
-    case Card::TeamYellsCheer: return "Team Yell's Cheer";
     case Card::RoseannesBackup: return "Roseanne's Backup";
     case Card::Klara: return "Klara";
     case Card::ProfessorTuro: return "Professor Turo's Scenario";
@@ -132,7 +134,8 @@ constexpr std::string_view name(const Card card) {
     case Card::ProfessorsLetter:
     case Card::QuickBall:
     case Card::SecretBox:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Lusamine data: https://api.pokemontcg.io/v2/cards/sm4-96
+    case Card::TeamYellsCheer:
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Team Yell's Cheer data: https://api.pokemontcg.io/v2/cards/swsh9-149
   }
   return "Unknown";
 }

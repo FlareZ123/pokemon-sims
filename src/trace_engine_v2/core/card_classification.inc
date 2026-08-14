@@ -185,22 +185,13 @@ constexpr bool is_special_energy(const Card card) {
 }
 constexpr bool is_supporter(const Card card) {
   // Registered Supporters own intrinsic subtype classification in CardDefinition.
-  // Erika's Invitation exact Supporter print: https://api.pokemontcg.io/v2/cards/sv3pt5-160 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3598
-  // Guzma exact Supporter print: https://api.pokemontcg.io/v2/cards/sm3-115 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3618
-  // Gladion exact Supporter print: https://api.pokemontcg.io/v2/cards/sm4-95 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3604
-  // Team Yell's Cheer exact Supporter print: https://api.pokemontcg.io/v2/cards/swsh9-149 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3620
+  // Grant: https://api.pokemontcg.io/v2/cards/swsh10-144 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3589
+  // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3585
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3595
+  // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148 ; recovery: https://github.com/FlareZ123/pokemon-sims/issues/3562
   // Advanced Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   if (cards::has_definition(card)) return cards::registered_is_supporter(card);
-
-  switch (card) {
-    case Card::Grant:
-    case Card::Serena:
-    case Card::TateLiza:
-    case Card::StevensResolve:
-      return true;
-    default:
-      return false;
-  }
+  return false;
 }
 
 constexpr bool is_item(const Card card) {

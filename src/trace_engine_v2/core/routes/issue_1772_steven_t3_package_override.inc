@@ -13,10 +13,11 @@
   }
 
   bool issue_1772_steven_t3_package_available() const {
-    const bool payload_in_known_deck =
-        std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
-    const bool payload_held =
-        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool payload_in_known_deck = payload_zone_contains(state_.deck);
+    // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+    // Apex Dragon payload semantics: https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool payload_held = payload_zone_contains(state_.hand);
+    // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
 
     // Full Prize inspection establishes the same fixed-list K1 as a resolved
     // deck search, so this route must use the repository-wide knowledge predicate:
@@ -117,8 +118,9 @@
   }
 
   bool issue_1772_t3_crispin_completion_available() const {
-    const bool payload_held =
-        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool payload_held = payload_zone_contains(state_.hand);
+    // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+    // Apex Dragon payload semantics: https://api.pokemontcg.io/v2/cards/swsh12-136
 
     // Only the package banked by this helper on the immediately preceding turn may
     // unlock its specialized Crispin/Vessel continuation. The recorded relative turn

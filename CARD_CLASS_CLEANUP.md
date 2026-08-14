@@ -199,6 +199,20 @@ Keep payload role, DCI/UDP, strict-JIT admission, connector priority, and K0/K1 
 
 Future policy cleanup should reuse these named seams before adding another payload preference loop or Garbodor scenario-label/timing branch.
 
+## Numbered policy-fragment migration
+
+Three previously anonymous trace-engine fragments now have named canonical owners while their historical `part_*.inc` paths remain compatibility forwarders at the exact same textual include boundaries:
+
+- `part_013.inc` forwards to `core/supporter_legacy_runtime.inc`.
+- `part_014a.inc` forwards to `turn_action_policy_runtime.inc`. This owner stays at the trace-engine root because its established nested `core/routes/...` includes are relative to that directory.
+- `part_014b.inc` forwards to `core/recovery_supporter_policy.inc`.
+
+The executable bodies are byte-preserving moves. Future retirement of these forwarders must first migrate raw-source readers and same-repository anchors, then retarget `composition/engine_body.inc` at the identical member and macro boundaries. Preserve DCI/UDP/AMR behavior, Supporter contention, connector domination, K0/K1 semantics, declaration order, macro order, and direct rule/card URLs throughout that work.
+
+C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+Advanced rules and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+Decision priorities and knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+
 ## Rules and policy anchors
 
 Advanced rules procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

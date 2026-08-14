@@ -78,7 +78,7 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Canonical print: `swsh10-146`.
 - Card data: https://api.pokemontcg.io/v2/cards/swsh10-146
 - Status: exact identity, display name, Trainer kind, and Item subtype are owned by `src/cards/trainers/hisuian_heavy_ball.hpp` and `kRegisteredCardDefinitions`.
-- Existing Hisuian Heavy Ball strategy and resolution remain in Engine for this metadata-only wave. Prize inspection, Basic-Pokémon choice, Prize replacement, shuffle, K0/K1 timing, DCI/AMR, connector priority, and readiness behavior remain unchanged.
+- Existing Hisuian Heavy Ball strategy and resolution remain in Engine for this wave. Prize inspection, Basic-Pokémon choice, Prize replacement, shuffle, K0/K1 timing, DCI/AMR, connector priority, and readiness behavior remain unchanged.
 - Legacy `name()` and `is_item()` compatibility cases are removed. The registered definition is now the sole owner of those intrinsic facts.
 - Follow-up for this card must locate the single live Hisuian Heavy Ball resolver before moving printed Prize inspection and replacement through `CardContext`; preserve the printed branch that discards the Item when no Basic Pokémon is revealed. Printed effect: https://api.pokemontcg.io/v2/cards/swsh10-146
 
@@ -423,3 +423,9 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - `src/trace_engine_v2/core/forretress/scenarios.inc` now owns the Garbodor scenario extension beside `core/forretress/runtime.inc`, including one named scenario-set type and one shared lookup helper. Scenario specification: https://github.com/FlareZ123/pokemon-sims/issues/2808 Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
 - The current Forretress implementation owner is `src/trace_engine_v2/core/forretress/runtime.inc`; the older `part_forretress_ex_combo_legacy.inc` path referenced by the 2026-08-13 checkpoint is retired. Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1 Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2 Current runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/runtime.inc
 - This wave changes ownership and lookup structure only. Exploding Energy resolution, route admission, DCI/UDP/AMR, K0/K1 knowledge, connector domination, lock behavior, and readiness policy remain at their existing owners. Advanced rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+## Cleanup wave 2026-08-14 Oricorio direct-owner completion
+
+- Completed: `src/trace_engine_v2/composition/post_014a_overrides.inc` now includes `src/trace_engine_v2/core/routes/oricorio_connector_policy.inc` directly at the same proven late-search member boundary. The former `src/trace_engine_v2/core/oricorio_connector_policy.inc` compatibility forwarder is retired. Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/oricorio_connector_policy.inc
+- The direct-owner change preserves the exact route-policy body, macro lifetime, DCI/UDP/AMR, connector domination, K0/K1 timing, lock admission, action ordering, and readiness behavior. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+- Next safe follow-up: continue retiring compatibility forwarders only after independently proving their live parent include boundaries; do not recreate the retired Oricorio forwarding path.

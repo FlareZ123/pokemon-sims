@@ -15,6 +15,7 @@
 #include "trainers/forest_seal_stone.hpp"
 #include "trainers/guzma_hala.hpp"
 #include "trainers/hisuian_heavy_ball.hpp"
+#include "trainers/klara.hpp"
 #include "trainers/lusamine.hpp"
 #include "trainers/mysterious_treasure.hpp"
 #include "trainers/pokemon_communication.hpp"
@@ -27,7 +28,7 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 21> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 22> kRegisteredCardDefinitions{
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleCompressor::definition, // Exact Phantom Forces Item: https://api.pokemontcg.io/v2/cards/xy4-92
     &BattleVipPass::definition,
@@ -48,6 +49,7 @@ inline constexpr std::array<const CardDefinition*, 21> kRegisteredCardDefinition
     &ProfessorBurnet::definition, // Exact Trainer Gallery Supporter: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     &SecretBox::definition, // Exact Twilight Masquerade ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv6-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3541
     &Lusamine::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
+    &Klara::definition, // Exact Chilling Reign Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
     &VsSeeker::definition, // Exact Phantom Forces Item: https://api.pokemontcg.io/v2/cards/xy4-109
 };
 

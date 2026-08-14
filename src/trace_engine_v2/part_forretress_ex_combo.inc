@@ -23,9 +23,11 @@ const GarbodorScenarioSet kGarbodorScenarios{{
 }};
 
 template <typename ScenarioRange>
-void append_scenarios(ScenarioList& result, const ScenarioRange& scenarios) {
+[[nodiscard]] ScenarioList with_appended_scenarios(
+    ScenarioList result, const ScenarioRange& scenarios) {
   result.reserve(result.size() + scenarios.size());
   result.insert(result.end(), scenarios.begin(), scenarios.end());
+  return result;
 }
 
 template <typename ScenarioRange>
@@ -40,7 +42,6 @@ template <typename ScenarioRange>
 }
 
 ScenarioList all_scenarios_with_garbodor() {
-  ScenarioList result = all_scenarios();
   // Garbodor BKP 57 suppresses Pokemon Abilities while it has a Tool. Boost Shake
   // establishes Garbodor during the opponent's first turn, producing different
   // Regidrago T1 timing by seat. Append these rows so existing scenario indexes and
@@ -48,8 +49,7 @@ ScenarioList all_scenarios_with_garbodor() {
   // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
   // Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
   // Scenario model: https://github.com/FlareZ123/pokemon-sims/issues/2808
-  append_scenarios(result, kGarbodorScenarios);
-  return result;
+  return with_appended_scenarios(all_scenarios(), kGarbodorScenarios);
 }
 
 std::optional<Scenario> scenario_by_label_with_garbodor(const std::string& label) {

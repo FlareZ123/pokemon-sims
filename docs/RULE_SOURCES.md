@@ -48,6 +48,7 @@ The API records are card-text sources. They do not replace official tournament r
 | Battle VIP Pass | https://api.pokemontcg.io/v2/cards/swsh8-225 |
 | Arven | https://api.pokemontcg.io/v2/cards/sv1-166 |
 | Crispin | https://api.pokemontcg.io/v2/cards/sv7-133 |
+| Guzma & Hala — Stadium search plus optional two-card Tool/Special Energy bonus search; traceability repair: https://github.com/FlareZ123/pokemon-sims/issues/3760 | https://api.pokemontcg.io/v2/cards/sm12-229 |
 | Professor Burnet | https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 |
 | Serena | https://api.pokemontcg.io/v2/cards/swsh12-164 |
 | Tate & Liza | https://api.pokemontcg.io/v2/cards/sm7-148 |

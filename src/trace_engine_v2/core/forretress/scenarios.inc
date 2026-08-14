@@ -3,15 +3,23 @@
 // declarations preserve the public historical registry for the existing corpus:
 // Scenario model: https://github.com/FlareZ123/pokemon-sims/issues/2808
 using ScenarioList = std::vector<Scenario>;
+using GarbodorScenarioSet = std::array<Scenario, 2>;
 ScenarioList all_scenarios();
 std::optional<Scenario> scenario_by_label(const std::string& label);
 
-const std::array<Scenario, 2> kGarbodorScenarios{{
+const GarbodorScenarioSet kGarbodorScenarios{{
     {"garbodor-shake-ability-lock/go-first",
      DciProfile::StrictJit, LockMode::None, true, 5},
     {"garbodor-shake-ability-lock/go-second",
      DciProfile::StrictJit, LockMode::None, false, 5},
 }};
+
+const Scenario* find_garbodor_scenario(const std::string& label) {
+  const auto match = std::find_if(
+      kGarbodorScenarios.begin(), kGarbodorScenarios.end(),
+      [&label](const Scenario& scenario) { return scenario.label == label; });
+  return match == kGarbodorScenarios.end() ? nullptr : &*match;
+}
 
 ScenarioList all_scenarios_with_garbodor() {
   ScenarioList result = all_scenarios();
@@ -28,9 +36,6 @@ ScenarioList all_scenarios_with_garbodor() {
 }
 
 std::optional<Scenario> scenario_by_label_with_garbodor(const std::string& label) {
-  const auto match = std::find_if(
-      kGarbodorScenarios.begin(), kGarbodorScenarios.end(),
-      [&label](const Scenario& scenario) { return scenario.label == label; });
-  if (match != kGarbodorScenarios.end()) return *match;
+  if (const Scenario* match = find_garbodor_scenario(label)) return *match;
   return scenario_by_label(label);
 }

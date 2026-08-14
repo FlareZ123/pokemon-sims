@@ -430,3 +430,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - src/trace_engine_v2/core/setup_lifecycle.inc owns the opening-hand and starting-Prize counts as named constants, matching the advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 - Recipe expansion and K0 setup-knowledge reset are isolated behind setup-lifecycle helpers. The refactor preserves deck order, shuffle timing, mulligan handling, Prize placement, DCI/UDP/AMR, connector domination, K0/K1 transitions, and route selection.
 - Keep future setup cleanup mechanical at this owner; printed card resolution and gameplay strategy stay outside the setup lifecycle. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/setup_lifecycle.inc
+
+## Regidrago V metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3683
+- Canonical print: `swsh12-135`; exact card data: https://api.pokemontcg.io/v2/cards/swsh12-135
+- `src/cards/pokemon/regidrago_v.hpp` and `kRegisteredCardDefinitions` now own Regidrago V identity, display name, Basic stage, Dragon type, Pokémon V / Rule Box flags, and printed Retreat Cost metadata.
+- Registered Pokémon compatibility now reuses `CardDefinition` for intrinsic Basic, Pokémon, Pokémon V, Rule Box, Dragon, and Dragon-or-Psychic queries instead of duplicating Regidrago V branches across legacy switches. Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+- Live `retreat_cost()` resolution remains in the legacy compatibility table while confirmed bugs #3643 and #3652 are owned by their bug branches, so this cleanup does not silently alter claimed retreat behavior. Bugs: https://github.com/FlareZ123/pokemon-sims/issues/3643 https://github.com/FlareZ123/pokemon-sims/issues/3652 Advanced retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- Focused registration and compatibility coverage: `tests/regidrago_v_card_class_tests.cpp`.
+- DCI/UDP/AMR, connector domination, K0/K1 timing, evolution, Energy planning, attack selection, Active-position policy, and ready-turn behavior remain at their existing Engine owners.

@@ -156,7 +156,6 @@ constexpr bool is_supporter(const Card card) {
   if (cards::has_definition(card)) return cards::registered_is_supporter(card);
 
   switch (card) {
-    case Card::Dawn:
     case Card::Grant:
     case Card::Arven:
     case Card::Crispin:

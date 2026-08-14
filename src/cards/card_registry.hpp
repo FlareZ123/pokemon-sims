@@ -6,6 +6,7 @@
 #include "trainers/battle_vip_pass.hpp"
 #include "trainers/brilliant_blender.hpp"
 #include "trainers/chaotic_swell.hpp"
+#include "trainers/dawn.hpp"
 #include "trainers/evolution_incense.hpp"
 #include "trainers/field_blower.hpp"
 #include "trainers/guzma_hala.hpp"
@@ -18,10 +19,11 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 12> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 13> kRegisteredCardDefinitions{
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
     &ChaoticSwell::definition, // Exact Cosmic Eclipse Stadium: https://api.pokemontcg.io/v2/cards/sm12-187
+    &Dawn::definition, // Exact Mega Evolution Supporter: https://api.pokemontcg.io/v2/cards/me2-87
     &EvolutionIncense::definition, // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163
     &FieldBlower::definition, // Exact SM 125 metadata: https://api.pokemontcg.io/v2/cards/sm2-125
     &QuickBall::definition,

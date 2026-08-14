@@ -99,7 +99,7 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - `src/cards/trainers/professor_burnet.hpp` and `kRegisteredCardDefinitions` now own Professor Burnet identity, display name, Trainer kind, and Supporter subtype.
 - Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Burnet's intrinsic metadata. Focused coverage: `tests/professor_burnet_card_class_tests.cpp`.
 - Existing search-for-up-to-two-cards discard resolution, payload selection, DCI/UDP/AMR, connector domination, K0/K1 timing, Supporter contention, and route policy remain in Engine. Printed effect: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-- A later resolver migration must first locate the single live Professor Burnet resolution owner and preserve deck inspection, selected discards, final shuffle, and knowledge transitions through `CardContext`. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#b-03-supporters
+- A later resolver migration must first locate the single live Professor Burnet resolution owner and preserve deck inspection, selected discards, final shuffle, and knowledge transitions through `CardContext`. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
@@ -289,3 +289,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - `src/cards/trainers/chaotic_swell.hpp` and `kRegisteredCardDefinitions` own Chaotic Swell identity, display name, Trainer kind, and Stadium subtype.
 - Legacy `name()` and `is_stadium()` compatibility paths delegate registered Chaotic Swell metadata to the registry while retaining Stadium fallbacks only for unmigrated cards. Focused coverage: `tests/chaotic_swell_card_class_tests.cpp`.
 - Existing Stadium placement and replacement behavior, opponent-Stadium cancellation, strategy, DCI/UDP/AMR, K0/K1, connector domination, and lock interactions remain in Engine. A later resolver migration must locate the single live Chaotic Swell effect owner before moving printed Stadium cancellation through `CardContext`. Printed effect: https://api.pokemontcg.io/v2/cards/sm12-187
+
+## Dawn metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3560
+- Canonical print: `me2-87`; exact card data: https://api.pokemontcg.io/v2/cards/me2-87
+- `src/cards/trainers/dawn.hpp` and `kRegisteredCardDefinitions` now own Dawn identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Dawn's intrinsic facts; both now reach the registered definition before their unmigrated fallbacks. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- Focused registration coverage: `tests/dawn_card_class_tests.cpp`.
+- This wave intentionally leaves Dawn's printed Basic/Stage 1/Stage 2 deck search, reveal, hand movement, shuffle, Supporter contention, K0/K1 transitions, DCI/UDP/AMR, connector domination, and route strategy at their current Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/me2-87
+- A later resolver migration must first locate the single live Dawn resolution boundary and preserve the printed search/reveal/shuffle order through `CardContext` without moving strategic target preference into card code.

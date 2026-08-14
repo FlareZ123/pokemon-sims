@@ -40,6 +40,9 @@ static_assert(cards::QuickBall::definition.name == "Quick Ball");
 static_assert(cards::GuzmaHala::definition.id == Card::GuzmaHala);
 static_assert(cards::GuzmaHala::definition.canonical_id == "sm12-229");
 static_assert(cards::GuzmaHala::definition.name == "Guzma & Hala");
+static_assert(cards::Dawn::definition.id == Card::Dawn); // Exact Supporter: https://api.pokemontcg.io/v2/cards/me2-87
+static_assert(cards::Dawn::definition.canonical_id == "me2-87");
+static_assert(cards::Dawn::definition.name == "Dawn");
 static_assert(cards::Powerglass::definition.id == Card::Powerglass); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
 static_assert(cards::Powerglass::definition.canonical_id == "sv6pt5-63");
 static_assert(cards::Powerglass::definition.name == "Powerglass");
@@ -85,7 +88,6 @@ constexpr std::string_view name(const Card card) {
     case Card::UltraBall: return "Ultra Ball";
     case Card::PokemonCommunication: return "Pokémon Communication";
     case Card::EarthenVessel: return "Earthen Vessel";
-    case Card::Dawn: return "Dawn";
     case Card::Grant: return "Grant";
     case Card::Arven: return "Arven";
     case Card::Crispin: return "Crispin";
@@ -111,6 +113,7 @@ constexpr std::string_view name(const Card card) {
     case Card::BattleVipPass:
     case Card::BrilliantBlender:
     case Card::ChaoticSwell:
+    case Card::Dawn:
     case Card::EvolutionIncense:
     case Card::FieldBlower:
     case Card::GuzmaHala:

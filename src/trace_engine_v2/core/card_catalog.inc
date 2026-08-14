@@ -43,9 +43,6 @@ static_assert(cards::GuzmaHala::definition.name == "Guzma & Hala");
 static_assert(cards::Arven::definition.id == Card::Arven); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
 static_assert(cards::Arven::definition.canonical_id == "sv1-166");
 static_assert(cards::Arven::definition.name == "Arven");
-static_assert(cards::BattleCompressor::definition.id == Card::BattleCompressor); // Exact Item: https://api.pokemontcg.io/v2/cards/xy4-92
-static_assert(cards::BattleCompressor::definition.canonical_id == "xy4-92");
-static_assert(cards::BattleCompressor::definition.name == "Battle Compressor Team Flare Gear");
 static_assert(cards::Crispin::definition.id == Card::Crispin); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv7-133 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3580
 static_assert(cards::Crispin::definition.canonical_id == "sv7-133");
 static_assert(cards::Crispin::definition.name == "Crispin");
@@ -55,7 +52,13 @@ static_assert(cards::Dawn::definition.name == "Dawn");
 static_assert(cards::Powerglass::definition.id == Card::Powerglass); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
 static_assert(cards::Powerglass::definition.canonical_id == "sv6pt5-63");
 static_assert(cards::Powerglass::definition.name == "Powerglass");
-static_assert(cards::VsSeeker::definition.id == Card::VsSeeker); // Exact Item: https://api.pokemontcg.io/v2/cards/xy4-109
+static_assert(cards::Lusamine::definition.id == Card::Lusamine); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
+static_assert(cards::Lusamine::definition.canonical_id == "sm4-96");
+static_assert(cards::Lusamine::definition.name == "Lusamine");
+static_assert(cards::BattleCompressor::definition.id == Card::BattleCompressor); // Exact Phantom Forces Item: https://api.pokemontcg.io/v2/cards/xy4-92
+static_assert(cards::BattleCompressor::definition.canonical_id == "xy4-92");
+static_assert(cards::BattleCompressor::definition.name == "Battle Compressor");
+static_assert(cards::VsSeeker::definition.id == Card::VsSeeker); // Exact Phantom Forces Item: https://api.pokemontcg.io/v2/cards/xy4-109
 static_assert(cards::VsSeeker::definition.canonical_id == "xy4-109");
 static_assert(cards::VsSeeker::definition.name == "VS Seeker");
 
@@ -105,13 +108,11 @@ constexpr std::string_view name(const Card card) {
     case Card::Guzma: return "Guzma";
     case Card::Channeler: return "Channeler";
     case Card::Gladion: return "Gladion";
-    case Card::Lusamine: return "Lusamine";
     case Card::TeamYellsCheer: return "Team Yell's Cheer";
     case Card::RoseannesBackup: return "Roseanne's Backup";
     case Card::Klara: return "Klara";
     case Card::ProfessorTuro: return "Professor Turo's Scenario";
     case Card::ErikasInvitation: return "Erika's Invitation";
-    case Card::ForestSealStone: return "Forest Seal Stone";
     case Card::WishfulBaton: return "Wishful Baton";
     case Card::ForestOfVitality: return "Forest of Vitality";
     case Card::PathToPeak: return "Path to the Peak";
@@ -127,8 +128,10 @@ constexpr std::string_view name(const Card card) {
     case Card::Dawn:
     case Card::EvolutionIncense:
     case Card::FieldBlower:
+    case Card::ForestSealStone: // Exact registered name: https://api.pokemontcg.io/v2/cards/swsh12-156
     case Card::GuzmaHala:
     case Card::HisuianHeavyBall:
+    case Card::Lusamine:
     case Card::MysteriousTreasure:
     case Card::PokemonCommunication:
     case Card::Powerglass:
@@ -137,7 +140,7 @@ constexpr std::string_view name(const Card card) {
     case Card::QuickBall:
     case Card::SecretBox:
     case Card::VsSeeker:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Pokémon Communication data: https://api.pokemontcg.io/v2/cards/sm9-152 ; Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92 ; VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Lusamine data: https://api.pokemontcg.io/v2/cards/sm4-96 ; BC/VS data: https://api.pokemontcg.io/v2/cards/xy4-92 https://api.pokemontcg.io/v2/cards/xy4-109
   }
   return "Unknown";
 }

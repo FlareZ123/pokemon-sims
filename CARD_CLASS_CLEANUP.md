@@ -92,6 +92,15 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Focused registration coverage: `tests/field_blower_card_class_tests.cpp`.
 - Follow-up must locate the single live Field Blower printed-resolution owner before moving state transitions. Preserve target choice and all lock-removal policy in Engine until a reusable `CardContext` boundary exists.
 
+### Forest Seal Stone
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3612
+- Canonical print: `swsh12-156`; exact card data: https://api.pokemontcg.io/v2/cards/swsh12-156
+- `src/cards/trainers/forest_seal_stone.hpp` and `kRegisteredCardDefinitions` own Forest Seal Stone identity, display name, Trainer kind, and Pokémon Tool subtype.
+- Legacy `name()` and `is_tool()` compatibility paths now source registered Forest Seal Stone metadata through the registry while retaining the Tool fallback only for unmigrated cards. Focused coverage: `tests/forest_seal_stone_card_class_tests.cpp`.
+- Existing Pokémon V holder selection, Active-versus-Bench Tool-slot reservation, Star Alchemy resolution, VSTAR Power accounting, DCI/UDP/AMR, connector domination, K0/K1, lock behavior, and route strategy remain in Engine. Live holder owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010_attach_fss_override.inc
+- A later printed-resolution migration must preserve the Advanced Player manual's one-Tool-per-Pokémon procedure and keep strategic holder choice outside card metadata. Advanced Tool procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ### Cleanup wave 2026-08-13 checkpoint
@@ -327,3 +336,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Focused registration coverage: `tests/pokemon_communication_card_class_tests.cpp`.
 - This wave preserves the existing exchange/search/reveal/shuffle resolver and all DCI/UDP/AMR, connector-domination, K0/K1, and route-selection behavior at their current Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm9-152
 - Any later printed-resolution migration must begin from the single live owner at `src/trace_engine_v2/part_pokemon_communication.inc` and preserve the card's printed exchange, search, reveal, hand movement, and shuffle ordering through `CardContext`. Rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+## Lusamine metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3619
+- Canonical print: `sm4-96`; exact card data: https://api.pokemontcg.io/v2/cards/sm4-96
+- `src/cards/trainers/lusamine.hpp` and `kRegisteredCardDefinitions` own Lusamine identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Lusamine's intrinsic facts; both source registered metadata before unmigrated fallbacks.
+- Focused registration coverage: `tests/lusamine_card_class_tests.cpp`.
+- This wave preserves Lusamine's discard-recovery resolution, target choice, Supporter contention, DCI/UDP/AMR, connector domination, K0/K1 state, and route strategy at their existing Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm4-96
+- A later resolver migration must locate the single live Lusamine resolution boundary and preserve its Supporter/Stadium recovery ordering through `CardContext` without moving strategic recovery choice into card code.

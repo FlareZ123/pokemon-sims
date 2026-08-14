@@ -46,6 +46,7 @@ constexpr bool is_pokemon(const Card card) {
 // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
 constexpr bool is_pokemon_v(const Card card) {
   return card == Card::RegidragoV || card == Card::RegidragoVstar ||
+         card == Card::GoodraVstar ||  // Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136 ; Pokémon V ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/ ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3608
          card == Card::CrobatV;  // Pokémon V: https://api.pokemontcg.io/v2/cards/swsh3-104
 }
 constexpr bool is_rule_box_pokemon(const Card card) {
@@ -166,7 +167,6 @@ constexpr bool is_supporter(const Card card) {
     case Card::Channeler:
     case Card::Gladion:
     case Card::ErikasInvitation:
-    case Card::Lusamine:
     case Card::TeamYellsCheer:
     case Card::RoseannesBackup:
     case Card::Klara:
@@ -195,11 +195,11 @@ constexpr bool is_item(const Card card) {
 constexpr bool is_tool(const Card card) {
   // Registered Tools own their intrinsic Trainer subtype in CardDefinition.
   // Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-  // Powerglass exact print: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+  // Forest Seal Stone exact print: https://api.pokemontcg.io/v2/cards/swsh12-156
   if (cards::has_definition(card)) {
     return cards::registered_is_trainer_kind(card, cards::TrainerKind::Tool);
   }
-  return card == Card::ForestSealStone || card == Card::WishfulBaton;
+  return card == Card::WishfulBaton;
 }
 
 constexpr bool is_stadium(const Card card) {

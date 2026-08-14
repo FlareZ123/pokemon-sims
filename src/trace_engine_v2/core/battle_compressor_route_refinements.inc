@@ -6,9 +6,6 @@
     Engine projected = issue_3545_projection(shadow_rng);
     if (!issue_3545_hidden_project_compressor(projected, targets)) return -1;
 
-    // BC may stage a Supporter for VS Seeker. Recover it through the ordinary VS
-    // policy, then let the oracle-safe projection adapter reproduce the production
-    // pre-Supporter sequence. This evaluates the complete public T1 continuation.
     projected.play_vs_seeker();
     const int required_before = required_current_supporter
         ? projected.hand_count(*required_current_supporter)
@@ -20,12 +17,6 @@
       return -1;
     }
     projected.issue_3545_continue_after_supporter(projected);
-
-    // End-of-turn Powerglass is deterministic from the current public discard. The
-    // next-turn projection intentionally omits the unknown start-of-turn draw, then
-    // evaluates only the public cards already reserved by the current route.
-    // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
-    // Future-card oracle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
     projected.resolve_powerglass_end_turn();
     if (projected.state_.turn >= projected.scenario_.max_turn) {
       return projected.issue_3545_setup_route_score();
@@ -39,43 +30,41 @@
   bool issue_3545_grant_stage_available(
       const std::vector<Card>& existing_targets) const {
     // Grant has no setup-axis Supporter value in these goldfish recipes, while its
-    // printed discard-pile auxiliary effect is an independent current-turn action:
-    // discard two other cards from hand to return Grant to hand. The engine already
-    // invokes that recovery from record_ready() when GGF + Active VSTAR are complete
-    // and payload is the sole missing axis. BC may therefore stage Grant before the
-    // ready turn without violating strict JIT, provided the currently visible hand
-    // already proves both future recovery costs: one held Dragon and one ordinary
-    // DCI card. This route does not consume the future Supporter action.
+    // discard-pile auxiliary effect is an independent action: discard two other
+    // cards from hand to return Grant to hand. The existing record_ready() path uses
+    // that effect only after Active VSTAR + GGF are complete and payload is the sole
+    // missing axis. BC may stage Grant before that turn if the current public hand
+    // already proves a held Dragon plus an ordinary second recovery cost.
     // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
     // Grant: https://api.pokemontcg.io/v2/cards/swsh10-144
-    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // Existing Grant recovery owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
     if (!strict_payload_timing() || state_.turn_ended || item_locked() ||
         !need_payload() || can_play_payload_this_turn() ||
         state_.turn >= scenario_.max_turn || existing_targets.size() >= 3U ||
         count_of(state_.deck, Card::Grant) <= count_of(existing_targets, Card::Grant) ||
         std::find(existing_targets.begin(), existing_targets.end(),
-                  Card::StevensResolve) != existing_targets.end() ||
-        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+                  Card::StevensResolve) != existing_targets.end()) {
       return false;
     }
 
+    const auto payload_it =
+        std::find_if(state_.hand.begin(), state_.hand.end(), is_payload);
+    if (payload_it == state_.hand.end()) return false;
+
+    // This is a future-ready-turn proof, so reserve the currently held Dragon
+    // symbolically rather than calling choose_discard(true), which correctly protects
+    // that Dragon under strict JIT on the current pre-ready turn. The ordinary second
+    // Grant cost is still validated by the shared DCI selector after removing the BC
+    // that will be consumed now and excluding Grant itself from legal costs.
     Engine probe = *this;
     remove_one(probe.state_.hand, Card::BattleCompressor);
-    const bool flex_fodder = scenario_.dci == DciProfile::MatchupFlexJit;
-    const auto payload = probe.choose_discard(true, flex_fodder);
-    if (!payload || !is_payload(*payload) ||
-        !remove_one(probe.state_.hand, *payload)) {
-      return false;
-    }
-
-    // Grant itself may not pay its own auxiliary recovery cost. Remove held copies
-    // only in this non-mutating proof, matching grant_recovery_strict_jit_costs().
+    if (!remove_one(probe.state_.hand, *payload_it)) return false;
     probe.state_.hand.erase(
         std::remove(probe.state_.hand.begin(), probe.state_.hand.end(), Card::Grant),
         probe.state_.hand.end());
+    const bool flex_fodder = scenario_.dci == DciProfile::MatchupFlexJit;
     const auto ordinary = probe.choose_discard(false, flex_fodder);
     return ordinary.has_value() && *ordinary != Card::Grant;
   }
@@ -83,21 +72,17 @@
   std::vector<Card> issue_3545_refined_battle_compressor_targets() const {
     std::vector<Card> best = issue_3545_hidden_battle_compressor_targets();
     int best_score = issue_3545_next_public_turn_score(best);
-
     const auto powerglass_energy = issue_3545_powerglass_energy_target();
 
     // Strict and matchup-flex can use BC + VS as a deterministic two-turn package:
     // BC stages Steven plus a Basic Energy, Powerglass recovers that Energy at end of
     // T1, and Steven reserves VSTAR + Crispin + Mysterious Treasure. On T2 Crispin
-    // finishes GGF and Treasure discards the already-held Dragon on the actual ready
-    // turn. Compare this whole public route against the ordinary BC Supporter choice
-    // instead of valuing Steven only at the end of T1.
+    // finishes GGF and Treasure discards the held Dragon on the actual ready turn.
     // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
     // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
-    // Same-ready-turn JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     if (strict_payload_timing() && powerglass_energy &&
         hand_count(Card::VsSeeker) > 0 && supporter_allowed() &&
         count_of(state_.deck, Card::StevensResolve) > 0 &&
@@ -112,22 +97,13 @@
       }
     }
 
-    // When no current-turn payload action is legal, an otherwise-unused BC slot may
-    // prepare Grant as the future same-ready-turn Dragon outlet. The proof above uses
-    // only current public hand contents. A complete Steven + Powerglass + Treasure
-    // package already supplies a deterministic outlet and therefore keeps its slot.
     if (issue_3545_grant_stage_available(best)) {
       best.push_back(Card::Grant);
     }
 
-    // No-discard-control permits early Dragon banking, while multiple early Dragons
-    // have diminishing setup value once one payload is already available. If a held
-    // or attached Powerglass can deterministically advance the Energy axis, let that
-    // Basic Energy compete with the second or third payload slot. Preserve the first
-    // payload according to the established attack-priority ordering.
-    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
-    // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
-    // DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // No-control needs one early Dragon bank. A deterministic Powerglass Energy
+    // improvement outranks a second or third early payload with no additional setup
+    // axis value.
     if (scenario_.dci == DciProfile::NoDiscardControl && powerglass_energy &&
         count_of(best, *powerglass_energy) == 0) {
       std::vector<Card> trial = best;

@@ -54,7 +54,7 @@ constexpr bool registered_is_supporter(const Card card) {
 
 constexpr bool registered_is_ace_spec(const Card card) {
   const CardDefinition* definition = find_definition(card);
-  return definition != nullptr && definition->ace_spec;
+  return definition != nullptr && is_ace_spec(*definition);
 }
 
 }  // namespace sim::cards

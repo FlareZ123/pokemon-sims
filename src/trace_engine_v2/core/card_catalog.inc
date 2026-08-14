@@ -55,6 +55,9 @@ static_assert(cards::Powerglass::definition.name == "Powerglass");
 static_assert(cards::Lusamine::definition.id == Card::Lusamine); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
 static_assert(cards::Lusamine::definition.canonical_id == "sm4-96");
 static_assert(cards::Lusamine::definition.name == "Lusamine");
+static_assert(cards::Channeler::definition.id == Card::Channeler); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm11-190 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3624
+static_assert(cards::Channeler::definition.canonical_id == "sm11-190");
+static_assert(cards::Channeler::definition.name == "Channeler");
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},         {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
@@ -100,7 +103,6 @@ constexpr std::string_view name(const Card card) {
     case Card::TateLiza: return "Tate & Liza";
     case Card::StevensResolve: return "Steven's Resolve";
     case Card::Guzma: return "Guzma";
-    case Card::Channeler: return "Channeler";
     case Card::Gladion: return "Gladion";
     case Card::TeamYellsCheer: return "Team Yell's Cheer";
     case Card::RoseannesBackup: return "Roseanne's Backup";
@@ -118,6 +120,7 @@ constexpr std::string_view name(const Card card) {
     case Card::BattleVipPass:
     case Card::BrilliantBlender:
     case Card::ChaoticSwell:
+    case Card::Channeler:
     case Card::Crispin:
     case Card::Dawn:
     case Card::EvolutionIncense:
@@ -132,7 +135,7 @@ constexpr std::string_view name(const Card card) {
     case Card::ProfessorsLetter:
     case Card::QuickBall:
     case Card::SecretBox:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Lusamine data: https://api.pokemontcg.io/v2/cards/sm4-96
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Channeler data: https://api.pokemontcg.io/v2/cards/sm11-190
   }
   return "Unknown";
 }

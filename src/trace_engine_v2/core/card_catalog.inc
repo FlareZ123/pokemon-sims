@@ -58,6 +58,9 @@ static_assert(cards::Lusamine::definition.name == "Lusamine");
 static_assert(cards::Klara::definition.id == Card::Klara); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
 static_assert(cards::Klara::definition.canonical_id == "swsh6-145");
 static_assert(cards::Klara::definition.name == "Klara");
+static_assert(cards::RoseannesBackup::definition.id == Card::RoseannesBackup); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh9-148 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3629
+static_assert(cards::RoseannesBackup::definition.canonical_id == "swsh9-148");
+static_assert(cards::RoseannesBackup::definition.name == "Roseanne's Backup");
 static_assert(cards::WishfulBaton::definition.id == Card::WishfulBaton); // Exact Pokémon Tool: https://api.pokemontcg.io/v2/cards/sm3-128 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3631
 static_assert(cards::WishfulBaton::definition.canonical_id == "sm3-128");
 static_assert(cards::WishfulBaton::definition.name == "Wishful Baton");
@@ -109,7 +112,6 @@ constexpr std::string_view name(const Card card) {
     case Card::Channeler: return "Channeler";
     case Card::Gladion: return "Gladion";
     case Card::TeamYellsCheer: return "Team Yell's Cheer";
-    case Card::RoseannesBackup: return "Roseanne's Backup";
     case Card::ProfessorTuro: return "Professor Turo's Scenario";
     case Card::ErikasInvitation: return "Erika's Invitation";
     case Card::ForestOfVitality: return "Forest of Vitality";
@@ -136,6 +138,7 @@ constexpr std::string_view name(const Card card) {
     case Card::ProfessorBurnet:
     case Card::ProfessorsLetter:
     case Card::QuickBall:
+    case Card::RoseannesBackup: // Exact registered name: https://api.pokemontcg.io/v2/cards/swsh9-148
     case Card::SecretBox:
     case Card::WishfulBaton: // Exact registered name: https://api.pokemontcg.io/v2/cards/sm3-128
       break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp

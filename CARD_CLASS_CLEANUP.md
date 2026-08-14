@@ -238,6 +238,7 @@ When a legacy function mixes these responsibilities, leave route admission and s
 8. Keep strategy in Engine.
 9. Add focused tests for exact metadata and printed legality/effect boundaries as each phase becomes active.
 10. Run the full CI matrix and representative `--simulate-this` traces before merge.
+
 If migration reveals a gameplay defect, file it through the normal bug workflow. Do not silently combine the behavior correction with architecture cleanup.
 ## Validation gate
 
@@ -423,3 +424,12 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - `src/trace_engine_v2/core/forretress/scenarios.inc` now owns the Garbodor scenario extension beside `core/forretress/runtime.inc`, including one named scenario-set type and one shared lookup helper. Scenario specification: https://github.com/FlareZ123/pokemon-sims/issues/2808 Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
 - The current Forretress implementation owner is `src/trace_engine_v2/core/forretress/runtime.inc`; the older `part_forretress_ex_combo_legacy.inc` path referenced by the 2026-08-13 checkpoint is retired. Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1 Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2 Current runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/runtime.inc
 - This wave changes ownership and lookup structure only. Exploding Energy resolution, route admission, DCI/UDP/AMR, K0/K1 knowledge, connector domination, lock behavior, and readiness policy remain at their existing owners. Advanced rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+## Double Dragon Energy metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3685
+- Canonical print: `xy6-97`; exact card data: https://api.pokemontcg.io/v2/cards/xy6-97
+- `src/cards/energy/double_dragon_energy.hpp` and `kRegisteredCardDefinitions` now own Double Dragon Energy identity, display name, Energy kind, and Special-Energy classification.
+- Legacy `name()`, `is_energy()`, and `is_special_energy()` compatibility paths now source registered Double Dragon Energy metadata through the registry; Grass and Fire remain the legacy Basic Energy fallbacks until their own migrations.
+- This wave preserves the printed Dragon-only attachment restriction, two-Energy provision, Energy-axis strategy, DCI/UDP/AMR, connector domination, K0/K1 state, and route behavior at their existing Engine owners. Exact printed effect: https://api.pokemontcg.io/v2/cards/xy6-97
+- A later behavior migration must locate the single live Double Dragon Energy attachment/provision owner before moving state transitions, preserve the rule that an illegally attached copy is discarded, and keep strategic attachment choice outside intrinsic metadata.

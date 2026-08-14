@@ -10,6 +10,27 @@
     return match == bench.end() ? nullptr : &*match;
   }
 
+  template <typename ActiveZone, typename BenchZone>
+  [[nodiscard]] static auto pokemon_at_board_index_in_zones(
+      ActiveZone& active, BenchZone& bench, const std::size_t index)
+      -> decltype(&*active) {
+    if (index == 0U) return active ? &*active : nullptr;
+    const std::size_t bench_index = index - 1U;
+    return bench_index < bench.size() ? &bench[bench_index] : nullptr;
+  }
+
+  template <typename ActiveZone, typename BenchZone, typename PokemonType>
+  [[nodiscard]] static std::optional<std::size_t> board_index_of_pokemon_in_zones(
+      const ActiveZone& active, const BenchZone& bench,
+      const PokemonType* pokemon) {
+    if (pokemon == nullptr) return std::nullopt;
+    if (active && pokemon == &*active) return 0U;
+    for (std::size_t index = 0; index < bench.size(); ++index) {
+      if (pokemon == &bench[index]) return index + 1U;
+    }
+    return std::nullopt;
+  }
+
   template <typename Predicate>
   [[nodiscard]] Pokemon* find_board_pokemon_matching(Predicate predicate) {
     return find_board_pokemon_matching_in_zones(

@@ -10,6 +10,18 @@
            strict_payload_timing() && supporter_allowed();
   }
 
+  bool late_steven_burnet_route_has_regidrago_state() const {
+    // The continuation assumes an Active Regidrago V that entered play before the
+    // current turn and already carries exactly the Grass/Fire state admitted by the
+    // original route predicate. Keep that board-state contract in one named gate.
+    // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Evolution and Energy attachment procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    return state_.active && state_.active->card == Card::RegidragoV &&
+           state_.active->entered_turn < state_.turn &&
+           state_.active->grass == 1 && state_.active->fire >= 1;
+  }
+
   bool late_steven_burnet_route_available() const {
     // This route uses Steven's Resolve on the current turn, then ordinary evolution,
     // one manual Energy attachment, and the already-held Professor Burnet next turn.
@@ -23,9 +35,7 @@
     // Confirmed semantic-profile/lock bug: https://github.com/FlareZ123/pokemon-sims/issues/3223
     // Confirmed Burnet payload-zone bug: https://github.com/FlareZ123/pokemon-sims/issues/3302
     if (!late_steven_burnet_route_has_turn_window() ||
-        !state_.active || state_.active->card != Card::RegidragoV ||
-        state_.active->entered_turn >= state_.turn ||
-        state_.active->grass != 1 || state_.active->fire < 1 ||
+        !late_steven_burnet_route_has_regidrago_state() ||
         hand_count(Card::StevensResolve) == 0 ||
         hand_count(Card::ProfessorBurnet) == 0 ||
         !first_searchable_payload_in_known_deck().has_value() ||

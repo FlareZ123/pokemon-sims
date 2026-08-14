@@ -3,6 +3,7 @@
 #include <array>
 
 #include "card_definition.hpp"
+#include "energy/double_dragon_energy.hpp"
 #include "pokemon/appletun.hpp"
 #include "trainers/arven.hpp"
 #include "trainers/battle_vip_pass.hpp"
@@ -31,8 +32,9 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 25> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 26> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
+    &DoubleDragonEnergy::definition, // Exact Roaring Skies Special Energy: https://api.pokemontcg.io/v2/cards/xy6-97
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -84,6 +86,23 @@ constexpr bool registered_is_supporter(const Card card) {
   return registered_is_trainer_kind(card, TrainerKind::Supporter);
 }
 
+constexpr bool registered_is_energy(const Card card) {
+  const CardDefinition* definition = find_definition(card);
+  return definition != nullptr && definition->kind == CardKind::Energy;
+}
+
+constexpr bool registered_is_basic_energy(const Card card) {
+  const CardDefinition* definition = find_definition(card);
+  return definition != nullptr && definition->kind == CardKind::Energy &&
+         definition->basic_energy;
+}
+
+constexpr bool registered_is_special_energy(const Card card) {
+  const CardDefinition* definition = find_definition(card);
+  return definition != nullptr && definition->kind == CardKind::Energy &&
+         !definition->basic_energy;
+}
+
 constexpr bool registered_is_ace_spec(const Card card) {
   const CardDefinition* definition = find_definition(card);
   return definition != nullptr && definition->ace_spec;
@@ -110,6 +129,9 @@ static_assert(definition_matches_registration(Dawn::definition, Card::Dawn,
                                               "me2-87", "Dawn")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/me2-87
 static_assert(definition_matches_registration(Powerglass::definition, Card::Powerglass,
                                               "sv6pt5-63", "Powerglass")); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+static_assert(definition_matches_registration(DoubleDragonEnergy::definition,
+                                              Card::DoubleDragonEnergy, "xy6-97",
+                                              "Double Dragon Energy")); // Exact Special Energy: https://api.pokemontcg.io/v2/cards/xy6-97
 static_assert(definition_matches_registration(Lusamine::definition, Card::Lusamine,
                                               "sm4-96", "Lusamine")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
 static_assert(definition_matches_registration(Klara::definition, Card::Klara,

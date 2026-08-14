@@ -40,12 +40,22 @@
     return board_has_pokemon_matching(pokemon_has_open_v_tool_slot);
   }
 
+  [[nodiscard]] static constexpr bool pokemon_satisfies_evolution_turn_timing(
+      const Pokemon& pokemon, const int current_turn,
+      const bool permits_entry_turn_evolution = false) {
+    // A Pokémon ordinarily cannot evolve on the turn it was put into play.
+    // Effects such as Forest of Vitality may explicitly permit entry-turn evolution;
+    // the caller remains responsible for that effect's printed target restrictions.
+    // Core evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+    return pokemon.entered_turn < current_turn || permits_entry_turn_evolution;
+  }
+
   [[nodiscard]] static constexpr bool pokemon_can_evolve_into_regidrago_vstar(
       const Pokemon& pokemon, const int current_turn) {
-    // A Basic Pokémon cannot evolve on the turn it was put into play:
-    // https://www.pokemon.com/us/pokemon-tcg/rules
     // Regidrago VSTAR evolves from Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-136
-    return pokemon.card == Card::RegidragoV && pokemon.entered_turn < current_turn;
+    return pokemon.card == Card::RegidragoV &&
+           pokemon_satisfies_evolution_turn_timing(pokemon, current_turn);
   }
 
   [[nodiscard]] bool board_has_evolvable_regidrago_v() const {

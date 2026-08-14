@@ -3,6 +3,7 @@
 #include <array>
 
 #include "card_definition.hpp"
+#include "pokemon/appletun.hpp"
 #include "trainers/arven.hpp"
 #include "trainers/battle_vip_pass.hpp"
 #include "trainers/brilliant_blender.hpp"
@@ -30,7 +31,8 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 24> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 25> kRegisteredCardDefinitions{
+    &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -86,5 +88,41 @@ constexpr bool registered_is_ace_spec(const Card card) {
   const CardDefinition* definition = find_definition(card);
   return definition != nullptr && definition->ace_spec;
 }
+
+// Registry-owned compile-time contracts stay beside the definitions they verify.
+// Architecture plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+static_assert(QuickBall::definition.id == Card::QuickBall);
+static_assert(QuickBall::definition.canonical_id == "swsh1-179");
+static_assert(QuickBall::definition.name == "Quick Ball");
+static_assert(GuzmaHala::definition.id == Card::GuzmaHala);
+static_assert(GuzmaHala::definition.canonical_id == "sm12-229");
+static_assert(GuzmaHala::definition.name == "Guzma & Hala");
+static_assert(Arven::definition.id == Card::Arven); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
+static_assert(Arven::definition.canonical_id == "sv1-166");
+static_assert(Arven::definition.name == "Arven");
+static_assert(Crispin::definition.id == Card::Crispin); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv7-133 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3580
+static_assert(Crispin::definition.canonical_id == "sv7-133");
+static_assert(Crispin::definition.name == "Crispin");
+static_assert(Dawn::definition.id == Card::Dawn); // Exact Supporter: https://api.pokemontcg.io/v2/cards/me2-87
+static_assert(Dawn::definition.canonical_id == "me2-87");
+static_assert(Dawn::definition.name == "Dawn");
+static_assert(Powerglass::definition.id == Card::Powerglass); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+static_assert(Powerglass::definition.canonical_id == "sv6pt5-63");
+static_assert(Powerglass::definition.name == "Powerglass");
+static_assert(Lusamine::definition.id == Card::Lusamine); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
+static_assert(Lusamine::definition.canonical_id == "sm4-96");
+static_assert(Lusamine::definition.name == "Lusamine");
+static_assert(Klara::definition.id == Card::Klara); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
+static_assert(Klara::definition.canonical_id == "swsh6-145");
+static_assert(Klara::definition.name == "Klara");
+static_assert(WishfulBaton::definition.id == Card::WishfulBaton); // Exact Pokémon Tool: https://api.pokemontcg.io/v2/cards/sm3-128 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3631
+static_assert(WishfulBaton::definition.canonical_id == "sm3-128");
+static_assert(WishfulBaton::definition.name == "Wishful Baton");
+static_assert(Channeler::definition.id == Card::Channeler); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm11-190 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3624
+static_assert(Channeler::definition.canonical_id == "sm11-190");
+static_assert(Channeler::definition.name == "Channeler");
+static_assert(ProfessorTuroScenario::definition.id == Card::ProfessorTuro); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
+static_assert(ProfessorTuroScenario::definition.canonical_id == "sv4-171");
+static_assert(ProfessorTuroScenario::definition.name == "Professor Turo's Scenario");
 
 }  // namespace sim::cards

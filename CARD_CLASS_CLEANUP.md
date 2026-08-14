@@ -318,3 +318,14 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - The same post-search owner now contains the Garbodor/Field Blower Arven continuation immediately after the empty-deck Arven alias release. The former `part_arven_garbodor_field_blower_override.inc` fragment is retired. Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125 Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Existing route specification: https://github.com/FlareZ123/pokemon-sims/issues/2808
 - This consolidation is mechanical. It preserves the exact function bodies, macro lifetimes, helper include, direct card/rule URLs, and declaration order. Future Arven cleanup should continue from `composition/post_014a_overrides.inc` and avoid recreating one-owner `part_*.inc` fragments.
 - Validation gate remains strict Release compilation, the full regression suite, representative `--simulate-this` traces, and the paired T2/T3 matrix. Any matrix movement requires a separately justified behavior change rather than being accepted as cleanup drift.
+
+## Erika's Invitation metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3598
+- Canonical print: `sv3pt5-160`; exact card data: https://api.pokemontcg.io/v2/cards/sv3pt5-160 and https://github.com/PokemonTCG/pokemon-tcg-data/blob/master/cards/en/sv3pt5.json
+- `src/cards/trainers/erikas_invitation.hpp` and `kRegisteredCardDefinitions` own Erika's Invitation identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility tables delegate the migrated intrinsic facts to the registry. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- Focused registration coverage: `tests/erikas_invitation_card_class_tests.cpp`.
+- Existing opponent-hand inspection, Bench placement, forced switch effect modeling, single-player setup strategy, DCI/UDP/AMR, connector domination, K0/K1, and route selection remain at their current Engine owners for this metadata-only wave.
+- A later resolver migration must first identify the single live printed-resolution boundary, then preserve the exact reveal, Basic selection, Bench-capacity condition, and switch sequence through `CardContext`. Printed effect: https://api.pokemontcg.io/v2/cards/sv3pt5-160
+- Next mechanical `.inc` target: the issue-1070 late-Supporter compatibility forwarder may be retired only after `composition/post_014a_overrides.inc` directly includes `core/routes/tate_after_vstar_search_selector.inc` at the current `choose_supporter` alias boundary and CI revalidates declaration order. C++ textual include semantics: https://eel.is/c++draft/cpp.include

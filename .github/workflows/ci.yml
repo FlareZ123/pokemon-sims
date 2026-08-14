@@ -47,6 +47,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Bash -e explicitly exempts status inverted with !, so forbidden-pattern
+          # checks use an explicit failing branch instead of bare `! grep`.
+          # https://www.gnu.org/software/bash/manual/bash.html#The-Set-Builtin
+          # GitHub's explicit Bash shell runs with -e and -o pipefail:
+          # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepsshell
+          # Confirmed regression-gate defect: https://github.com/FlareZ123/pokemon-sims/issues/3663
+          assert_absent() {
+            local pattern="$1"
+            local file="$2"
+            if grep -q -- "$pattern" "$file"; then
+              printf 'Forbidden trace pattern found: %s in %s\n' "$pattern" "$file" >&2
+              exit 1
+            fi
+          }
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3 | tee trace-1.txt
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4 | tee trace-2.txt
           ./build/regidrago_sim --simulate-this --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2 | tee trace-3.txt
@@ -64,8 +78,8 @@ jobs:
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee trace-4.txt
           grep -q "Searched up to 3 cards: Regidrago VSTAR. Turn ended." trace-4.txt
           grep -q "T3 | DISCARD.*Dragapult ex (Quick Ball cost)" trace-4.txt
-          ! grep -q "Searched up to 3 cards: Regidrago VSTAR, Crispin" trace-4.txt
-          ! grep -q "Searched up to 3 cards: Regidrago VSTAR, Brilliant Blender" trace-4.txt
+          assert_absent "Searched up to 3 cards: Regidrago VSTAR, Crispin" trace-4.txt
+          assert_absent "Searched up to 3 cards: Regidrago VSTAR, Brilliant Blender" trace-4.txt
           grep -q "T3 | READY" trace-4.txt
           # Quick Ball must preserve the strict-JIT Dragon until the VSTAR card axis is reachable:
           # https://api.pokemontcg.io/v2/cards/swsh1-179
@@ -108,12 +122,26 @@ jobs:
           grep -q "T2 | DISCARD.*Dragapult ex (Mysterious Treasure cost)" trace-8.txt
           grep -q "T2 | WONDER TAG.*Crispin" trace-8.txt
           grep -q "T2 | PLAY SUPPORTER.*R-CRISPIN-01" trace-8.txt
-          ! grep -q "STAR ALCHEMY" trace-8.txt
+          assert_absent "STAR ALCHEMY" trace-8.txt
           grep -q "T2 | READY" trace-8.txt
       - name: Run three reviewed Pineco setup audits
         shell: bash
         run: |
           set -euo pipefail
+          # Bash -e explicitly exempts status inverted with !, so forbidden-pattern
+          # checks use an explicit failing branch instead of bare `! grep`.
+          # https://www.gnu.org/software/bash/manual/bash.html#The-Set-Builtin
+          # GitHub's explicit Bash shell runs with -e and -o pipefail:
+          # https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idstepsshell
+          # Confirmed regression-gate defect: https://github.com/FlareZ123/pokemon-sims/issues/3663
+          assert_absent() {
+            local pattern="$1"
+            local file="$2"
+            if grep -q -- "$pattern" "$file"; then
+              printf 'Forbidden trace pattern found: %s in %s\n' "$pattern" "$file" >&2
+              exit 1
+            fi
+          }
           # Seed 35 has a complete K1 direct route. Steven banks Crispin and a
           # Dragon payload, then held Mysterious Treasure supplies its own discard
           # cost while preserving Secret Box, held Forretress ex, and the unused
@@ -139,9 +167,9 @@ jobs:
           grep -q "banked Crispin and Dragapult ex" pineco-trace-35.txt
           grep -q "Dragapult ex (Mysterious Treasure cost)" pineco-trace-35.txt
           grep -q "without advancing the Pineco line" pineco-trace-35.txt
-          ! grep -q "Secret Box discarded three other cards" pineco-trace-35.txt
-          ! grep -q "T2 | EXPLODING ENERGY" pineco-trace-35.txt
-          ! grep -q "T2 | EVOLVE | rules: R-FORRETRESS-01" pineco-trace-35.txt
+          assert_absent "Secret Box discarded three other cards" pineco-trace-35.txt
+          assert_absent "T2 | EXPLODING ENERGY" pineco-trace-35.txt
+          assert_absent "T2 | EVOLVE | rules: R-FORRETRESS-01" pineco-trace-35.txt
           grep -q "T2 | READY" pineco-trace-35.txt
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 18 --require-ready-by 2 | tee pineco-trace-18.txt
           grep -q "Arven banked the next-turn Secret Box route" pineco-trace-18.txt
@@ -163,8 +191,8 @@ jobs:
           # Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3152
           ./build/regidrago_sim --simulate-this --deck regidrago-pineco --scenario strict-jit/go-second --seed 40 --require-ready-by 2 | tee pineco-trace-40.txt
           grep -q "Steven's Resolve banked Regidrago VSTAR, Crispin, and Mysterious Treasure" pineco-trace-40.txt
-          ! grep -q "Gladion recovered the legally known prized Secret Box" pineco-trace-40.txt
-          ! grep -q "Secret Box discarded three other cards" pineco-trace-40.txt
+          assert_absent "Gladion recovered the legally known prized Secret Box" pineco-trace-40.txt
+          assert_absent "Secret Box discarded three other cards" pineco-trace-40.txt
           grep -q "Mega Dragonite ex (Mysterious Treasure cost)" pineco-trace-40.txt
           grep -q "T2 | READY" pineco-trace-40.txt
       # The paired aggregate contains the canonical shell population as exact rows.

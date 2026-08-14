@@ -327,3 +327,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Focused registration coverage: `tests/pokemon_communication_card_class_tests.cpp`.
 - This wave preserves the existing exchange/search/reveal/shuffle resolver and all DCI/UDP/AMR, connector-domination, K0/K1, and route-selection behavior at their current Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm9-152
 - Any later printed-resolution migration must begin from the single live owner at `src/trace_engine_v2/part_pokemon_communication.inc` and preserve the card's printed exchange, search, reveal, hand movement, and shuffle ordering through `CardContext`. Rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+## Lusamine metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3619
+- Canonical print: `sm4-96`; exact card data: https://api.pokemontcg.io/v2/cards/sm4-96
+- `src/cards/trainers/lusamine.hpp` and `kRegisteredCardDefinitions` own Lusamine identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Lusamine's intrinsic facts; both source registered metadata before unmigrated fallbacks.
+- Focused registration coverage: `tests/lusamine_card_class_tests.cpp`.
+- This wave preserves Lusamine's discard-recovery resolution, target choice, Supporter contention, DCI/UDP/AMR, connector domination, K0/K1 state, and route strategy at their existing Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm4-96
+- A later resolver migration must locate the single live Lusamine resolution boundary and preserve its Supporter/Stadium recovery ordering through `CardContext` without moving strategic recovery choice into card code.

@@ -7,7 +7,8 @@
         // Repository route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
         // Confirmed relative-turn bug: https://github.com/FlareZ123/pokemon-sims/issues/3561
         const int ready_turn = state_.turn + 1;
-        if (secret_box_combo_enabled() ||
+        if (issue_1447_vessel_ready_turn_ == state_.turn || // A recorded next-turn continuation resolves now; never re-bank it: https://github.com/FlareZ123/pokemon-sims/issues/3561
+            secret_box_combo_enabled() ||
             scenario_.dci != DciProfile::StrictJit ||
             scenario_.locks != LockMode::None ||
             scenario_.max_turn < ready_turn || !deck_seen_ || !state_.active ||

@@ -25,8 +25,8 @@ T2 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GG] | Bench=(none)
 T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Dialga-GX
 T3 | POLICY | rules: P-AXIS-01 | Start: Active=Regidrago VSTAR [GG] | Bench=(none) | Hand=Gladion, Dragapult ex, Professor Burnet, Dialga-GX | Discard=Mysterious Treasure, Mysterious Treasure, Field Blower, Earthen Vessel, Tapu Lele-GX, Oricorio GRI 55
 T3 | LEGACY STAR | rules: R-RVS-01; R-VSTAR-01 | Discarded top 7: Dipplin TWM 127, Regidrago V, Arven, Steven's Resolve, Crispin, Latias ex, Professor Turo's Scenario; recovered: Earthen Vessel, Crispin.
-T3 | DISCARD | rules: R-EV-01 | Dragapult ex (Earthen Vessel cost)
-T3 | Earthen Vessel | rules: R-EV-01; R-GAME-ITEM | Searched up to 2 Basic Energy: Fire Energy, Grass Energy.
+T3 | DISCARD | rules: R-EV-01; P-DCI-01; P-JIT-01 | Dragapult ex (Earthen Vessel cost)
+T3 | Earthen Vessel | rules: R-EV-01; R-GAME-ITEM; P-JIT-01 | Searched up to 2 Basic Energy: Fire Energy, Grass Energy.
 T3 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER | Searched Fire Energy and Grass Energy; attached Fire Energy to Regidrago VSTAR and put Grass Energy into hand.
 T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=(none) | Hand=Gladion, Dialga-GX, Professor Burnet, Fire Energy, Grass Energy, Grass Energy | Discard=Mysterious Treasure, Mysterious Treasure, Field Blower, Tapu Lele-GX, Oricorio GRI 55, Dipplin TWM 127, Regidrago V, Arven, Steven's Resolve, Latias ex, Professor Turo's Scenario, Earthen Vessel, Dragapult ex, Crispin
 T3 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

@@ -5,6 +5,21 @@
   using BoardIndex = std::size_t;
   using OptionalBoardIndex = std::optional<BoardIndex>;
 
+  [[nodiscard]] static constexpr BoardIndex board_index_from_bench_index(
+      const BoardIndex bench_index) {
+    // Canonical board mapping: Active is 0 and Bench positions are offset by one.
+    // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+    return bench_index + 1U;
+  }
+
+  [[nodiscard]] static constexpr OptionalBoardIndex bench_index_from_board_index(
+      const BoardIndex board_index) {
+    // Board index 0 denotes Active and therefore has no Bench index.
+    // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+    if (board_index == 0U) return std::nullopt;
+    return board_index - 1U;
+  }
+
   template <typename ActiveZone, typename BenchZone, typename Predicate>
   [[nodiscard]] static auto find_board_pokemon_matching_in_zones(
       ActiveZone& active, BenchZone& bench, Predicate predicate)
@@ -25,8 +40,10 @@
     // callers migrate away from raw Active/Bench index arithmetic.
     // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
     if (index == 0U) return active ? &*active : nullptr;
-    const BoardIndex bench_index = index - 1U;
-    return bench_index < bench.size() ? &bench[bench_index] : nullptr;
+    const OptionalBoardIndex bench_index = bench_index_from_board_index(index);
+    return bench_index && *bench_index < bench.size()
+        ? &bench[*bench_index]
+        : nullptr;
   }
 
   template <typename ActiveZone, typename BenchZone, typename Predicate>
@@ -36,7 +53,7 @@
     // C++ container indexing semantics: https://eel.is/c++draft/vector.capacity
     if (active && predicate(*active)) return 0U;
     for (BoardIndex index = 0; index < bench.size(); ++index) {
-      if (predicate(bench[index])) return index + 1U;
+      if (predicate(bench[index])) return board_index_from_bench_index(index);
     }
     return std::nullopt;
   }

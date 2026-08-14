@@ -52,7 +52,7 @@
         should_play_steven_issue3197_original();
   }
 
-  bool play_steven() {
+  bool play_steven_issue3653_original() {
     if (!issue_3197_steven_treasure_crispin_route_available()) {
       return play_steven_issue3197_original();
     }
@@ -84,4 +84,46 @@
           "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
           "Searched the semantic Treasure-Crispin route: Regidrago VSTAR, Crispin, Grass Energy. Turn ended.");
     return true;
+  }
+
+  bool play_issue_3653_steven_blender_package() {
+    if (!issue_3222_steven_blender_fallback_available()) return false;
+
+    remove_one(state_.hand, Card::StevensResolve);
+    state_.discard.push_back(Card::StevensResolve);
+    state_.supporter_used = true;
+    outcome_.used_steven = true;
+    record_deck_search_knowledge("Steven's Resolve issue-3653 Blender package");
+
+    if (!move_deck_to_hand(Card::RegidragoVstar) ||
+        !move_deck_to_hand(Card::BrilliantBlender)) {
+      throw std::logic_error("Issue-3653 known Steven targets disappeared");
+    }
+    shuffle(state_.deck);
+    state_.turn_ended = true;
+
+    // Steven may search up to three unrestricted cards, so reserve the known
+    // VSTAR + Blender package without paying Quick Ball's discard cost next turn.
+    // Blender can then put the Dragon payload into discard on the same turn that
+    // the held Basic Energy completes Apex Dragon. This preserves the held Dragon
+    // and Quick Ball when their paid connector route is dominated.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Supporter, Item, search, discard, evolution, and attachment procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // K1, same-ready-turn JIT, and connector priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3653
+    trace("PLAY SUPPORTER",
+          "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
+          "Searched the semantic VSTAR-Blender package: Regidrago VSTAR, Brilliant Blender. Turn ended.");
+    return true;
+  }
+
+  bool play_steven() {
+    if (issue_3197_steven_treasure_crispin_route_available()) {
+      return play_steven_issue3653_original();
+    }
+    if (play_issue_3653_steven_blender_package()) return true;
+    return play_steven_issue3653_original();
   }

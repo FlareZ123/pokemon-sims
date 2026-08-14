@@ -189,6 +189,19 @@ Next mechanical Steven step: inventory the remaining Steven-named root `part_*.i
 
 Route specifications: https://github.com/FlareZ123/pokemon-sims/issues/1745 https://github.com/FlareZ123/pokemon-sims/issues/1771 https://github.com/FlareZ123/pokemon-sims/issues/1772 https://github.com/FlareZ123/pokemon-sims/issues/2622 https://github.com/FlareZ123/pokemon-sims/issues/3653
 
+### Late Steven/Burnet route ownership
+
+`src/trace_engine_v2/core/routes/late_steven_burnet_route_policy.inc` now names the existing availability contract as three reusable strategy gates: the K1/JIT/Supporter turn window, the Active Regidrago V board state, and the held/known-deck resource package. `late_steven_burnet_route_available()` composes those gates and retains the same route admission semantics.
+
+Keep these helpers strategy-only. Printed Supporter resolution, evolution, Energy attachment, deck search, and discard procedure remain at their established action/card owners. Preserve direct source URLs beside each gate when this route is moved or consolidated further.
+
+Late route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_burnet_route_policy.inc
+Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
 ## Shared policy cleanup plan
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` owns payload preference order, payload-zone membership, payload-zone counts, and physical-order first-payload selection through `PayloadPreferencePolicy`. Route files should reuse `payload_zone_contains()` and `first_payload_card_in_zone()` where their existing semantics match.

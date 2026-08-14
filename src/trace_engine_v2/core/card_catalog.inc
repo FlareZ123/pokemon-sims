@@ -49,6 +49,9 @@ static_assert(cards::Crispin::definition.name == "Crispin");
 static_assert(cards::Dawn::definition.id == Card::Dawn); // Exact Supporter: https://api.pokemontcg.io/v2/cards/me2-87
 static_assert(cards::Dawn::definition.canonical_id == "me2-87");
 static_assert(cards::Dawn::definition.name == "Dawn");
+static_assert(cards::EarthenVessel::definition.id == Card::EarthenVessel); // Exact Item: https://api.pokemontcg.io/v2/cards/sv4-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3475
+static_assert(cards::EarthenVessel::definition.canonical_id == "sv4-163");
+static_assert(cards::EarthenVessel::definition.name == "Earthen Vessel");
 static_assert(cards::Powerglass::definition.id == Card::Powerglass); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
 static_assert(cards::Powerglass::definition.canonical_id == "sv6pt5-63");
 static_assert(cards::Powerglass::definition.name == "Powerglass");
@@ -93,7 +96,6 @@ constexpr std::string_view name(const Card card) {
     case Card::SecretBox: return "Secret Box";
     case Card::UltraBall: return "Ultra Ball";
     case Card::PokemonCommunication: return "Pokémon Communication";
-    case Card::EarthenVessel: return "Earthen Vessel";
     case Card::Grant: return "Grant";
     case Card::Serena: return "Serena";
     case Card::TateLiza: return "Tate & Liza";
@@ -120,6 +122,7 @@ constexpr std::string_view name(const Card card) {
     case Card::ChaoticSwell:
     case Card::Crispin:
     case Card::Dawn:
+    case Card::EarthenVessel:
     case Card::EvolutionIncense:
     case Card::FieldBlower:
     case Card::GuzmaHala:
@@ -129,7 +132,7 @@ constexpr std::string_view name(const Card card) {
     case Card::ProfessorBurnet:
     case Card::ProfessorsLetter:
     case Card::QuickBall:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Crispin migration: https://github.com/FlareZ123/pokemon-sims/issues/3580
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Earthen Vessel migration: https://github.com/FlareZ123/pokemon-sims/issues/3475
   }
   return "Unknown";
 }

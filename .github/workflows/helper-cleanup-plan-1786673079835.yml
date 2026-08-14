@@ -1,0 +1,47 @@
+name: One-shot cleanup plan updater
+
+on:
+  push:
+    branches:
+      - helper-cleanup-plan-1786673079835
+
+permissions:
+  contents: write
+
+jobs:
+  update-plan:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cleanup-1786673079835
+          fetch-depth: 0
+      - name: Advance cleanup plan checkpoint
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("CARD_CLASS_CLEANUP.md")
+          text = path.read_text(encoding="utf-8")
+          heading = "## Cleanup wave 2026-08-13 issue-962 and route-policy plan\n"
+          checkpoint = (
+              "\n- Cleanup checkpoint: `src/trace_engine_v2/core/routes/README.md` now inventories the "
+              "issue-962 and issue-1447 policy owners, `part_014a_issue_962_eligibility.inc` explicitly "
+              "documents its single composition boundary, and `part_014a_issue_1447_vessel_hold.inc` "
+              "is explicitly marked as a compatibility-only forwarder. These edits are organization-only; "
+              "the two inert issue-962 marker files remain the next deletion targets after their parent include "
+              "sites are collapsed. Shared route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/"
+              "src/trace_engine_v2/core/routes/issue_962_route.inc\n"
+          )
+          if checkpoint.strip() in text:
+              raise SystemExit("checkpoint already present")
+          if heading not in text:
+              raise SystemExit("cleanup plan heading missing")
+          path.write_text(text.replace(heading, heading + checkpoint, 1), encoding="utf-8")
+      - name: Commit plan-only change
+        run: |
+          git config user.name "cleanup-agent"
+          git config user.email "40903650+FlareZ123@users.noreply.github.com"
+          git add CARD_CLASS_CLEANUP.md
+          git commit -m "Cleanup: advance card class cleanup plan"
+          git push origin HEAD:cleanup-1786673079835

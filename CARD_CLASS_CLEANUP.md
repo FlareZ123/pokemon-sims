@@ -92,15 +92,6 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Focused registration coverage: `tests/field_blower_card_class_tests.cpp`.
 - Follow-up must locate the single live Field Blower printed-resolution owner before moving state transitions. Preserve target choice and all lock-removal policy in Engine until a reusable `CardContext` boundary exists.
 
-### Professor Burnet
-
-- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3569
-- Canonical print: `swsh12tg-TG26`; exact card data: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-- `src/cards/trainers/professor_burnet.hpp` and `kRegisteredCardDefinitions` now own Professor Burnet identity, display name, Trainer kind, and Supporter subtype.
-- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Burnet's intrinsic metadata. Focused coverage: `tests/professor_burnet_card_class_tests.cpp`.
-- Existing search-for-up-to-two-cards discard resolution, payload selection, DCI/UDP/AMR, connector domination, K0/K1 timing, Supporter contention, and route policy remain in Engine. Printed effect: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-- A later resolver migration must first locate the single live Professor Burnet resolution owner and preserve deck inspection, selected discards, final shuffle, and knowledge transitions through `CardContext`. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
 ### Cleanup wave 2026-08-13 checkpoint
@@ -126,7 +117,6 @@ The issue-962 eligibility, projection, and decision sections now compose directl
 Keep `simulation_runtime.inc` limited to state/runtime data types and trace ownership. Gameplay strategy, DCI/AMR/K0/K1 policy, and card effects remain in Engine, policy, and card modules.
 
 The retired `src/trace_engine_v2/part_late_policy_bundle.inc` comment-only compatibility path was deleted after repository-wide reference checks found no live include dependency. Its former Quick Ball, Crispin provenance, Secret Box, and Celestial Roar chain remains solely owned by `composition/post_014a_overrides.inc`; future cleanup must continue at that canonical owner rather than recreating the historical bundle. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
-
 The former `src/trace_engine_v2/part_issue_989_wonder_tag_complete_route_override.inc` forwarding shim is retired. `composition/opening_engine_overrides.inc` now includes `core/tapu_wonder_tag_route_policy.inc` directly at the same member boundary, preserving the existing macro lifetime while removing one redundant `.inc` layer. Keep Wonder Tag route logic in the core owner. Canonical policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tapu_wonder_tag_route_policy.inc Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
 
 Registered-card compatibility now uses `find_definition()` as the single registry lookup. `has_definition()` and intrinsic Item classification delegate to that lookup instead of maintaining parallel card switches, reducing duplicate ownership as additional cards migrate.
@@ -299,3 +289,15 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Focused registration coverage: `tests/dawn_card_class_tests.cpp`.
 - This wave intentionally leaves Dawn's printed Basic/Stage 1/Stage 2 deck search, reveal, hand movement, shuffle, Supporter contention, K0/K1 transitions, DCI/UDP/AMR, connector domination, and route strategy at their current Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/me2-87
 - A later resolver migration must first locate the single live Dawn resolution boundary and preserve the printed search/reveal/shuffle order through `CardContext` without moving strategic target preference into card code.
+
+## Cleanup wave 2026-08-13 board and Forretress contract follow-up
+
+- `src/trace_engine_v2/core/board_state_policy.inc` now owns one Active-first `find_board_pokemon_matching()` traversal. Boolean board queries delegate to that finder, preserving the repository's explicit Active-before-Bench short-circuit contract while giving later cleanup one reusable board lookup seam. C++ algorithm semantics: https://eel.is/c++draft/alg.find
+- `src/trace_engine_v2/core/forretress_combo_contract.inc` now names `OptionalBoardIndex` beside `BoardIndex` and `AttachmentDestinations`, and marks pure combo queries `[[nodiscard]]`. This keeps board-index/result vocabulary in the declared contract rather than spreading raw container types through future forwarding `.inc` files. Pineco / Forretress ex sources: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+- Next safe follow-up: migrate the out-of-class Forretress definitions to the existing `BoardIndex`, `OptionalBoardIndex`, and `AttachmentDestinations` aliases only after the declaration boundary is proven in CI. Keep that future edit type-only, preserve Exploding Energy's existing card/ruling URLs beside its resolver, and do not combine it with route-policy changes. Current implementation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_forretress_ex_combo_legacy.inc
+
+## Cleanup wave 2026-08-13 late-Supporter route consolidation
+
+- Completed: the issue-3040 Professor Turo staging implementation now lives at `src/trace_engine_v2/core/routes/professor_turo_regidrago_staging_policy.inc`; the former root-level `part_issue_3040_turo_regidrago_staging_override.inc` fragment is retired. Canonical route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/professor_turo_regidrago_staging_policy.inc Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+- The issue-1070 late-Supporter selector composition now lives beside that route at `src/trace_engine_v2/core/routes/tate_after_vstar_search_selector.inc`. Its historical `part_issue_1070_tate_after_vstar_search_override.inc` path is intentionally a thin boundary forwarder while `composition/post_014a_overrides.inc` still consumes that compatibility name. Canonical selector: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/tate_after_vstar_search_selector.inc
+- Preserve the existing `choose_supporter` macro lifetime and the selector's final-fallback ordering. A later cleanup may include the canonical selector directly from `composition/post_014a_overrides.inc` and retire the remaining forwarder only after that class-member boundary is revalidated. C++ textual-include semantics: https://eel.is/c++draft/cpp.include

@@ -37,8 +37,6 @@
       return false;
     }
 
-    // After Steven removes one VSTAR, Treasure still needs a legal Dragon/Psychic
-    // target on T2. Count the projected reservation explicitly at K1.
     bool treasure_target_remains = false;
     for (const Card card : state_.deck) {
       if (!is_dragon_or_psychic(card)) continue;
@@ -73,7 +71,7 @@
     return true;
   }
 
-  void choose_supporter_issue3545_actual() {
+  void choose_supporter_issue3545_base() {
     if (play_steven_issue3545_powerglass_treasure()) return;
-    choose_supporter_issue_1152();
+    choose_supporter();
   }

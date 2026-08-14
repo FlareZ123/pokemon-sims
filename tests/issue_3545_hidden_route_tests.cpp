@@ -39,7 +39,8 @@ struct EngineTestAccess {
     return engine.hand_count(card);
   }
   static int discard_count(const Engine& engine, const Card card) {
-    return count_of(engine.state_.discard, card);
+    return static_cast<int>(std::count(engine.state_.discard.begin(),
+                                      engine.state_.discard.end(), card));
   }
 };
 }  // namespace sim

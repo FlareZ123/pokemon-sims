@@ -360,8 +360,7 @@
 
 #include "../core/ultra_ball_target_policy.inc"
 #include "../part_blender_vstar_axis_override.inc"
-// Canonical Oricorio connector route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/oricorio_connector_policy.inc
-#include "../core/routes/oricorio_connector_policy.inc"
+#include "../core/routes/oricorio_connector_policy.inc" // Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/oricorio_connector_policy.inc
 
 // Post-search Earthen Vessel and Mysterious Treasure connector stack. This is the
 // sole composition owner, so the wrapper aliases and their release points are kept

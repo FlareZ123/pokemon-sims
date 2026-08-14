@@ -141,10 +141,24 @@ if (play_issue_1552_t1_vessel_route()) return true;
       // and Special Energy axes before generic paid search consumes those resources.
       // https://api.pokemontcg.io/v2/cards/sm12-229
       if (!state_.supporter_used && setup_axis_missing() && play_guzma_hala()) return true;
-      #include "part_014a_issue_962_eligibility.inc"
-      #include "part_014a_issue_962_projection.inc"
-      #include "part_014a_issue_962_decision.inc"
-      #include "part_014a_issue_1447_vessel_hold.inc"
+      // Issue-962 eligibility, projection, and decision share one canonical route
+      // implementation. Compose the sections directly at this proven member boundary
+      // and keep their dependency order explicit.
+      // C++ textual include semantics: https://eel.is/c++draft/cpp.include
+      // Route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_962_route.inc
+      #define REGIDRAGO_ISSUE_962_SECTION_ELIGIBILITY
+      #include "core/routes/issue_962_route.inc"
+      #undef REGIDRAGO_ISSUE_962_SECTION_ELIGIBILITY
+      #define REGIDRAGO_ISSUE_962_SECTION_PROJECTION
+      #include "core/routes/issue_962_route.inc"
+      #undef REGIDRAGO_ISSUE_962_SECTION_PROJECTION
+      #define REGIDRAGO_ISSUE_962_SECTION_DECISION
+      #include "core/routes/issue_962_route.inc"
+      #undef REGIDRAGO_ISSUE_962_SECTION_DECISION
+      // Issue-1447 has a single route-policy owner; no forwarding include is needed
+      // at this now-proven boundary.
+      // Route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1447_vessel_hold_policy.inc
+      #include "core/routes/issue_1447_vessel_hold_policy.inc"
 
       // Prefer the higher-connectivity Quick Ball route only when cost-aware
       // projections prove Tapu Lele-GX -> Wonder Tag -> Crispin preserves both

@@ -86,6 +86,17 @@
     return Card::Grass;
   }
 
+  bool supporter_rules_allow_turn(const int turn) const {
+    // A player may play only one Supporter per turn, and the player going first
+    // cannot play a Supporter on that player's first turn. Future-turn projection
+    // checks only these persistent rules because supporter_used/turn_ended reset at
+    // begin_turn(): https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Scheduled Item lock does not itself restrict Supporters: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+    // Confirmed projected-Burnet bug: https://github.com/FlareZ123/pokemon-sims/issues/3555
+    return !uses_full_supporter_lock(scenario_.locks) &&
+           !(scenario_.going_first && turn == 1);
+  }
+
   bool quick_ball_seed23_latias_route_ready() const {
     // Historical name retained for regression compatibility. The route itself is
     // state-generic: Quick Ball may replace Tate & Liza with Latias ex when the
@@ -97,15 +108,17 @@
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Advanced evolution / turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // K1, JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2704
+    // Scheduled Item-lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/2704 https://github.com/FlareZ123/pokemon-sims/issues/3555
     const bool jit_profile = scenario_.dci == DciProfile::StrictJit ||
                              scenario_.dci == DciProfile::MatchupFlexJit;
     const int projected_ready_turn = state_.turn + 1;
-    if (!prizes_known() || !jit_profile || scenario_.locks != LockMode::None ||
+    if (!prizes_known() || !jit_profile ||
         scenario_.max_turn < projected_ready_turn || !state_.vstar_power_used ||
         !state_.supporter_used || !state_.manual_energy_used ||
-        state_.retreat_used || item_locked() || !state_.active ||
-        !is_basic(state_.active->card) || bench_space() == 0 ||
+        state_.retreat_used || item_locked() ||
+        !supporter_rules_allow_turn(projected_ready_turn) ||
+        !state_.active || !is_basic(state_.active->card) || bench_space() == 0 ||
         !ability_available_for_pokemon(Card::LatiasEx) ||
         in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
         std::count(state_.deck.begin(), state_.deck.end(), Card::LatiasEx) == 0 ||
@@ -152,7 +165,7 @@
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // K1, JIT, route priority, and DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2704
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/2704 https://github.com/FlareZ123/pokemon-sims/issues/3555
     return energy_route_finishes;
   }
 

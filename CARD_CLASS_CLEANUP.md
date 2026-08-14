@@ -318,3 +318,18 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - The same post-search owner now contains the Garbodor/Field Blower Arven continuation immediately after the empty-deck Arven alias release. The former `part_arven_garbodor_field_blower_override.inc` fragment is retired. Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125 Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Existing route specification: https://github.com/FlareZ123/pokemon-sims/issues/2808
 - This consolidation is mechanical. It preserves the exact function bodies, macro lifetimes, helper include, direct card/rule URLs, and declaration order. Future Arven cleanup should continue from `composition/post_014a_overrides.inc` and avoid recreating one-owner `part_*.inc` fragments.
 - Validation gate remains strict Release compilation, the full regression suite, representative `--simulate-this` traces, and the paired T2/T3 matrix. Any matrix movement requires a separately justified behavior change rather than being accepted as cleanup drift.
+
+## Gladion metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3604
+- Canonical print: `sm4-95`; exact card data: https://api.pokemontcg.io/v2/cards/sm4-95
+- `src/cards/trainers/gladion.hpp` and `kRegisteredCardDefinitions` own Gladion identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Gladion's intrinsic facts; registered metadata is the sole owner of those facts.
+- Focused registration coverage: `tests/gladion_card_class_tests.cpp`.
+- Gladion's Prize inspection and exchange strategy, K0/K1 knowledge transitions, DCI/UDP/AMR, Supporter contention, target choice, and route ordering stay at their existing Engine owners. A later resolver migration must first locate the single live Gladion printed-resolution boundary and preserve the printed Prize replacement procedure through `CardContext`. Printed effect: https://api.pokemontcg.io/v2/cards/sm4-95
+
+## Cleanup wave 2026-08-14 Regidrago classifier consolidation
+
+- `is_regidrago_v_line()` now lives in `src/trace_engine_v2/core/card_classification.inc` beside the shared Pokémon identity predicates. Regidrago V and Regidrago VSTAR exact prints: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+- `src/trace_engine_v2/core/regidrago_line_helpers.inc` is reduced to a compatibility include marker at the established post-search composition boundary. The predicate implementation has one owner while existing include order and historical source links remain stable.
+- Delete the compatibility marker only after repository-wide include references and source-link consumers are proven absent. Keep the change mechanical and preserve existing route admission, DCI/UDP/AMR, K0/K1, Supporter contention, and ready-turn behavior.

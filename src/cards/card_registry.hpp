@@ -19,10 +19,11 @@
 #include "trainers/professor_burnet.hpp"
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
+#include "trainers/secret_box.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 16> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 17> kRegisteredCardDefinitions{
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -39,6 +40,7 @@ inline constexpr std::array<const CardDefinition*, 16> kRegisteredCardDefinition
     &GuzmaHala::definition, // Exact Cosmic Eclipse 229 Supporter: https://api.pokemontcg.io/v2/cards/sm12-229
     &Powerglass::definition, // Exact Shrouded Fable Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
     &ProfessorBurnet::definition, // Exact Trainer Gallery Supporter: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    &SecretBox::definition, // Exact Twilight Masquerade ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv6-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3541
 };
 
 constexpr const CardDefinition* find_definition(const Card card) {
@@ -64,6 +66,11 @@ constexpr bool registered_is_item(const Card card) {
 
 constexpr bool registered_is_supporter(const Card card) {
   return registered_is_trainer_kind(card, TrainerKind::Supporter);
+}
+
+constexpr bool registered_is_ace_spec(const Card card) {
+  const CardDefinition* definition = find_definition(card);
+  return definition != nullptr && definition->ace_spec;
 }
 
 }  // namespace sim::cards

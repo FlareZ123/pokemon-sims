@@ -167,9 +167,9 @@ Future retirement of either shim requires migrating every raw-source reader and 
 
 `src/trace_engine_v2/part_forretress_ex_combo.inc` owns the Garbodor scenario extension directly beside the `core/forretress/runtime.inc` include. Preserve the local `ScenarioExtension` value ownership and the same `std::optional<Scenario>` lookup shape as the public registry.
 
-`src/trace_engine_v2/core/board_state_policy.inc` owns the shared Active-first mutable/const board traversal and shared prior-turn evolution timing predicate. `src/trace_engine_v2/core/forretress/runtime.inc` now delegates Pineco evolution-candidate lookup plus prior/current-turn Pineco presence checks through that seam while keeping Forest of Vitality's entry-turn exception at the Forretress route owner. This completes the traversal-only Pineco step without changing DCI/UDP/AMR, K0/K1, connector, readiness, Ability, or evolution policy.
+`src/trace_engine_v2/core/board_state_policy.inc` owns the shared Active-first mutable/const board traversal, prior-turn evolution timing predicate, and canonical `BoardIndex` / `OptionalBoardIndex` vocabulary. It now also owns the shared `0 == Active`, `Bench index + 1` lookup and index-discovery seams. `src/trace_engine_v2/core/forretress/contract.inc` consumes that vocabulary rather than redeclaring it, while `src/trace_engine_v2/core/forretress/runtime.inc` continues to own Exploding Energy strategy and resolution. This cleanup changes structure only; DCI/UDP/AMR, K0/K1, connector, readiness, Ability, and evolution policy remain at their prior owners.
 
-Next mechanical Forretress step: introduce a shared board-index traversal seam before migrating Exploding Energy's remaining Active-versus-Bench source/target index scans. Preserve the existing `0 == Active` and `Bench index + 1` mapping, and keep Exploding Energy selection, attachment distribution, self-Knock-Out, promotion, and route policy at their current owners.
+Next mechanical Forretress step: migrate Exploding Energy's remaining Active-versus-Bench source/target scans in `core/forretress/runtime.inc` through `board_pokemon_at_index()` and `board_index_matching()`. Preserve selection, attachment distribution, self-Knock-Out, promotion, and route policy at the Forretress owner.
 
 Board query owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
 Forretress runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/runtime.inc
@@ -201,14 +201,17 @@ Future policy cleanup should reuse these named seams before adding another paylo
 
 ## Numbered policy-fragment migration
 
-Three previously anonymous trace-engine fragments now have named canonical owners while their historical `part_*.inc` paths remain compatibility forwarders at the exact same textual include boundaries:
+Two compatibility forwarders remain for previously anonymous trace-engine fragments that now have named canonical owners at the same textual include boundaries:
 
 - `part_013.inc` forwards to `core/supporter_legacy_runtime.inc`.
-- `part_014a.inc` forwards to `turn_action_policy_runtime.inc`. This owner stays at the trace-engine root because its established nested `core/routes/...` includes are relative to that directory.
 - `part_014b.inc` forwards to `core/recovery_supporter_policy.inc`.
 
-The executable bodies are byte-preserving moves. Future retirement of these forwarders must first migrate raw-source readers and same-repository anchors, then retarget `composition/engine_body.inc` at the identical member and macro boundaries. Preserve DCI/UDP/AMR behavior, Supporter contention, connector domination, K0/K1 semantics, declaration order, macro order, and direct rule/card URLs throughout that work.
+`part_014a.inc` is retired. `composition/engine_body.inc` now includes `turn_action_policy_runtime.inc` directly at the exact former `part_014a.inc` member and macro boundary, leaving one executable include path for that runtime owner. The runtime remains at the trace-engine root because its established nested `core/routes/...` includes are relative to that directory.
 
+Future retirement of the remaining forwarders must first migrate raw-source readers and same-repository anchors, then retarget their composition owners at identical member and macro boundaries. Preserve DCI/UDP/AMR behavior, Supporter contention, connector domination, K0/K1 semantics, declaration order, macro order, and direct rule/card URLs throughout that work.
+
+Turn action runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/turn_action_policy_runtime.inc
+Composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 Advanced rules and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 Decision priorities and knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md

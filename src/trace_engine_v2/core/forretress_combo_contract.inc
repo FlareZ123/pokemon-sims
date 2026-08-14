@@ -5,12 +5,15 @@
   // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/972
 
+  using BoardIndex = std::size_t;
+  using AttachmentDestinations = std::vector<BoardIndex>;
+
   // Combo state and board queries.
   bool forretress_combo_enabled() const;
   bool needs_pineco_connector() const;
   bool needs_forretress_connector() const;
-  Pokemon* pokemon_at_board_index(std::size_t index);
-  std::optional<std::size_t> exploding_energy_regidrago_target_index() const;
+  Pokemon* pokemon_at_board_index(BoardIndex index);
+  std::optional<BoardIndex> exploding_energy_regidrago_target_index() const;
   Card fallback_combo_basic_after_search_started() const;
   Card fallback_combo_pokemon_after_search_started() const;
 
@@ -19,7 +22,7 @@
   bool evolve_forretress_ex();
   void discard_forretress_ex_stack(const Pokemon& knocked_out);
   bool resolve_exploding_energy(
-      const std::vector<std::size_t>& attachment_destinations);
+      const AttachmentDestinations& attachment_destinations);
   bool use_exploding_energy_for_setup();
   bool advance_forretress_combo();
 

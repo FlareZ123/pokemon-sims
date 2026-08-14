@@ -49,6 +49,9 @@ static_assert(cards::Crispin::definition.name == "Crispin");
 static_assert(cards::Dawn::definition.id == Card::Dawn); // Exact Supporter: https://api.pokemontcg.io/v2/cards/me2-87
 static_assert(cards::Dawn::definition.canonical_id == "me2-87");
 static_assert(cards::Dawn::definition.name == "Dawn");
+static_assert(cards::ErikasInvitation::definition.id == Card::ErikasInvitation); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv3pt5-160 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3598
+static_assert(cards::ErikasInvitation::definition.canonical_id == "sv3pt5-160");
+static_assert(cards::ErikasInvitation::definition.name == "Erika's Invitation");
 static_assert(cards::Powerglass::definition.id == Card::Powerglass); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
 static_assert(cards::Powerglass::definition.canonical_id == "sv6pt5-63");
 static_assert(cards::Powerglass::definition.name == "Powerglass");
@@ -106,7 +109,6 @@ constexpr std::string_view name(const Card card) {
     case Card::RoseannesBackup: return "Roseanne's Backup";
     case Card::Klara: return "Klara";
     case Card::ProfessorTuro: return "Professor Turo's Scenario";
-    case Card::ErikasInvitation: return "Erika's Invitation";
     case Card::ForestSealStone: return "Forest Seal Stone";
     case Card::WishfulBaton: return "Wishful Baton";
     case Card::ForestOfVitality: return "Forest of Vitality";
@@ -120,6 +122,7 @@ constexpr std::string_view name(const Card card) {
     case Card::ChaoticSwell:
     case Card::Crispin:
     case Card::Dawn:
+    case Card::ErikasInvitation:
     case Card::EvolutionIncense:
     case Card::FieldBlower:
     case Card::GuzmaHala:
@@ -129,7 +132,7 @@ constexpr std::string_view name(const Card card) {
     case Card::ProfessorBurnet:
     case Card::ProfessorsLetter:
     case Card::QuickBall:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Crispin migration: https://github.com/FlareZ123/pokemon-sims/issues/3580
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Erika migration: https://github.com/FlareZ123/pokemon-sims/issues/3598
   }
   return "Unknown";
 }

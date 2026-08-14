@@ -6,16 +6,17 @@
   // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/972
 
   using BoardIndex = std::size_t;
+  using OptionalBoardIndex = std::optional<BoardIndex>;
   using AttachmentDestinations = std::vector<BoardIndex>;
 
   // Combo state and board queries.
-  bool forretress_combo_enabled() const;
-  bool needs_pineco_connector() const;
-  bool needs_forretress_connector() const;
+  [[nodiscard]] bool forretress_combo_enabled() const;
+  [[nodiscard]] bool needs_pineco_connector() const;
+  [[nodiscard]] bool needs_forretress_connector() const;
   Pokemon* pokemon_at_board_index(BoardIndex index);
-  std::optional<BoardIndex> exploding_energy_regidrago_target_index() const;
-  Card fallback_combo_basic_after_search_started() const;
-  Card fallback_combo_pokemon_after_search_started() const;
+  [[nodiscard]] OptionalBoardIndex exploding_energy_regidrago_target_index() const;
+  [[nodiscard]] Card fallback_combo_basic_after_search_started() const;
+  [[nodiscard]] Card fallback_combo_pokemon_after_search_started() const;
 
   // Board mutation and ability resolution.
   bool bench_pineco_if_useful();

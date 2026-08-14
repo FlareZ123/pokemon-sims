@@ -153,6 +153,8 @@ constexpr bool is_special_energy(const Card card) {
   return is_energy(card) && !is_basic_energy(card);
 }
 constexpr bool is_supporter(const Card card) {
+  // Registered Supporters own intrinsic subtype metadata. Tate & Liza exact print:
+  // https://api.pokemontcg.io/v2/cards/sm7-148
   if (cards::has_definition(card)) return cards::registered_is_supporter(card);
 
   switch (card) {
@@ -162,7 +164,6 @@ constexpr bool is_supporter(const Card card) {
     case Card::Crispin:
     case Card::ProfessorBurnet:
     case Card::Serena:
-    case Card::TateLiza:
     case Card::StevensResolve:
     case Card::Guzma:
     case Card::Channeler:

@@ -156,7 +156,7 @@ Future retirement of either shim requires migrating every raw-source reader and 
 
 `src/trace_engine_v2/part_forretress_ex_combo.inc` owns the Garbodor scenario extension directly beside the `core/forretress/runtime.inc` include. Preserve the local `ScenarioExtension` value ownership and the same `std::optional<Scenario>` lookup shape as the public registry.
 
-`src/trace_engine_v2/core/board_state_policy.inc` owns the shared Active-first mutable/const board traversal. The next mechanical Forretress step is to reuse that seam for Pineco evolution candidate lookup where declaration order permits it. Keep the edit traversal-only and preserve Forest of Vitality evolution timing.
+`src/trace_engine_v2/core/board_state_policy.inc` now owns the shared Active-first mutable/const board traversal and the stable Active=0 / Bench=n+1 pointer-to-index recovery used by board-targeting effects. The Forretress runtime reuses that seam for Pineco evolution selection and Exploding Energy source/Regidrago target lookup, removing three hand-written Active/Bench scans while preserving traversal order and Forest of Vitality timing. The next mechanical Forretress step is to reuse these seams for any remaining board scans only when their target ordering and mutation semantics are identical.
 
 Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
 Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1

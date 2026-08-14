@@ -163,7 +163,7 @@ Future retirement of either shim requires migrating every raw-source reader and 
 
 ## Forretress cleanup plan
 
-`src/trace_engine_v2/core/forretress/contract.inc` is the canonical Engine-member declaration owner. Runtime definitions live in `src/trace_engine_v2/core/forretress/runtime.inc`. The declaration/runtime split remains required while Engine is a textual class body and runtime definitions are emitted after Engine closes.
+`src/trace_engine_v2/core/forretress/contract.inc` is the canonical Engine-member declaration owner. Runtime definitions live in `src/trace_engine_v2/core/forretress/runtime.inc`. The declaration/runtime split remains required while Engine is a textual class body and runtime definitions are emitted after Engine closes. The declarations are grouped in runtime order by combo setup, Exploding Energy resolution, and search connectors so future moves can preserve each ownership boundary without reconstructing the monolithic sequence.
 
 `src/trace_engine_v2/part_forretress_ex_combo.inc` owns the Garbodor scenario extension directly beside the `core/forretress/runtime.inc` include. Preserve the local `ScenarioExtension` value ownership and the same `std::optional<Scenario>` lookup shape as the public registry.
 
@@ -206,10 +206,13 @@ Two compatibility forwarders remain for previously anonymous trace-engine fragme
 - `part_013.inc` forwards to `core/supporter_legacy_runtime.inc`.
 - `part_014b.inc` forwards to `core/recovery_supporter_policy.inc`.
 
+`part_013.inc` is still a live composition boundary: `composition/opening_engine_overrides.inc` includes it directly before the opening override continuation. A cleanup CI probe that removed the shim failed both Release and sanitizer compilation at that include, so future retirement must first retarget the parent include to `core/supporter_legacy_runtime.inc` at the identical member boundary. Build evidence: https://github.com/FlareZ123/pokemon-sims/actions/runs/31849652554
+
 `part_014a.inc` is retired. `composition/engine_body.inc` now includes `turn_action_policy_runtime.inc` directly at the exact former `part_014a.inc` member and macro boundary, leaving one executable include path for that runtime owner. The runtime remains at the trace-engine root because its established nested `core/routes/...` includes are relative to that directory.
 
 Future retirement of the remaining forwarders must first migrate raw-source readers and same-repository anchors, then retarget their composition owners at identical member and macro boundaries. Preserve DCI/UDP/AMR behavior, Supporter contention, connector domination, K0/K1 semantics, declaration order, macro order, and direct rule/card URLs throughout that work.
 
+Supporter legacy runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/supporter_legacy_runtime.inc
 Turn action runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/turn_action_policy_runtime.inc
 Composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
 C++ textual-include semantics: https://eel.is/c++draft/cpp.include

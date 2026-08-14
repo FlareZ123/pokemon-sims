@@ -133,6 +133,12 @@ The Forretress contract now names `BoardIndex`, `OptionalBoardIndex`, and `Attac
 
 Pineco / Forretress ex exact cards: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
 
+## Steven route package cleanup
+
+`src/trace_engine_v2/core/routes/steven_package_policy.inc` now owns the issue-1745 Steven/Latias T3 policy through the colocated `steven_latias_t3_policy.inc`. The historical root `part_issue_1745_steven_latias_t3_override.inc` was retired after its live package include moved, preserving the established textual order and the route's existing rule/card citations. Package owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_package_policy.inc Route specification: https://github.com/FlareZ123/pokemon-sims/issues/1745
+
+Next mechanical Steven step: migrate one remaining root implementation included by `steven_package_policy.inc` into `core/routes/` only after confirming it has no other live raw-source consumer. Keep each move behavior-neutral, preserve include order, preserve direct card/rule URLs beside the existing policy, and remove the historical root file in the same switching commit.
+
 ## Rules and policy anchors
 
 Advanced rules procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

@@ -5,6 +5,14 @@
 #include <stdexcept>
 #include <string_view>
 
+namespace sim {
+
+// Unified-test discovery requires one access block per standalone regression.
+// This metadata seam is public, so no privileged Engine access is necessary.
+struct EngineTestAccess {};
+
+}  // namespace sim
+
 namespace {
 
 void expect(const bool condition, const char* message) {
@@ -31,6 +39,10 @@ void test_earthen_vessel_metadata_is_registry_owned() {
          "Earthen Vessel must remain an Item.");
   expect(sim::cards::registered_is_item(sim::Card::EarthenVessel),
          "Earthen Vessel Item classification must resolve through the registry.");
+  expect(sim::is_item(sim::Card::EarthenVessel),
+         "Compatibility Item classification must resolve through registered metadata.");
+  expect(sim::name(sim::Card::EarthenVessel) == "Earthen Vessel",
+         "Compatibility name lookup must resolve through registered metadata.");
 }
 
 }  // namespace

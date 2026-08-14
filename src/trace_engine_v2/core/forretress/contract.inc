@@ -1,10 +1,13 @@
-  // Test-variant combo support. Definitions are emitted after Engine closes so
-  // these declarations are visible to opening setup, connector policy, and the
-  // active turn composition without disturbing the split translation unit.
+  // Canonical Forretress class-member contract. Definitions are emitted after
+  // Engine closes so these declarations remain visible to opening setup,
+  // connector policy, and active-turn composition without disturbing the split
+  // translation unit.
+  // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
   // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
   // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/972
 
+  // Shared board-index vocabulary for the Forretress implementation.
   using BoardIndex = std::size_t;
   using OptionalBoardIndex = std::optional<BoardIndex>;
   using AttachmentDestinations = std::vector<BoardIndex>;

@@ -1,3 +1,6 @@
+  using BoardIndex = std::size_t;
+  using OptionalBoardIndex = std::optional<BoardIndex>;
+
   template <typename ActiveZone, typename BenchZone, typename Predicate>
   [[nodiscard]] static auto find_board_pokemon_matching_in_zones(
       ActiveZone& active, BenchZone& bench, Predicate predicate)
@@ -29,7 +32,7 @@
   }
 
   template <typename Predicate>
-  [[nodiscard]] std::optional<std::size_t> board_index_matching(
+  [[nodiscard]] OptionalBoardIndex board_index_matching(
       Predicate predicate) const {
     // Board index 0 denotes the Active spot; Bench entries use their container
     // index plus one. Keep that mapping in one Active-first traversal for callers
@@ -39,7 +42,7 @@
     const auto match = std::find_if(
         state_.bench.begin(), state_.bench.end(), predicate);
     if (match == state_.bench.end()) return std::nullopt;
-    return static_cast<std::size_t>(
+    return static_cast<BoardIndex>(
         std::distance(state_.bench.begin(), match)) + 1U;
   }
 

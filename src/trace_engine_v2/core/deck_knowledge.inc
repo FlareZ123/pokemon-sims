@@ -6,7 +6,7 @@
     return count > 0;
   }
 
-  [[nodiscard]] int loose_public_copy_count(const Card card) const {
+  [[nodiscard]] int unattached_public_copy_count(const Card card) const {
     return hand_count(card) + count_of(state_.discard, card);
   }
 
@@ -15,7 +15,8 @@
     // deck-versus-Prize placement:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
-    return loose_public_copy_count(card) + attached_public_count(card);
+    const int unattached = unattached_public_copy_count(card);
+    return unattached + attached_public_count(card);
   }
 
   [[nodiscard]] int unresolved_copy_count(

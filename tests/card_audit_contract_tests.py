@@ -23,12 +23,13 @@ CARD_SOURCE_TRAILING_PUNCTUATION = ".,;:!?`"
 # https://github.com/PokemonTCG/pokemon-tcg-data
 # Correct Mega Dragonite ex record: https://api.pokemontcg.io/v2/cards/me2pt5-152
 # Professor's Letter supplied-corpus record: https://api.pokemontcg.io/v2/cards/xy1-123
+# Ultra Ball supplied-corpus record: https://api.pokemontcg.io/v2/cards/sv1-196
 # Confirmed source-traceability bug: https://github.com/FlareZ123/pokemon-sims/issues/1696
 CANONICAL_SOURCE_CARD_IDS = {
     "base1-99", "me1-117", "me2-87", "me2pt5-16", "me2pt5-152",
     "sm11-141", "sm11-190", "sm12-187", "sm12-229", "sm2-55", "sm2-60", "sm2-125",
     "sm3-115", "sm3-128", "sm4-95", "sm4-96", "sm5-100", "sm6-113",
-    "sm7-145", "sm7-148", "sm9-152", "sv1-166", "sv3pt5-160",
+    "sm7-145", "sm7-148", "sm9-152", "sv1-166", "sv1-196", "sv3pt5-160",
     "sv4-163", "sv4-171", "sv5-146", "sv4pt5-1", "sv4pt5-2", "sv6-127",
     "sv6-130", "sv6-163", "sv6pt5-63", "sv7-133", "sv8-76",
     "sv8-140", "sv8-164", "swsh1-163", "swsh1-179", "swsh3-104",

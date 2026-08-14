@@ -6,8 +6,9 @@
               pays_apex_energy_cost(pokemon);
               // https://github.com/FlareZ123/pokemon-sims/issues/2424
         });
-    const bool payload_in_known_deck =
-        std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
+    const bool payload_in_known_deck = payload_zone_contains(state_.deck);
+    // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+    // Apex Dragon payload semantics: https://api.pokemontcg.io/v2/cards/swsh12-136
 
     // Complete legal deck or Prize inspection establishes K1:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states

@@ -90,7 +90,6 @@ constexpr std::string_view name(const Card card) {
     case Card::Appletun: return "Appletun sv8-140";
     case Card::Pineco: return "Pineco";
     case Card::ForretressEx: return "Forretress ex";
-    case Card::SecretBox: return "Secret Box";
     case Card::UltraBall: return "Ultra Ball";
     case Card::PokemonCommunication: return "Pokémon Communication";
     case Card::EarthenVessel: return "Earthen Vessel";
@@ -129,7 +128,8 @@ constexpr std::string_view name(const Card card) {
     case Card::ProfessorBurnet:
     case Card::ProfessorsLetter:
     case Card::QuickBall:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Crispin migration: https://github.com/FlareZ123/pokemon-sims/issues/3580
+    case Card::SecretBox:
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Secret Box data: https://api.pokemontcg.io/v2/cards/sv6-163
   }
   return "Unknown";
 }

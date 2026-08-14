@@ -337,3 +337,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Focused registration coverage: `tests/lusamine_card_class_tests.cpp`.
 - This wave preserves Lusamine's discard-recovery resolution, target choice, Supporter contention, DCI/UDP/AMR, connector domination, K0/K1 state, and route strategy at their existing Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm4-96
 - A later resolver migration must locate the single live Lusamine resolution boundary and preserve its Supporter/Stadium recovery ordering through `CardContext` without moving strategic recovery choice into card code.
+
+## Channeler metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3624
+- Canonical print: `sm11-190`; exact card data: https://api.pokemontcg.io/v2/cards/sm11-190
+- `src/cards/trainers/channeler.hpp` and `kRegisteredCardDefinitions` own Channeler identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Channeler's intrinsic facts; both source registered metadata before unmigrated fallbacks.
+- Focused registration coverage: `tests/channeler_card_class_tests.cpp`.
+- This wave preserves Channeler's setup strategy, DCI/UDP/AMR, connector domination, K0/K1, Supporter contention, and route policy at existing Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm11-190
+- A later resolver migration must locate the single live Channeler resolution boundary and preserve attack-effect removal ordering through `CardContext` without moving strategy choice into card code. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

@@ -37,6 +37,28 @@
     projected.state_.discarded_this_turn.clear();
   }
 
+  void issue_3545_continue_after_supporter(Engine& projected) const {
+    if (projected.state_.turn_ended) return;
+
+    // A recovered Supporter's value is not always visible immediately after the
+    // Supporter resolves. Arven and other search/recovery Supporters can create an
+    // Item route that only becomes a completed axis after the ordinary post-Supporter
+    // fixed point, evolution, and attachment steps. Evaluate that public continuation
+    // without calling the #3545 BC/VS wrapper again, which keeps the projection
+    // finite and prevents recursive self-credit.
+    // Turn sequencing: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Item/evolution/attachment procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    projected.play_basics_from_hand();
+    projected.play_items_until_stable_issue_3057(true);
+    projected.attach_manual();
+    projected.evolve_best_regi();
+    projected.play_basics_from_hand();
+    projected.play_items_until_stable_issue_3057(true);
+    projected.evolve_best_regi();
+    projected.attach_manual();
+  }
+
   std::optional<Card> issue_3545_first_payload_in_deck() const {
     // Preserve the established attack-payload priority already used by Brilliant
     // Blender. Battle Compressor can choose any cards from deck, so only physically
@@ -126,6 +148,7 @@
       issue_3545_advance_public_state_one_turn(projected);
     }
     projected.choose_supporter();
+    issue_3545_continue_after_supporter(projected);
     return projected.issue_3545_setup_route_score();
   }
 
@@ -146,10 +169,9 @@
 
     // VS Seeker puts one Supporter from discard into hand. Evaluate each recovery
     // against both the ordinary Supporter line and any cheaper direct BC payload
-    // line already available in hand. When BC and VS genuinely combine, the
-    // projection resolves the BC payload before applying the recovered Supporter.
-    // This accepts Crispin+BC Energy/payload synergy while rejecting redundant
-    // Burnet+BC payload duplication.
+    // line already available in hand. The comparison includes the ordinary
+    // post-Supporter Item/evolution/attachment continuation so search-chain
+    // Supporters are valued by the setup they actually complete.
     // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
     // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
@@ -163,6 +185,7 @@
       issue_3545_advance_public_state_one_turn(baseline);
     }
     baseline.choose_supporter();
+    issue_3545_continue_after_supporter(baseline);
     int best_score = baseline.issue_3545_setup_route_score();
     best_score = std::max(
         best_score,
@@ -190,6 +213,7 @@
         issue_3545_advance_public_state_one_turn(projected);
       }
       if (!issue_3545_recovered_supporter_is_used(projected, candidate)) continue;
+      issue_3545_continue_after_supporter(projected);
 
       const int score = projected.issue_3545_setup_route_score();
       if (score > best_score) {
@@ -240,8 +264,9 @@
     // BC may turn a deck Supporter into VS Seeker access. Evaluate the combined
     // route against both the ordinary Supporter line and a direct BC payload line.
     // The projected BC resolution also includes the one Dragon payload that the
-    // real selector will take when payload is live, allowing true synergy such as
-    // BC(payload + Crispin) -> VS Seeker -> Crispin for simultaneous payload/Energy.
+    // real selector will take when payload is live. Continue through the ordinary
+    // post-Supporter Item/evolution/attachment steps before comparing scores so
+    // Arven and other connector Supporters receive their actual route value.
     // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
     // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
@@ -253,6 +278,7 @@
       issue_3545_advance_public_state_one_turn(baseline);
     }
     baseline.choose_supporter();
+    issue_3545_continue_after_supporter(baseline);
     int best_score = baseline.issue_3545_setup_route_score();
     best_score = std::max(
         best_score,
@@ -292,8 +318,117 @@
         issue_3545_advance_public_state_one_turn(projected);
       }
       if (!issue_3545_recovered_supporter_is_used(projected, candidate)) continue;
+      issue_3545_continue_after_supporter(projected);
 
       const int score = projected.issue_3545_setup_route_score();
+      if (score > best_score) {
+        best_score = score;
+        best = candidate;
+      }
+    }
+    return best;
+  }
+
+  std::optional<Card> issue_3545_powerglass_energy_target() const {
+    if (state_.turn_ended || item_locked() || hand_count(Card::BattleCompressor) == 0 ||
+        state_.turn >= scenario_.max_turn || !state_.active ||
+        (state_.active->card != Card::RegidragoV &&
+         state_.active->card != Card::RegidragoVstar) ||
+        pays_apex_energy_cost(*state_.active)) {
+      return std::nullopt;
+    }
+
+    const bool attached_powerglass = state_.active->tool == Tool::Powerglass;
+    const bool held_powerglass_can_attach = state_.active->tool == Tool::None &&
+        hand_count(Card::Powerglass) > 0;
+    if (!attached_powerglass && !held_powerglass_can_attach) return std::nullopt;
+
+    const auto projected_end_progress = [this](const std::optional<Card> added) {
+      std::mt19937_64 shadow_rng = rng_;
+      Engine projected = issue_3545_projection(shadow_rng);
+      if (added) {
+        if (!remove_one(projected.state_.deck, *added)) return -1;
+        projected.state_.discard.push_back(*added);
+        projected.state_.discarded_this_turn.push_back(*added);
+      }
+      if (projected.state_.active && projected.state_.active->tool != Tool::Powerglass) {
+        projected.attach_powerglass();
+      }
+      projected.resolve_powerglass_end_turn();
+      return projected.state_.active
+          ? projected.apex_energy_progress(*projected.state_.active)
+          : -1;
+    };
+
+    const int baseline = projected_end_progress(std::nullopt);
+    for (const Card energy : {Card::Grass, Card::Fire}) {
+      if (count_of(state_.deck, energy) == 0) continue;
+      if (projected_end_progress(energy) > baseline) return energy;
+    }
+    return std::nullopt;
+  }
+
+  std::optional<Card> issue_3545_compressor_future_bank_target(
+      const Card current_supporter) const {
+    if (hand_count(Card::BattleCompressor) == 0 || hand_count(Card::VsSeeker) < 2 ||
+        !supporter_allowed() || state_.turn >= scenario_.max_turn ||
+        !item_locked_on_turn(state_.turn + 1)) {
+      return std::nullopt;
+    }
+
+    const auto score_route = [this, current_supporter](
+                                 const std::optional<Card> future_supporter) {
+      std::mt19937_64 shadow_rng = rng_;
+      Engine projected = issue_3545_projection(shadow_rng);
+      projected.deck_seen_ = true;
+      if (!remove_one(projected.state_.hand, Card::BattleCompressor)) return -1;
+      projected.state_.discard.push_back(Card::BattleCompressor);
+      if (!remove_one(projected.state_.deck, current_supporter)) return -1;
+      projected.state_.discard.push_back(current_supporter);
+      projected.state_.discarded_this_turn.push_back(current_supporter);
+      if (future_supporter) {
+        if (!remove_one(projected.state_.deck, *future_supporter)) return -1;
+        projected.state_.discard.push_back(*future_supporter);
+        projected.state_.discarded_this_turn.push_back(*future_supporter);
+      }
+      if (projected.need_payload() && projected.can_play_payload_this_turn()) {
+        if (const auto payload = projected.issue_3545_first_payload_in_deck()) {
+          if (remove_one(projected.state_.deck, *payload)) {
+            projected.state_.discard.push_back(*payload);
+            projected.state_.discarded_this_turn.push_back(*payload);
+          }
+        }
+      }
+      if (!remove_one(projected.state_.hand, Card::VsSeeker)) return -1;
+      projected.state_.discard.push_back(Card::VsSeeker);
+      if (!projected.recover_discard_to_hand(current_supporter) ||
+          !issue_3545_recovered_supporter_is_used(projected, current_supporter)) {
+        return -1;
+      }
+      issue_3545_continue_after_supporter(projected);
+      if (projected.state_.turn_ended) return -1;
+
+      if (future_supporter) {
+        if (!remove_one(projected.state_.hand, Card::VsSeeker)) return -1;
+        projected.state_.discard.push_back(Card::VsSeeker);
+        if (!projected.recover_discard_to_hand(*future_supporter)) return -1;
+      }
+      issue_3545_advance_public_state_one_turn(projected);
+      projected.choose_supporter();
+      issue_3545_continue_after_supporter(projected);
+      return projected.issue_3545_setup_route_score();
+    };
+
+    int best_score = score_route(std::nullopt);
+    std::optional<Card> best;
+    std::vector<Card> seen;
+    for (const Card candidate : state_.deck) {
+      if (!is_supporter(candidate) || candidate == current_supporter ||
+          std::find(seen.begin(), seen.end(), candidate) != seen.end()) {
+        continue;
+      }
+      seen.push_back(candidate);
+      const int score = score_route(candidate);
       if (score > best_score) {
         best_score = score;
         best = candidate;
@@ -310,7 +445,12 @@
     }
 
     const auto supporter = issue_3545_compressor_supporter_target();
-    if (supporter) targets.push_back(*supporter);
+    if (supporter) {
+      targets.push_back(*supporter);
+      if (const auto future = issue_3545_compressor_future_bank_target(*supporter)) {
+        targets.push_back(*future);
+      }
+    }
 
     const bool payload_live = need_payload() && can_play_payload_this_turn();
     const bool payload_is_dominated =
@@ -332,6 +472,21 @@
         if (targets.size() >= payload_limit || targets.size() >= 3U) break;
         if (count_of(state_.deck, payload) > count_of(targets, payload)) {
           targets.push_back(payload);
+        }
+      }
+    }
+
+    // Powerglass attaches a Basic Energy from discard at end of turn. On a setup
+    // turn where payload is not yet live, an otherwise-unused BC slot may seed the
+    // exact Basic Energy that increases the projected end-turn Apex Energy progress.
+    // Compare against the existing discard before selecting the Energy so BC never
+    // duplicates an already-live Powerglass target.
+    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+    // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    if (!payload_live && targets.size() < 3U) {
+      if (const auto energy = issue_3545_powerglass_energy_target()) {
+        if (count_of(state_.deck, *energy) > count_of(targets, *energy)) {
+          targets.push_back(*energy);
         }
       }
     }

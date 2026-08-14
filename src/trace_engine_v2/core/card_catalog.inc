@@ -46,6 +46,9 @@ static_assert(cards::Dawn::definition.name == "Dawn");
 static_assert(cards::Powerglass::definition.id == Card::Powerglass); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
 static_assert(cards::Powerglass::definition.canonical_id == "sv6pt5-63");
 static_assert(cards::Powerglass::definition.name == "Powerglass");
+static_assert(cards::Arven::definition.id == Card::Arven); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv1-166 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3577
+static_assert(cards::Arven::definition.canonical_id == "sv1-166");
+static_assert(cards::Arven::definition.name == "Arven");
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},         {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
@@ -89,7 +92,6 @@ constexpr std::string_view name(const Card card) {
     case Card::PokemonCommunication: return "Pokémon Communication";
     case Card::EarthenVessel: return "Earthen Vessel";
     case Card::Grant: return "Grant";
-    case Card::Arven: return "Arven";
     case Card::Crispin: return "Crispin";
     case Card::ProfessorBurnet: return "Professor Burnet";
     case Card::Serena: return "Serena";
@@ -111,6 +113,7 @@ constexpr std::string_view name(const Card card) {
     case Card::DoubleDragonEnergy: return "Double Dragon Energy";  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
+    case Card::Arven:
     case Card::BattleVipPass:
     case Card::BrilliantBlender:
     case Card::ChaoticSwell:
@@ -123,7 +126,7 @@ constexpr std::string_view name(const Card card) {
     case Card::Powerglass:
     case Card::ProfessorsLetter:
     case Card::QuickBall:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Arven migration: https://github.com/FlareZ123/pokemon-sims/issues/3577
   }
   return "Unknown";
 }

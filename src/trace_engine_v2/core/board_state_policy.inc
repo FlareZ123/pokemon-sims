@@ -1,3 +1,10 @@
+  // Board index 0 is Active; subsequent indexes map to Bench positions. Keep the
+  // index vocabulary beside the canonical Active-before-Bench traversal seam so
+  // feature modules do not redeclare the same raw container mapping.
+  using BoardIndex = std::size_t;
+  using OptionalBoardIndex = std::optional<BoardIndex>;
+  using AttachmentDestinations = std::vector<BoardIndex>;
+
   template <typename ActiveZone, typename BenchZone, typename Predicate>
   [[nodiscard]] static auto find_board_pokemon_matching_in_zones(
       ActiveZone& active, BenchZone& bench, Predicate predicate)
@@ -26,6 +33,21 @@
   template <typename Predicate>
   [[nodiscard]] bool board_has_pokemon_matching(Predicate predicate) const {
     return find_board_pokemon_matching(predicate) != nullptr;
+  }
+
+  template <typename Predicate>
+  [[nodiscard]] OptionalBoardIndex find_board_pokemon_index_matching(
+      Predicate predicate) const {
+    // Preserve the simulator's established 0 == Active and Bench index + 1
+    // mapping while sharing the same Active-before-Bench traversal policy.
+    // C++ find_if semantics: https://eel.is/c++draft/alg.find
+    if (state_.active && predicate(*state_.active)) return 0U;
+    const auto match = std::find_if(
+        state_.bench.begin(), state_.bench.end(), predicate);
+    if (match == state_.bench.end()) return std::nullopt;
+    return static_cast<BoardIndex>(
+               std::distance(state_.bench.begin(), match)) +
+           1U;
   }
 
   [[nodiscard]] static constexpr bool pokemon_has_open_v_tool_slot(

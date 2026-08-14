@@ -98,6 +98,7 @@ These staged entries advance the card-class plan without changing the simulator'
 
 - Registered display names for Battle VIP Pass, Brilliant Blender, Field Blower, Hisuian Heavy Ball, Professor's Letter, Evolution Incense, Mysterious Treasure, Quick Ball, and Guzma & Hala now flow through `CardDefinition`; their legacy `name()` branches no longer duplicate those strings. Canonical registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 - `is_item()` delegates every registered Item to registry metadata. Its legacy switch now contains only unmigrated Items: Secret Box, Ultra Ball, Pokémon Communication, and Earthen Vessel. Exact migrated Item prints: https://api.pokemontcg.io/v2/cards/swsh8-225 https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/swsh10-146 https://api.pokemontcg.io/v2/cards/xy1-123 https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
+- ACE SPEC metadata now has one intrinsic predicate on `CardDefinition` and one registered-card predicate in `card_registry.hpp`. Future compatibility cleanup should delegate migrated ACE SPEC queries through that seam before retaining legacy fallbacks for unmigrated cards. Brilliant Blender source: https://api.pokemontcg.io/v2/cards/sv8-164 Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 - This wave is mechanical ownership cleanup only. Printed resolution, strategy, DCI/UDP/AMR, connector priority, and K0/K1 transitions remain at their existing owners. The next resolver migration must still locate the single live resolution boundary before moving state transitions. Architecture contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#card-module-contract
 
 ## Composition consolidation status
@@ -128,8 +129,9 @@ Registered-card compatibility now uses `find_definition()` as the single registr
 - Registered display-name ownership is now mechanically complete for the current registry inventory: `name()` consults `find_definition()` first and has no duplicate return strings for registered cards.
 - Registered Item ownership is now mechanically complete for the current registry inventory: `is_item()` delegates registered cards before reaching a legacy switch that contains only unmigrated Items.
 - `registered_is_trainer_kind()` is the shared intrinsic Trainer-subtype query. Item, Supporter, Stadium, and Tool compatibility checks should delegate to this helper as those classifications migrate.
+- ACE SPEC ownership now follows the same metadata path: `is_ace_spec(const CardDefinition&)` reads the intrinsic flag, and `registered_is_ace_spec()` reuses that predicate for registered cards. Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
 - `is_trainer_kind()` belongs with `CardDefinition` because it interprets intrinsic metadata only. Route policy, DCI/UDP, AMR, connector domination, K0/K1, and matchup state remain outside the registry.
-- The next card migration should reuse these registry primitives before adding any new compatibility branch. If a migrated fact still needs a legacy fallback, keep that fallback only for unmigrated cards.
+- The next card migration should reuse these registry primitives before adding any new compatibility branch. If a migrated intrinsic fact still needs a legacy fallback, keep that fallback only for unmigrated cards.
 
 For mechanical `.inc` cleanup:
 

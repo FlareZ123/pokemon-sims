@@ -78,7 +78,7 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Card data: https://api.pokemontcg.io/v2/cards/swsh10-146
 - Status: exact identity, display name, Trainer kind, and Item subtype are owned by `src/cards/trainers/hisuian_heavy_ball.hpp` and `kRegisteredCardDefinitions`.
 - Existing Hisuian Heavy Ball strategy and resolution remain in Engine for this metadata-only wave. Prize inspection, Basic-Pokémon choice, Prize replacement, shuffle, K0/K1 timing, DCI/AMR, connector priority, and readiness behavior remain unchanged.
-- Legacy `name()` and `is_item()` cases remain compatibility-only and are unreachable for the registered definition. Remove those duplicate fallbacks in a later mechanical edit rather than mixing legacy-table deletion with this registration wave.
+- Legacy `name()` and `is_item()` duplicate cases are retired; registered metadata is now the sole intrinsic name/Item-classification owner. Printed effect: https://api.pokemontcg.io/v2/cards/swsh10-146
 - Follow-up for this card must locate the single live Hisuian Heavy Ball resolver before moving printed Prize inspection and replacement through `CardContext`; preserve the printed branch that discards the Item when no Basic Pokémon is revealed. Printed effect: https://api.pokemontcg.io/v2/cards/swsh10-146
 
 ### Field Blower
@@ -95,8 +95,8 @@ These staged entries advance the card-class plan without changing the simulator'
 
 ### Cleanup wave 2026-08-13 checkpoint
 
-- Field Blower's registered display name now flows through `CardDefinition`, while the concurrently migrated Hisuian Heavy Ball retains its temporary legacy compatibility label for a later mechanical cleanup. Canonical registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-- `is_item()` delegates Field Blower, Professor's Letter, Evolution Incense, Mysterious Treasure, and Quick Ball identity to registered metadata. Hisuian Heavy Ball retains its compatibility fallback for a later mechanical edit. Exact prints: https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/xy1-123 https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/swsh10-146
+- Field Blower, Hisuian Heavy Ball, Battle VIP Pass, and Brilliant Blender registered display names now flow through `CardDefinition`; `name()` keeps legacy cases only for unmigrated identities. Canonical registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+- `is_item()` delegates every registered Item identity to `registered_is_item()` and keeps the legacy switch only for currently unmigrated Items. Exact registered prints include: https://api.pokemontcg.io/v2/cards/sm2-125 https://api.pokemontcg.io/v2/cards/swsh10-146 https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/sm9-148
 - This wave is mechanical ownership cleanup only. Printed resolution, strategy, DCI/UDP/AMR, connector priority, and K0/K1 transitions remain at their existing owners. The next resolver migration must still locate the single live resolution boundary before moving state transitions. Architecture contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#card-module-contract
 
 ## Composition consolidation status
@@ -123,7 +123,7 @@ Registered-card compatibility now uses `find_definition()` as the single registr
 
 ### Registry consolidation checkpoint
 
-- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Brilliant Blender, Field Blower, Quick Ball, Professor's Letter, Evolution Incense, Mysterious Treasure, and Hisuian Heavy Ball now use that inventory; future migrations append one definition there instead of extending a lookup switch. Field Blower source: https://api.pokemontcg.io/v2/cards/sm2-125 Hisuian Heavy Ball source: https://api.pokemontcg.io/v2/cards/swsh10-146
+- `kRegisteredCardDefinitions` is the single explicit list of migrated definitions. Battle VIP Pass, Brilliant Blender, Field Blower, Quick Ball, Professor's Letter, Evolution Incense, Mysterious Treasure, Hisuian Heavy Ball, and Guzma & Hala now use that inventory; future migrations append one definition there instead of extending a lookup switch. Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 - `registered_is_trainer_kind()` is the shared intrinsic Trainer-subtype query. Item, Supporter, Stadium, and Tool compatibility checks should delegate to this helper as those classifications migrate.
 - `is_trainer_kind()` belongs with `CardDefinition` because it interprets intrinsic metadata only. Route policy, DCI/UDP, AMR, connector domination, K0/K1, and matchup state remain outside the registry.
 - The next card migration should reuse these registry primitives before adding any new compatibility branch. If a migrated fact still needs a legacy fallback, keep that fallback only for unmigrated cards.
@@ -247,3 +247,9 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - `src/cards/trainers/battle_vip_pass.hpp` and `kRegisteredCardDefinitions` own exact identity, display name, Trainer kind, and Item subtype.
 - Focused registration coverage: `tests/battle_vip_pass_card_class_tests.cpp`.
 - Existing first-turn admission, Basic-Pokémon Bench search resolution, bench-space policy, K0/K1 timing, DCI/UDP/AMR, connector domination, and route ordering remain in Engine. A later printed-resolution migration should preserve those boundaries and reuse the existing live resolver.
+
+## Cleanup wave 2026-08-13 registered-item ownership follow-up
+
+- `src/trace_engine_v2/core/card_catalog.inc` now treats all currently registered Item display names as registry-owned compatibility cases. The legacy switch no longer duplicates Battle VIP Pass, Brilliant Blender, or Hisuian Heavy Ball names. Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+- `src/trace_engine_v2/core/card_classification.inc` now routes every registered Item through `registered_is_item()` and limits its fallback switch to unmigrated Items. This removes duplicate intrinsic ownership without moving any printed effect, strategy, DCI/UDP/AMR, K0/K1, lock, or route-order logic.
+- The next `.inc` consolidation should continue at proven single-owner composition boundaries. `core/simulator_state.inc` remains intentionally split because it preserves a live declaration continuation; the Quick Ball base/tail bridge remains split for the same boundary reason. C++ textual include semantics: https://eel.is/c++draft/cpp.include

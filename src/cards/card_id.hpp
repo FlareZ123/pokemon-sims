@@ -62,6 +62,8 @@ enum class Card : std::uint8_t {
   Grass,
   Fire,
   GuzmaHala,
+  BattleCompressor, // Exact Item: https://api.pokemontcg.io/v2/cards/xy4-92
+  VsSeeker, // Exact Item: https://api.pokemontcg.io/v2/cards/xy4-109
 };
 
 }  // namespace sim

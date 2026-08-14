@@ -7,8 +7,7 @@
 // Card catalog: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 // Card classification: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
 // Simulator state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
-// Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forest_field_blower_policy.inc
-// Lock-removal specification: https://github.com/FlareZ123/pokemon-sims/issues/3057
+// Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/issues/3057
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
 
 #ifndef SIM_TRACE_SIMULATOR_STATE_INCLUDED
@@ -62,6 +61,12 @@
 #error "Opening composition leaked the temporary might_be_unseen alias"
 #endif
 
+// Define the issue-3545 Treasure admission wrapper at a proven class-member boundary.
+// Its delegate is defined by the following opening composition; complete-class member
+// lookup permits this earlier inline definition while keeping all legacy definitions
+// untouched by the later scheduler-only macro alias.
+#include "../core/battle_compressor_treasure_reservation.inc"
+
 // Phase 3: compose the banked-Tapu replacement at the post-search member boundary.
 // Preserve this order because part_014a closes run_search_items_one_step() before
 // the completed replacement policy is composed at the safe class-member boundary.
@@ -73,11 +78,24 @@
 #endif
 #define retreat_banked_tapu_to_regidrago retreat_banked_tapu_to_regidrago_issue3089_original
 #include "opening_engine_overrides.inc"
-#include "../part_014a.inc"
 #undef retreat_banked_tapu_to_regidrago
 #if defined(retreat_banked_tapu_to_regidrago)
-#error "Banked-Tapu composition leaked the temporary retreat alias"
+#error "Banked-Tapu opening composition leaked the temporary retreat alias"
 #endif
+
+// part_014a resumes the search scheduler after opening overrides have defined the
+// final Treasure implementation. Alias only those scheduler calls to the reservation
+// wrapper so the underlying card behavior remains unchanged.
+#if defined(play_mysterious_treasure)
+#error "Issue-3545 Treasure reservation requires its alias to be undefined"
+#endif
+#define play_mysterious_treasure play_mysterious_treasure_issue3545_reserved
+#include "../part_014a.inc"
+#undef play_mysterious_treasure
+#if defined(play_mysterious_treasure)
+#error "Issue-3545 Treasure reservation leaked its scheduler alias"
+#endif
+
 #if defined(begin_turn)
 #error "Banked-Tapu composition expected opening_engine_overrides.inc to release begin_turn"
 #endif
@@ -96,25 +114,91 @@
 #define play_chaotic_swell play_chaotic_swell_issue_3057
 #define play_field_blower play_field_blower_issue_3057
 #include "post_014a_overrides.inc"
+
+// Keep the first validated BC/VS scheduler available as a base fixed point. The
+// hidden-route layer may intercept a BC or VS action when a strictly better public
+// continuation is proved, then the cross-profile refinement layer compares one
+// public turn farther without consulting the unknown next draw.
+// C++ textual macro replacement: https://eel.is/c++draft/cpp.replace
+// Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
+#if defined(play_items_until_stable_issue3545) || defined(choose_supporter) || \
+    defined(play_battle_compressor_hidden_routes) || \
+    defined(issue_3545_hidden_battle_compressor_targets)
+#error "Issue-3545 policy aliases must be undefined on entry"
+#endif
+
+// The deterministic Steven package is needed by both production Supporter dispatch
+// and the oracle-safe projection adapter, so define it before the projection layer.
+#include "../core/battle_compressor_steven_route.inc"
+#include "../core/battle_compressor_projection_adapter.inc"
+
+#define play_items_until_stable_issue3545 play_items_until_stable_issue3545_base
+#define choose_supporter choose_supporter_issue3545_projection
+#include "../core/battle_compressor_vs_seeker_policy.inc"
+#undef choose_supporter
+#undef play_items_until_stable_issue3545
+
+// Preserve the validated hidden target/executor under private names. The binding
+// layer then proves that a distinct second-VS Supporter bank is the actual next-turn
+// Supporter action before exposing the public hidden target vector to refinements.
+#define issue_3545_hidden_battle_compressor_targets \
+    issue_3545_hidden_battle_compressor_targets_unbound
+#define play_battle_compressor_hidden_routes \
+    play_battle_compressor_hidden_routes_issue3545_unbound
+#define play_items_until_stable_issue3545 \
+    play_items_until_stable_issue3545_hidden_base
+#include "../core/battle_compressor_hidden_routes.inc"
+#undef play_items_until_stable_issue3545
+#undef play_battle_compressor_hidden_routes
+#undef issue_3545_hidden_battle_compressor_targets
+#include "../core/battle_compressor_future_bank_binding.inc"
+
+// Preserve the complete cross-profile scheduler as the comparison/delegation base.
+// The Lusamine layer may consume BC + one VS only when its deterministic public
+// continuation strictly dominates this entire scheduler; otherwise it delegates
+// without changing any established target or Item ordering.
+#define play_items_until_stable_issue3545 \
+    play_items_until_stable_issue3545_refined_base
+#include "../core/battle_compressor_route_refinements.inc"
+#undef play_items_until_stable_issue3545
+#include "../core/battle_compressor_lusamine_routes.inc"
+
 #undef play_field_blower
 #undef play_chaotic_swell
 
-#if defined(play_chaotic_swell) || defined(play_field_blower)
-#error "Issue-3057 Pineco composition leaked a temporary lock-removal alias"
+#if defined(play_chaotic_swell) || defined(play_field_blower) || \
+    defined(play_items_until_stable_issue3545) || defined(choose_supporter) || \
+    defined(play_battle_compressor_hidden_routes) || \
+    defined(issue_3545_hidden_battle_compressor_targets)
+#error "Issue-3057/3545 composition leaked a temporary policy alias"
 #endif
 
-// Ordered late turn-execution, scenario-registry, and reporting composition is kept
-// directly on the canonical body now that it has a single owner. Preserve these
-// aliases through part_016 exactly as the historical wrapper did.
+// part_014c's issue-1152 bridge invokes the pre-bridge Supporter selector before it
+// composes its final run_turn wrappers. Point only that base call at the issue-3545
+// route hook. The bridge later replaces the macro with choose_supporter_issue_1152
+// for its own final turn shell, avoiding recursive dispatch through the final selector.
 #if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || \
-    defined(play_items_until_stable)
+    defined(play_items_until_stable) || defined(choose_supporter)
 #error "Late-turn composition requires execution aliases to be undefined on entry"
 #endif
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #define hand_count hand_count_issue_3057
-#define play_items_until_stable play_items_until_stable_issue_3057
+#define play_items_until_stable play_items_until_stable_issue3545
+#define choose_supporter choose_supporter_issue3545_base
+// The issue-1152 bridge intentionally replaces this temporary alias after capturing
+// it in choose_supporter_issue_1152(). Clang's strict preprocessor diagnoses that
+// deliberate textual handoff as a macro redefinition even though the replacement is
+// immediately scoped and released by the bridge.
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmacro-redefined"
+#endif
 #include "../part_014c.inc"
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+#undef choose_supporter
 #undef play_items_until_stable
 #undef hand_count
 #undef ability_available_for_pokemon
@@ -148,7 +232,7 @@
 #undef play_field_blower
 
 #if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || \
-    defined(play_items_until_stable) || defined(all_scenarios) || \
-    defined(scenario_by_label)
+    defined(play_items_until_stable) || defined(choose_supporter) || \
+    defined(all_scenarios) || defined(scenario_by_label)
 #error "Canonical engine composition leaked a late alias"
 #endif

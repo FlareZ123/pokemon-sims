@@ -1,0 +1,258 @@
+#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
+#include <iostream>
+#include <optional>
+#include <random>
+#include <stdexcept>
+#include <utility>
+#include <vector>
+
+namespace sim {
+struct EngineTestAccess {
+  static void set_state(Engine& engine, State state, const bool deck_seen = false) {
+    engine.state_ = std::move(state);
+    engine.deck_seen_ = deck_seen;
+    engine.prizes_revealed_ = false;
+  }
+  static std::optional<Card> compressor_supporter(const Engine& engine) {
+    return engine.issue_3545_compressor_supporter_target();
+  }
+  static std::vector<Card> base_targets(const Engine& engine) {
+    return engine.issue_3545_battle_compressor_targets();
+  }
+  static std::vector<Card> hidden_targets(const Engine& engine) {
+    return engine.issue_3545_hidden_battle_compressor_targets();
+  }
+  static std::vector<Card> refined_targets(const Engine& engine) {
+    return engine.issue_3545_refined_battle_compressor_targets();
+  }
+  static std::vector<Card> lusamine_targets(const Engine& engine,
+                                            const bool permit_payload = false) {
+    return engine.issue_3545_lusamine_route_targets(permit_payload);
+  }
+  static void play_issue3545_items(Engine& engine,
+                                   const bool permit_payload = false) {
+    engine.play_items_until_stable_issue3545(permit_payload);
+  }
+  static int hand_count(const Engine& engine, const Card card) {
+    return engine.hand_count(card);
+  }
+  static int discard_count(const Engine& engine, const Card card) {
+    return static_cast<int>(std::count(engine.state_.discard.begin(),
+                                      engine.state_.discard.end(), card));
+  }
+};
+}  // namespace sim
+
+namespace {
+void expect(const bool condition, const char* message) {
+  if (!condition) throw std::runtime_error(message);
+}
+
+sim::Scenario scenario(const sim::DciProfile dci = sim::DciProfile::StrictJit,
+                       const sim::LockMode locks = sim::LockMode::None,
+                       const int max_turn = 4) {
+  return sim::Scenario{"issue-3545-hidden", dci, locks, false, max_turn};
+}
+
+sim::State stochastic_supporter_state() {
+  sim::State state;
+  state.turn = 1;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 0, 0, 0};
+  state.bench.push_back(sim::Pokemon{sim::Card::RegidragoV, 0, 0, 0});
+  state.hand = {sim::Card::BattleCompressor, sim::Card::VsSeeker,
+                sim::Card::Powerglass, sim::Card::ProfessorTuro,
+                sim::Card::MegaDragonite, sim::Card::Fire};
+  state.deck = {
+      sim::Card::TateLiza, sim::Card::Arven, sim::Card::Crispin,
+      sim::Card::StevensResolve, sim::Card::RegidragoVstar,
+      sim::Card::RegidragoVstar, sim::Card::MysteriousTreasure,
+      sim::Card::MysteriousTreasure, sim::Card::QuickBall,
+      sim::Card::EarthenVessel, sim::Card::EvolutionIncense,
+      sim::Card::Grass, sim::Card::Grass, sim::Card::Grass,
+      sim::Card::Fire, sim::Card::Fire, sim::Card::Dragapult,
+      sim::Card::GoodraVstar, sim::Card::PathToPeak,
+      sim::Card::ChaoticSwell, sim::Card::Guzma,
+      sim::Card::FieldBlower};
+  return state;
+}
+
+void test_bc_vs_route_is_rng_invariant() {
+  // Battle Compressor establishes K1 by legally inspecting the deck. The decision
+  // may use the resulting public card identities, while the future shuffled order
+  // and a later Tate & Liza / Serena draw remain unknown. Holding the complete public
+  // state fixed must therefore hold every BC target layer fixed as well.
+  // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+  // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+  // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+  // Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+  std::optional<sim::Card> expected_supporter;
+  std::vector<sim::Card> expected_base;
+  std::vector<sim::Card> expected_hidden;
+  std::vector<sim::Card> expected_refined;
+  bool initialized = false;
+  for (std::uint64_t seed = 1; seed <= 64; ++seed) {
+    std::mt19937_64 rng{seed};
+    sim::Engine engine{scenario(), sim::baseline_recipe(), rng};
+    sim::EngineTestAccess::set_state(engine, stochastic_supporter_state(), false);
+    const auto supporter = sim::EngineTestAccess::compressor_supporter(engine);
+    const auto base = sim::EngineTestAccess::base_targets(engine);
+    const auto hidden = sim::EngineTestAccess::hidden_targets(engine);
+    const auto refined = sim::EngineTestAccess::refined_targets(engine);
+    if (!initialized) {
+      expected_supporter = supporter;
+      expected_base = base;
+      expected_hidden = hidden;
+      expected_refined = refined;
+      initialized = true;
+    } else {
+      expect(supporter == expected_supporter,
+             "BC->VS Supporter selection depended on a future shuffled draw.");
+      expect(base == expected_base,
+             "Base Battle Compressor targets depended on a future shuffled draw.");
+      expect(hidden == expected_hidden,
+             "Hidden Battle Compressor targets depended on a future shuffled draw.");
+      expect(refined == expected_refined,
+             "Refined Battle Compressor targets depended on a future shuffled draw.");
+    }
+  }
+}
+
+void test_two_vs_bank_does_not_spend_redundant_supporter_slot() {
+  // Once the first recovered Supporter is played it returns to discard. A second VS
+  // Seeker can bank that same Supporter before a persistent next-turn Item lock, so
+  // BC should discard another Supporter only when that different future card gives a
+  // strictly better public continuation.
+  // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+  // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+  // Turn-2 Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+  std::mt19937_64 rng{3545002};
+  sim::Engine engine{scenario(sim::DciProfile::StrictJit,
+                              sim::LockMode::TurnTwoItem, 3),
+                     sim::baseline_recipe(), rng};
+  sim::State state;
+  state.turn = 1;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 0, 1, 1};
+  state.hand = {sim::Card::BattleCompressor, sim::Card::VsSeeker,
+                sim::Card::VsSeeker, sim::Card::Grass};
+  state.deck = {sim::Card::Crispin, sim::Card::Arven,
+                sim::Card::RegidragoVstar, sim::Card::Grass,
+                sim::Card::Fire, sim::Card::MegaDragonite,
+                sim::Card::MysteriousTreasure, sim::Card::QuickBall};
+  sim::EngineTestAccess::set_state(engine, std::move(state), false);
+
+  const auto base = sim::EngineTestAccess::base_targets(engine);
+  const auto hidden = sim::EngineTestAccess::hidden_targets(engine);
+  const auto supporter_count = [](const std::vector<sim::Card>& cards) {
+    return static_cast<int>(std::count_if(cards.begin(), cards.end(),
+        [](const sim::Card card) { return sim::is_supporter(card); }));
+  };
+  expect(supporter_count(hidden) <= supporter_count(base),
+         "Hidden two-VS bank added an unnecessary Supporter discard.");
+  expect(supporter_count(hidden) <= 1,
+         "BC spent two slots on Supporters even though the second VS can re-bank the first.");
+}
+
+void test_one_vs_lusamine_banks_two_supporters_before_item_lock() {
+  // Strict JIT cannot discard the Dragon payload on T1 before Regidrago VSTAR is
+  // ready. With only one VS Seeker and a persistent T2+ Item lock, BC may instead
+  // stage Lusamine + Crispin + Professor Burnet. VS recovers Lusamine now; Lusamine
+  // recovers both future Supporters before Items become unavailable. The scorer must
+  // prove both banked Supporters are actually played across T2/T3 before selecting
+  // this three-card package.
+  // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+  // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+  // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Persistent Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+  std::mt19937_64 rng{3545005};
+  sim::Engine engine{scenario(sim::DciProfile::StrictJit,
+                              sim::LockMode::TurnTwoItem, 3),
+                     sim::baseline_recipe(), rng};
+  sim::State state;
+  state.turn = 1;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 0, 0, 0};
+  state.hand = {sim::Card::BattleCompressor, sim::Card::VsSeeker,
+                sim::Card::RegidragoVstar, sim::Card::Grass};
+  state.deck = {sim::Card::Lusamine, sim::Card::Crispin,
+                sim::Card::ProfessorBurnet, sim::Card::Grass,
+                sim::Card::Grass, sim::Card::Fire,
+                sim::Card::MegaDragonite, sim::Card::MysteriousTreasure,
+                sim::Card::QuickBall, sim::Card::EarthenVessel};
+  sim::EngineTestAccess::set_state(engine, std::move(state), false);
+
+  const std::vector<sim::Card> expected{
+      sim::Card::Lusamine, sim::Card::Crispin, sim::Card::ProfessorBurnet};
+  expect(sim::EngineTestAccess::lusamine_targets(engine, false) == expected,
+         "One-VS Lusamine bank did not beat the existing public-horizon scheduler.");
+
+  sim::EngineTestAccess::play_issue3545_items(engine, false);
+  expect(sim::EngineTestAccess::hand_count(engine, sim::Card::BattleCompressor) == 0,
+         "Lusamine bank left Battle Compressor in hand.");
+  expect(sim::EngineTestAccess::hand_count(engine, sim::Card::VsSeeker) == 0,
+         "Lusamine bank spent more or fewer than the sole VS Seeker.");
+  expect(sim::EngineTestAccess::hand_count(engine, sim::Card::Lusamine) == 1,
+         "VS Seeker did not recover Lusamine for the current Supporter action.");
+  expect(sim::EngineTestAccess::discard_count(engine, sim::Card::Crispin) == 1 &&
+             sim::EngineTestAccess::discard_count(engine, sim::Card::ProfessorBurnet) == 1,
+         "BC did not stage both future Supporters before the Item lock.");
+}
+
+void test_strict_and_flex_can_reserve_steven_powerglass_package() {
+  // With a held Dragon, VS Seeker, Powerglass, and the exact public deck resources,
+  // Steven + Grass is the complete BC package. Steven then reserves VSTAR, Crispin,
+  // and Mysterious Treasure for a deterministic next-turn same-JIT Dragon discard.
+  // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+  // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+  for (const sim::DciProfile dci : {sim::DciProfile::StrictJit,
+                                    sim::DciProfile::MatchupFlexJit}) {
+    std::mt19937_64 rng{3545003};
+    sim::Engine engine{scenario(dci), sim::baseline_recipe(), rng};
+    sim::EngineTestAccess::set_state(engine, stochastic_supporter_state(), false);
+    const auto targets = sim::EngineTestAccess::refined_targets(engine);
+    expect(targets.size() == 2,
+           "Strict/flex BC did not reserve the two-card Steven-Powerglass package.");
+    expect(targets[0] == sim::Card::StevensResolve &&
+               targets[1] == sim::Card::Grass,
+           "Strict/flex BC chose a weaker target vector than Steven plus Grass.");
+  }
+}
+
+void test_no_control_powerglass_competes_with_surplus_payload() {
+  // No-control needs only one early Dragon to establish a payload bank. When the
+  // same BC can seed Powerglass, the deterministic Energy-axis improvement outranks
+  // a second early Dragon with no additional setup-axis value.
+  // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+  // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+  // DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  std::mt19937_64 rng{3545004};
+  sim::Engine engine{scenario(sim::DciProfile::NoDiscardControl),
+                     sim::baseline_recipe(), rng};
+  sim::EngineTestAccess::set_state(engine, stochastic_supporter_state(), false);
+  const auto targets = sim::EngineTestAccess::refined_targets(engine);
+  const int payloads = static_cast<int>(std::count_if(
+      targets.begin(), targets.end(), sim::is_payload));
+  expect(std::find(targets.begin(), targets.end(), sim::Card::Grass) != targets.end(),
+         "No-control BC failed to seed the proven Powerglass Energy improvement.");
+  expect(payloads == 1,
+         "No-control BC spent a surplus slot on another early Dragon payload.");
+}
+}  // namespace
+
+int main() {
+  try {
+    test_bc_vs_route_is_rng_invariant();
+    test_two_vs_bank_does_not_spend_redundant_supporter_slot();
+    test_one_vs_lusamine_banks_two_supporters_before_item_lock();
+    test_strict_and_flex_can_reserve_steven_powerglass_package();
+    test_no_control_powerglass_competes_with_surplus_payload();
+    std::cout << "issue 3545 hidden-route tests passed\n";
+  } catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
+  }
+}

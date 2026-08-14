@@ -58,6 +58,12 @@ static_assert(cards::Lusamine::definition.name == "Lusamine");
 static_assert(cards::Klara::definition.id == Card::Klara); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
 static_assert(cards::Klara::definition.canonical_id == "swsh6-145");
 static_assert(cards::Klara::definition.name == "Klara");
+static_assert(cards::BattleCompressor::definition.id == Card::BattleCompressor); // Exact Phantom Forces Item: https://api.pokemontcg.io/v2/cards/xy4-92
+static_assert(cards::BattleCompressor::definition.canonical_id == "xy4-92");
+static_assert(cards::BattleCompressor::definition.name == "Battle Compressor");
+static_assert(cards::VsSeeker::definition.id == Card::VsSeeker); // Exact Phantom Forces Item: https://api.pokemontcg.io/v2/cards/xy4-109
+static_assert(cards::VsSeeker::definition.canonical_id == "xy4-109");
+static_assert(cards::VsSeeker::definition.name == "VS Seeker");
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},         {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
@@ -116,6 +122,7 @@ constexpr std::string_view name(const Card card) {
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
     case Card::Arven:
+    case Card::BattleCompressor:
     case Card::BattleVipPass:
     case Card::BrilliantBlender:
     case Card::ChaoticSwell:
@@ -135,7 +142,8 @@ constexpr std::string_view name(const Card card) {
     case Card::ProfessorsLetter:
     case Card::QuickBall:
     case Card::SecretBox:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Klara data: https://api.pokemontcg.io/v2/cards/swsh6-145
+    case Card::VsSeeker:
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Klara data: https://api.pokemontcg.io/v2/cards/swsh6-145 ; BC/VS data: https://api.pokemontcg.io/v2/cards/xy4-92 https://api.pokemontcg.io/v2/cards/xy4-109
   }
   return "Unknown";
 }

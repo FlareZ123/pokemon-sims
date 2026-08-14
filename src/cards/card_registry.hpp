@@ -4,6 +4,7 @@
 
 #include "card_definition.hpp"
 #include "trainers/arven.hpp"
+#include "trainers/battle_compressor.hpp"
 #include "trainers/battle_vip_pass.hpp"
 #include "trainers/brilliant_blender.hpp"
 #include "trainers/chaotic_swell.hpp"
@@ -23,11 +24,13 @@
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
 #include "trainers/secret_box.hpp"
+#include "trainers/vs_seeker.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 20> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 22> kRegisteredCardDefinitions{
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
+    &BattleCompressor::definition, // Exact Phantom Forces Item: https://api.pokemontcg.io/v2/cards/xy4-92
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
     &ChaoticSwell::definition, // Exact Cosmic Eclipse Stadium: https://api.pokemontcg.io/v2/cards/sm12-187
@@ -47,6 +50,7 @@ inline constexpr std::array<const CardDefinition*, 20> kRegisteredCardDefinition
     &SecretBox::definition, // Exact Twilight Masquerade ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv6-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3541
     &Lusamine::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
     &Klara::definition, // Exact Chilling Reign Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
+    &VsSeeker::definition, // Exact Phantom Forces Item: https://api.pokemontcg.io/v2/cards/xy4-109
 };
 
 constexpr const CardDefinition* find_definition(const Card card) {

@@ -44,11 +44,40 @@ CrobatModelingDeck make_crobat_modeling_deck(
   return deck;
 }
 
+CrobatModelingDeck make_issue_3545_bc_vs_trace_deck() {
+  DeckRecipe recipe = baseline_recipe();
+  // This Expanded-only recipe is a deterministic trace fixture for #3545, not a
+  // member of the published Crobat modeling experiment. Keeping it out of all()
+  // avoids silently changing results/crobat_variant_model.csv or rerunning every
+  // established 100k-trial variant merely to inspect Battle Compressor gameplay.
+  // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+  // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+  // Published Crobat experiment contract: https://github.com/FlareZ123/pokemon-sims/issues/1394
+  // Enhancement / trace fixture: https://github.com/FlareZ123/pokemon-sims/issues/3545
+  for (const Card cut : {Card::BrilliantBlender, Card::TeamYellsCheer,
+                         Card::Klara, Card::Lusamine,
+                         Card::Channeler, Card::ErikasInvitation}) {
+    adjust_modeling_recipe(recipe, cut, -1);
+  }
+  adjust_modeling_recipe(recipe, Card::BattleCompressor, 4);
+  adjust_modeling_recipe(recipe, Card::VsSeeker, 2);
+  CrobatModelingDeck deck{
+      "issue3545-bc-vs",
+      "Blender + Team Yell + Klara + Lusamine + Channeler + Erika -> 4 BC + 2 VS Seeker",
+      std::move(recipe)};
+  std::string error;
+  if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
+  return deck;
+}
+
 class CrobatModelingRegistry {
  public:
   static const std::vector<CrobatModelingDeck>& all() {
-    // These temporary recipes are deliberately absent from deck_registry() and
-    // --all-decks: https://github.com/FlareZ123/pokemon-sims/issues/1394
+    // These are the source-bound published modeling variants. Trace-only fixtures
+    // stay out of this list so issue #2253 continues to bind the experiment to the
+    // checked artifact without unnecessary model recomputation.
+    // Modeling contract: https://github.com/FlareZ123/pokemon-sims/issues/1394
+    // Artifact binding: https://github.com/FlareZ123/pokemon-sims/issues/2253
     static const std::vector<CrobatModelingDeck> decks{
         {"regidrago-shell", "none", baseline_recipe()},
         make_crobat_modeling_deck("crobat1-erika", {Card::ErikasInvitation}),
@@ -72,6 +101,15 @@ class CrobatModelingRegistry {
   }
 
   static const CrobatModelingDeck* find(const std::string_view id) {
+    // #3545 needs a high-frequency BC/VS recipe only for --simulate-this and
+    // --find-ready. It is intentionally absent from all() so --model-crobat keeps
+    // the published experiment stable.
+    // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
+    if (id == "issue3545-bc-vs") {
+      static const CrobatModelingDeck trace_deck =
+          make_issue_3545_bc_vs_trace_deck();
+      return &trace_deck;
+    }
     const auto& decks = all();
     const auto found = std::find_if(decks.begin(), decks.end(), [id](const auto& deck) {
       return deck.id == id;

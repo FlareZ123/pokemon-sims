@@ -133,5 +133,47 @@
       // Original refined bug / confirmed follow-up: https://github.com/FlareZ123/pokemon-sims/issues/2323 https://github.com/FlareZ123/pokemon-sims/issues/3124
       return std::nullopt;
     }
-    return candidate;
+    if (candidate) return candidate;
+
+    const auto has_discardable_copy = [this, excluded_from_cost](const Card card) {
+      const int excluded = excluded_from_cost && *excluded_from_cost == card ? 1 : 0;
+      return hand_count(card) > excluded;
+    };
+
+    // BC and VS Seeker are ordinary Items, so extra physical copies can pay another
+    // Trainer's discard cost while one copy remains available for the live route.
+    // This fallback runs only after every established DCI candidate above, avoiding
+    // any change to existing route priority in the canonical deck.
+    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+    // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+    // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
+    if (hand_count(Card::BattleCompressor) >= 2 &&
+        has_discardable_copy(Card::BattleCompressor)) {
+      return Card::BattleCompressor;
+    }
+    if (hand_count(Card::VsSeeker) >= 2 && has_discardable_copy(Card::VsSeeker)) {
+      return Card::VsSeeker;
+    }
+
+    // TurnTwoItem and FullCombined remain locked from T2 onward. Once the current
+    // modeled state is inside a persistent Item lock, a singleton BC or VS Seeker
+    // cannot regain setup value later in the horizon and is stable discard fuel.
+    // FullItem is always locked by definition. Discarding the dead Item as another
+    // card's cost is still legal because the lock restricts playing Items, not cards
+    // entering discard as costs of a separately legal effect.
+    // Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Persistent Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+    // Battle Compressor / VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-92 https://api.pokemontcg.io/v2/cards/xy4-109
+    const bool permanently_item_locked_from_here = item_locked() &&
+        (scenario_.locks == LockMode::FullItem ||
+         uses_turn_two_item_lock(scenario_.locks));
+    if (permanently_item_locked_from_here &&
+        has_discardable_copy(Card::BattleCompressor)) {
+      return Card::BattleCompressor;
+    }
+    if (permanently_item_locked_from_here && has_discardable_copy(Card::VsSeeker)) {
+      return Card::VsSeeker;
+    }
+    return std::nullopt;
   }

@@ -423,3 +423,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - `src/trace_engine_v2/core/forretress/scenarios.inc` now owns the Garbodor scenario extension beside `core/forretress/runtime.inc`, including one named scenario-set type and one shared lookup helper. Scenario specification: https://github.com/FlareZ123/pokemon-sims/issues/2808 Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
 - The current Forretress implementation owner is `src/trace_engine_v2/core/forretress/runtime.inc`; the older `part_forretress_ex_combo_legacy.inc` path referenced by the 2026-08-13 checkpoint is retired. Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1 Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2 Current runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/runtime.inc
 - This wave changes ownership and lookup structure only. Exploding Energy resolution, route admission, DCI/UDP/AMR, K0/K1 knowledge, connector domination, lock behavior, and readiness policy remain at their existing owners. Advanced rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+## Steven's Resolve metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3595
+- Canonical print: `sm7-145`; exact card data: https://api.pokemontcg.io/v2/cards/sm7-145
+- `src/cards/trainers/stevens_resolve.hpp` and `kRegisteredCardDefinitions` now own Steven's Resolve identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Steven's Resolve intrinsic facts; registered metadata is the sole owner.
+- Focused registration coverage: `tests/stevens_resolve_card_class_tests.cpp`.
+- This metadata-only wave preserves Steven's printed deck search and turn-ending resolution, Supporter contention, DCI/UDP/AMR, connector domination, K0/K1 knowledge timing, route selection, and readiness behavior at their existing Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm7-145
+- A later resolver migration must locate the single live Steven's Resolve state-transition owner and preserve the printed search/shuffle/turn-end sequence through `CardContext` while strategic target selection stays in Engine. Supporter/search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

@@ -51,6 +51,13 @@ struct State {
   bool turn_ended{false};
   bool path_lock_removed{false};
   Stadium stadium{Stadium::None};
+  // #1447's delayed Earthen Vessel route is a current-turn to immediately-following-turn
+  // continuation. Persist its semantic ready turn with copied simulator state so
+  // projections cannot lose or recreate the one-turn commitment:
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Advanced turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed relative-turn bug: https://github.com/FlareZ123/pokemon-sims/issues/3561
+  std::optional<int> issue_1447_vessel_ready_turn;
 };
 
 struct TrialOutcome {
@@ -210,7 +217,8 @@ struct TraceLog {
         << state.stadium_used << ':'
         << state.vstar_power_used << ':' << state.dark_asset_used << ':'
         << state.turn_ended << ':'
-        << state.path_lock_removed << ':' << static_cast<int>(state.stadium);
+        << state.path_lock_removed << ':' << static_cast<int>(state.stadium) << ':'
+        << state.issue_1447_vessel_ready_turn.value_or(0);
     return out.str();
   }
 

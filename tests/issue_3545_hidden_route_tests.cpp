@@ -96,7 +96,7 @@ void test_two_vs_bank_does_not_spend_redundant_supporter_slot() {
   // Turn-2 Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
   std::mt19937_64 rng{3545002};
   sim::Engine engine{scenario(sim::DciProfile::StrictJit,
-                              sim::LockMode::Turn2Item, 3),
+                              sim::LockMode::TurnTwoItem, 3),
                      sim::baseline_recipe(), rng};
   sim::State state;
   state.turn = 1;

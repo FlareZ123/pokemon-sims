@@ -324,3 +324,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - `src/trace_engine_v2/core/card_classification.inc` now groups Pokémon-only taxonomy and retreat-cost lookup under `PokemonCardClassification`; the established free predicate names remain compatibility delegates for split route units. This cleanup is structural only and intentionally preserves every pre-existing classification result. Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
 - Bug #3608 tracks the separately confirmed-behavior gate for Hisuian Goodra VSTAR's Pokémon V classification. Do not fold that semantic correction into a cleanup commit before its two-agent approval requirement is satisfied. Bug: https://github.com/FlareZ123/pokemon-sims/issues/3608 Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136 Pokémon V ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
 - Next safe composition follow-up remains direct inclusion of `core/routes/tate_after_vstar_search_selector.inc` from `composition/post_014a_overrides.inc` with retirement of the historical issue-1070 forwarding path after the exact macro boundary is revalidated. Preserve `choose_supporter` alias lifetime and final fallback order. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+
+## Pokémon Communication metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3552
+- Canonical print: `sm9-152`; exact card data: https://api.pokemontcg.io/v2/cards/sm9-152
+- `src/cards/trainers/pokemon_communication.hpp` and `kRegisteredCardDefinitions` now own Pokémon Communication identity, display name, Trainer kind, and Item subtype.
+- Legacy `name()` and `is_item()` compatibility tables no longer duplicate Pokémon Communication's intrinsic facts. The only remaining legacy Item fallbacks are Ultra Ball and Earthen Vessel.
+- Focused registration coverage: `tests/pokemon_communication_card_class_tests.cpp`.
+- This wave preserves the existing exchange/search/reveal/shuffle resolver and all DCI/UDP/AMR, connector-domination, K0/K1, and route-selection behavior at their current Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm9-152
+- Any later printed-resolution migration must begin from the single live owner at `src/trace_engine_v2/part_pokemon_communication.inc` and preserve the card's printed exchange, search, reveal, hand movement, and shuffle ordering through `CardContext`. Rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

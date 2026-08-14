@@ -1,0 +1,54 @@
+name: Cleanup 1786740529033
+
+on:
+  push:
+    branches:
+      - cleanup-1786740529033
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: cleanup-1786740529033
+          fetch-depth: 0
+
+      - name: Centralize board index recovery
+        run: |
+          python -c "from pathlib import Path; p=Path('src/trace_engine_v2/core/board_state_policy.inc'); s=p.read_text(); old='''  template <typename Predicate>\n  [[nodiscard]] bool board_has_pokemon_matching(Predicate predicate) const {\n    return find_board_pokemon_matching(predicate) != nullptr;\n  }\n\n  [[nodiscard]] static constexpr bool pokemon_has_open_v_tool_slot('''; new='''  template <typename Predicate>\n  [[nodiscard]] bool board_has_pokemon_matching(Predicate predicate) const {\n    return find_board_pokemon_matching(predicate) != nullptr;\n  }\n\n  [[nodiscard]] std::optional<std::size_t> board_index_of(\n      const Pokemon* target) const {\n    if (target == nullptr) return std::nullopt;\n    if (state_.active && target == &*state_.active) return 0U;\n    const auto match = std::find_if(\n        state_.bench.begin(), state_.bench.end(),\n        [target](const Pokemon& pokemon) { return target == &pokemon; });\n    if (match == state_.bench.end()) return std::nullopt;\n    // Board index 0 is Active and Bench indexes begin at 1. Keep pointer-to-index\n    // recovery beside the canonical Active-before-Bench traversal.\n    // C++ find_if semantics: https://eel.is/c++draft/alg.find\n    return static_cast<std::size_t>(std::distance(state_.bench.begin(), match)) + 1U;\n  }\n\n  [[nodiscard]] static constexpr bool pokemon_has_open_v_tool_slot('''; assert old in s; p.write_text(s.replace(old,new), encoding='utf-8')"
+          git add src/trace_engine_v2/core/board_state_policy.inc
+          git diff --cached --check
+          git commit -m "Cleanup: centralize board index recovery"
+
+      - name: Reuse board matcher for Pineco evolution
+        run: |
+          python -c "from pathlib import Path; p=Path('src/trace_engine_v2/core/forretress/runtime.inc'); s=p.read_text(); old='''  Pokemon* pineco = nullptr;\n  if (state_.active && can_evolve(*state_.active)) {\n    pineco = &*state_.active;\n  }\n  if (pineco == nullptr) {\n    for (Pokemon& pokemon : state_.bench) {\n      if (can_evolve(pokemon)) {\n        pineco = &pokemon;\n        break;\n      }\n    }\n  }\n'''; new='''  Pokemon* pineco = find_board_pokemon_matching(can_evolve);\n'''; assert old in s; p.write_text(s.replace(old,new), encoding='utf-8')"
+          git add src/trace_engine_v2/core/forretress/runtime.inc
+          git diff --cached --check
+          git commit -m "Cleanup: reuse board matcher for Pineco evolution"
+
+      - name: Reuse board indexing for Exploding Energy
+        run: |
+          python -c "from pathlib import Path; p=Path('src/trace_engine_v2/core/forretress/runtime.inc'); s=p.read_text(); old='''Engine::OptionalBoardIndex Engine::exploding_energy_regidrago_target_index() const {\n  const Pokemon* target = target_regi();\n  if (target == nullptr) return std::nullopt;\n  if (state_.active && target == &*state_.active) return 0U;\n  for (BoardIndex index = 0; index < state_.bench.size(); ++index) {\n    if (target == &state_.bench[index]) return index + 1U;\n  }\n  return std::nullopt;\n}\n'''; new='''Engine::OptionalBoardIndex Engine::exploding_energy_regidrago_target_index() const {\n  return board_index_of(target_regi());\n}\n'''; assert old in s; s=s.replace(old,new); old2='''  const bool source_is_active =\n      state_.active && state_.active->card == Card::ForretressEx;\n  OptionalBoardIndex source_bench_index;\n  if (!source_is_active) {\n    for (BoardIndex index = 0; index < state_.bench.size(); ++index) {\n      if (state_.bench[index].card == Card::ForretressEx) {\n        source_bench_index = index;\n        break;\n      }\n    }\n  }\n  if (!source_is_active && !source_bench_index) return false;\n'''; new2='''  const Pokemon* source = find_board_pokemon_matching(\n      [](const Pokemon& pokemon) { return pokemon.card == Card::ForretressEx; });\n  const auto source_index = board_index_of(source);\n  if (!source_index) return false;\n  const bool source_is_active = *source_index == 0U;\n  const OptionalBoardIndex source_bench_index = source_is_active\n      ? std::nullopt\n      : OptionalBoardIndex{*source_index - 1U};\n'''; assert old2 in s; p.write_text(s.replace(old2,new2), encoding='utf-8')"
+          git add src/trace_engine_v2/core/forretress/runtime.inc
+          git diff --cached --check
+          git commit -m "Cleanup: centralize Exploding Energy board lookup"
+
+      - name: Advance card cleanup plan and remove runner
+        run: |
+          python -c "from pathlib import Path; p=Path('CARD_CLASS_CLEANUP.md'); s=p.read_text(); old='''`src/trace_engine_v2/core/board_state_policy.inc` owns the shared Active-first mutable/const board traversal. The next mechanical Forretress step is to reuse that seam for Pineco evolution candidate lookup where declaration order permits it. Keep the edit traversal-only and preserve Forest of Vitality evolution timing.'''; new='''`src/trace_engine_v2/core/board_state_policy.inc` now owns the shared Active-first mutable/const board traversal and the stable Active=0 / Bench=n+1 pointer-to-index recovery used by board-targeting effects. The Forretress runtime reuses that seam for Pineco evolution selection and Exploding Energy source/Regidrago target lookup, removing three hand-written Active/Bench scans while preserving traversal order and Forest of Vitality timing. The next mechanical Forretress step is to reuse these seams for any remaining board scans only when their target ordering and mutation semantics are identical.'''; assert old in s; p.write_text(s.replace(old,new), encoding='utf-8')"
+          git add CARD_CLASS_CLEANUP.md
+          git rm .github/workflows/cleanup-1786740529033.yml
+          git diff --cached --check
+          git commit -m "Cleanup: advance Forretress board policy plan"
+
+      - name: Push cleanup commits
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git push origin HEAD:cleanup-1786740529033

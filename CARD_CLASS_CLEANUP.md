@@ -68,13 +68,24 @@ When a legacy function mixes these responsibilities, keep route admission and st
 
 ## Registered-card inventory
 
-The active registry contains 33 definitions after the Team Yell's Cheer, Gladion, and Guzma metadata migrations. The source of truth is `src/cards/card_registry.hpp`; this list is a planning index rather than a second registry.
+The active registry contains 34 definitions after the Team Yell's Cheer, Gladion, Guzma, and Erika's Invitation metadata migrations. The source of truth is `src/cards/card_registry.hpp`; this list is a planning index rather than a second registry.
 
 - Pokémon: Appletun (`sv8-140`), Mawile-GX (`sm11-141`), Oricorio (`sm2-55`), Regidrago V (`swsh12-135`). Sources: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/sm11-141 https://api.pokemontcg.io/v2/cards/sm2-55 https://api.pokemontcg.io/v2/cards/swsh12-135
 - Energy: Double Dragon Energy (`xy6-97`). Source: https://api.pokemontcg.io/v2/cards/xy6-97
-- Trainers: Arven, Battle VIP Pass, Brilliant Blender, Chaotic Swell, Channeler, Crispin, Dawn, Evolution Incense, Field Blower, Forest of Vitality, Forest Seal Stone, Gladion, Guzma, Guzma & Hala, Hisuian Heavy Ball, Klara, Lusamine, Mysterious Treasure, Pokémon Communication, Powerglass, Professor Burnet, Professor Turo's Scenario, Professor's Letter, Quick Ball, Roseanne's Backup, Secret Box, Team Yell's Cheer, Wishful Baton. Registry with exact-print URLs: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+- Trainers: Arven, Battle VIP Pass, Brilliant Blender, Chaotic Swell, Channeler, Crispin, Dawn, Erika's Invitation, Evolution Incense, Field Blower, Forest of Vitality, Forest Seal Stone, Gladion, Guzma, Guzma & Hala, Hisuian Heavy Ball, Klara, Lusamine, Mysterious Treasure, Pokémon Communication, Powerglass, Professor Burnet, Professor Turo's Scenario, Professor's Letter, Quick Ball, Roseanne's Backup, Secret Box, Team Yell's Cheer, Wishful Baton. Registry with exact-print URLs: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
 Do not create a parallel migration for a card whose enhancement or bug branch is already owned. Migration ownership must be checked before selecting the next card.
+
+### Erika's Invitation migration
+
+- Enhancement owner: https://github.com/FlareZ123/pokemon-sims/issues/3598
+- Exact Pokémon 151 print: https://api.pokemontcg.io/v2/cards/sv3pt5-160
+- `src/cards/trainers/erikas_invitation.hpp` and the explicit registry own identity, canonical print ID, display name, Trainer kind, and Supporter subtype.
+- `name()` and `is_supporter()` delegate those intrinsic facts through the registry instead of duplicating Erika's Invitation in legacy switches.
+- Focused registration coverage: `tests/erikas_invitation_card_class_tests.cpp`.
+- Preserve opponent-hand inspection, Basic-Pokémon selection, Bench placement, switching, setup-only route policy, DCI/UDP/AMR, Supporter contention, connector domination, K0/K1 state, and lock handling at their current Engine owners.
+- Any future printed-resolution migration must preserve the printed reveal, optional Basic placement, and conditional switch sequence through general rules operations while leaving target choice and route admission outside card code. Exact printed effect: https://api.pokemontcg.io/v2/cards/sv3pt5-160
+- Supporter procedure and one-Supporter-per-turn rule: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
 ### Guzma migration
 

@@ -13,8 +13,9 @@
   }
 
   bool issue_1772_steven_t3_package_available() const {
-    const bool payload_in_known_deck =
-        std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
+    const bool payload_in_known_deck = payload_zone_contains(state_.deck);
+    // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+    // Apex Dragon payload semantics: https://api.pokemontcg.io/v2/cards/swsh12-136
     const bool payload_held =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
 

@@ -7,7 +7,10 @@
 #define play_steven TRACE_ENGINE_FINAL_PLAY_STEVEN_ALIAS
 #endif
 
-#include "core/late_steven_burnet_route_policy.inc"
+// Include the canonical late-Steven/Burnet route directly at its proven member boundary.
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
+// Canonical route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_burnet_route_policy.inc
+#include "core/routes/late_steven_burnet_route_policy.inc"
 
   bool known_hand_or_deck_card_available(const Card card) const {
     // Once the deck is known, route package checks should express card access once

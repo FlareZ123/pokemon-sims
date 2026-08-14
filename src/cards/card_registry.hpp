@@ -17,10 +17,11 @@
 #include "trainers/professor_burnet.hpp"
 #include "trainers/professors_letter.hpp"
 #include "trainers/quick_ball.hpp"
+#include "trainers/ultra_ball.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 14> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 15> kRegisteredCardDefinitions{
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
@@ -29,6 +30,7 @@ inline constexpr std::array<const CardDefinition*, 14> kRegisteredCardDefinition
     &EvolutionIncense::definition, // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163
     &FieldBlower::definition, // Exact SM 125 metadata: https://api.pokemontcg.io/v2/cards/sm2-125
     &QuickBall::definition,
+    &UltraBall::definition, // Exact Scarlet & Violet Item: https://api.pokemontcg.io/v2/cards/sv1-196
     &ProfessorsLetter::definition, // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123
     &MysteriousTreasure::definition, // Exact SM 113 metadata: https://api.pokemontcg.io/v2/cards/sm6-113
     &HisuianHeavyBall::definition, // Exact SWSH 146 metadata: https://api.pokemontcg.io/v2/cards/swsh10-146

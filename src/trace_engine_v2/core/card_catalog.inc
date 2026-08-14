@@ -109,7 +109,6 @@ constexpr std::string_view name(const Card card) {
     case Card::Klara: return "Klara";
     case Card::ProfessorTuro: return "Professor Turo's Scenario";
     case Card::ErikasInvitation: return "Erika's Invitation";
-    case Card::ForestSealStone: return "Forest Seal Stone";
     case Card::WishfulBaton: return "Wishful Baton";
     case Card::ForestOfVitality: return "Forest of Vitality";
     case Card::PathToPeak: return "Path to the Peak";
@@ -125,6 +124,7 @@ constexpr std::string_view name(const Card card) {
     case Card::Dawn:
     case Card::EvolutionIncense:
     case Card::FieldBlower:
+    case Card::ForestSealStone: // Exact registered name: https://api.pokemontcg.io/v2/cards/swsh12-156
     case Card::GuzmaHala:
     case Card::HisuianHeavyBall:
     case Card::Lusamine:

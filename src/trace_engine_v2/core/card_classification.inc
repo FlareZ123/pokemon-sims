@@ -194,11 +194,11 @@ constexpr bool is_item(const Card card) {
 constexpr bool is_tool(const Card card) {
   // Registered Tools own their intrinsic Trainer subtype in CardDefinition.
   // Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-  // Powerglass exact print: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+  // Forest Seal Stone exact print: https://api.pokemontcg.io/v2/cards/swsh12-156
   if (cards::has_definition(card)) {
     return cards::registered_is_trainer_kind(card, cards::TrainerKind::Tool);
   }
-  return card == Card::ForestSealStone || card == Card::WishfulBaton;
+  return card == Card::WishfulBaton;
 }
 
 constexpr bool is_stadium(const Card card) {

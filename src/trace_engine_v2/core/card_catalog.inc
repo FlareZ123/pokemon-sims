@@ -73,7 +73,6 @@ constexpr std::string_view name(const Card card) {
     case Card::Serena: return "Serena";
     case Card::TateLiza: return "Tate & Liza";
     case Card::StevensResolve: return "Steven's Resolve";
-    case Card::Guzma: return "Guzma";
     case Card::ErikasInvitation: return "Erika's Invitation";
     case Card::PathToPeak: return "Path to the Peak";
     case Card::Grass: return "Grass Energy";
@@ -93,6 +92,7 @@ constexpr std::string_view name(const Card card) {
     case Card::ForestOfVitality: // Exact registered name: https://api.pokemontcg.io/v2/cards/me1-117 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3639
     case Card::ForestSealStone: // Exact registered name: https://api.pokemontcg.io/v2/cards/swsh12-156
     case Card::Gladion: // Exact registered Supporter name: https://api.pokemontcg.io/v2/cards/sm4-95 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3604
+    case Card::Guzma: // Exact registered Supporter name: https://api.pokemontcg.io/v2/cards/sm3-115 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3618
     case Card::GuzmaHala:
     case Card::HisuianHeavyBall:
     case Card::Klara:

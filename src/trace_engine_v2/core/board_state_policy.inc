@@ -1,3 +1,6 @@
+  using BoardIndex = std::size_t;
+  using OptionalBoardIndex = std::optional<BoardIndex>;
+
   template <typename ActiveZone, typename BenchZone, typename Predicate>
   [[nodiscard]] static auto find_board_pokemon_matching_in_zones(
       ActiveZone& active, BenchZone& bench, Predicate predicate)
@@ -26,6 +29,21 @@
   template <typename Predicate>
   [[nodiscard]] bool board_has_pokemon_matching(Predicate predicate) const {
     return find_board_pokemon_matching(predicate) != nullptr;
+  }
+
+  template <typename Predicate>
+  [[nodiscard]] OptionalBoardIndex board_index_matching(
+      Predicate predicate) const {
+    // Board index 0 denotes the Active spot; Bench entries use their container
+    // index plus one. Keep that mapping in one Active-first traversal for callers
+    // that need a stable board coordinate instead of a Pokemon pointer.
+    // C++ find_if and distance semantics: https://eel.is/c++draft/alg.find https://eel.is/c++draft/iterator.operations
+    if (state_.active && predicate(*state_.active)) return 0U;
+    const auto match = std::find_if(
+        state_.bench.begin(), state_.bench.end(), predicate);
+    if (match == state_.bench.end()) return std::nullopt;
+    return static_cast<BoardIndex>(
+        std::distance(state_.bench.begin(), match)) + 1U;
   }
 
   [[nodiscard]] static constexpr bool pokemon_has_open_v_tool_slot(

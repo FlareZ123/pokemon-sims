@@ -52,6 +52,9 @@ static_assert(cards::Dawn::definition.name == "Dawn");
 static_assert(cards::Powerglass::definition.id == Card::Powerglass); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
 static_assert(cards::Powerglass::definition.canonical_id == "sv6pt5-63");
 static_assert(cards::Powerglass::definition.name == "Powerglass");
+static_assert(cards::Serena::definition.id == Card::Serena); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh12-164 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3585
+static_assert(cards::Serena::definition.canonical_id == "swsh12-164");
+static_assert(cards::Serena::definition.name == "Serena");
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},         {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
@@ -95,7 +98,6 @@ constexpr std::string_view name(const Card card) {
     case Card::PokemonCommunication: return "Pokémon Communication";
     case Card::EarthenVessel: return "Earthen Vessel";
     case Card::Grant: return "Grant";
-    case Card::Serena: return "Serena";
     case Card::TateLiza: return "Tate & Liza";
     case Card::StevensResolve: return "Steven's Resolve";
     case Card::Guzma: return "Guzma";
@@ -129,7 +131,8 @@ constexpr std::string_view name(const Card card) {
     case Card::ProfessorBurnet:
     case Card::ProfessorsLetter:
     case Card::QuickBall:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Crispin migration: https://github.com/FlareZ123/pokemon-sims/issues/3580
+    case Card::Serena:
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Serena migration: https://github.com/FlareZ123/pokemon-sims/issues/3585
   }
   return "Unknown";
 }

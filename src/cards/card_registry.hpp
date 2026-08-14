@@ -3,6 +3,7 @@
 #include <array>
 
 #include "card_definition.hpp"
+#include "trainers/arven.hpp"
 #include "trainers/battle_vip_pass.hpp"
 #include "trainers/brilliant_blender.hpp"
 #include "trainers/chaotic_swell.hpp"
@@ -18,7 +19,8 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 12> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 13> kRegisteredCardDefinitions{
+    &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3577
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
     &ChaoticSwell::definition, // Exact Cosmic Eclipse Stadium: https://api.pokemontcg.io/v2/cards/sm12-187

@@ -207,7 +207,7 @@
 #undef choose_supporter
 
 #define choose_supporter choose_supporter_issue1209_original
-#include "../part_issue_1070_tate_after_vstar_search_override.inc"
+#include "../core/routes/tate_after_vstar_search_selector.inc" // Source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/tate_after_vstar_search_selector.inc
 #undef choose_supporter
 
 #if defined(choose_supporter)

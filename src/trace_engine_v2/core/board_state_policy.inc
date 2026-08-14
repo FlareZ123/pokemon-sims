@@ -1,7 +1,15 @@
   template <typename Predicate>
+  [[nodiscard]] const Pokemon* find_board_pokemon_matching(
+      Predicate predicate) const {
+    if (state_.active && predicate(*state_.active)) return &*state_.active;
+    const auto match = std::find_if(
+        state_.bench.begin(), state_.bench.end(), predicate);
+    return match == state_.bench.end() ? nullptr : &*match;
+  }
+
+  template <typename Predicate>
   [[nodiscard]] bool board_has_pokemon_matching(Predicate predicate) const {
-    if (state_.active && predicate(*state_.active)) return true;
-    return std::any_of(state_.bench.begin(), state_.bench.end(), predicate);
+    return find_board_pokemon_matching(predicate) != nullptr;
   }
 
   [[nodiscard]] static bool pokemon_has_open_v_tool_slot(

@@ -34,53 +34,72 @@
            deck_count_after_search_started(Card::Fire) > 0;
   }
 
-  std::optional<int> issue_3458_1797_projected_finish_turn() const {
-    // The #1797 connector needs an unused Supporter action. When Steven's Resolve is
-    // legal now, it may be found by Wonder Tag and played during this turn, then the
-    // semantic #3316 continuation finishes on the immediately following player turn.
-    // The first player cannot play a Supporter during that player's first turn, so
-    // that one rules-defined state banks Steven until the next turn and finishes one
-    // turn later. An already-spent Supporter action is intentionally not treated as
-    // another bank case because Supporter contention is part of route availability.
+  bool issue_3458_1797_current_steven_bank_state_available() const {
+    // The generalized current-Supporter case reuses the already-proven #3316 bank:
+    // Regidrago V has survived from a previous turn with one Grass, the manual
+    // attachment is still unused, and a second held Grass can be attached before
+    // Steven's Resolve ends this turn. These physical gates prevent a zero-Energy
+    // state from projecting an impossible next-turn GGF finish.
+    // Regidrago V / VSTAR and GGF: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
-    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
-    // Advanced Supporter and first-turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-    // Repository Supporter-contention and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Advanced evolution, attachment, and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Semantic bank/finish continuation: https://github.com/FlareZ123/pokemon-sims/issues/3316
     // Confirmed connector bug: https://github.com/FlareZ123/pokemon-sims/issues/3458
+    return supporter_allowed() && !state_.manual_energy_used && state_.active &&
+        state_.active->card == Card::RegidragoV &&
+        state_.active->entered_turn < state_.turn &&
+        state_.active->grass == 1 && state_.active->fire == 0 &&
+        state_.active->double_dragon == 0 && hand_count(Card::Grass) > 0;
+  }
+
+  bool issue_3458_1797_first_player_t1_bank_state_available() const {
+    // Preserve #1797's original first-player T1 bank. Wonder Tag may search Steven,
+    // but the first player cannot play a Supporter on that first turn. The held two
+    // Grass preserve the T1 and T2 manual attachments before #3316 finishes on T3.
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Official first-turn Supporter rule: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Advanced first-turn and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1797
+    // Confirmed connector bug: https://github.com/FlareZ123/pokemon-sims/issues/3458
+    return !supporter_allowed() && scenario_.going_first && state_.turn == 1 &&
+        supporter_rules_allow_turn(state_.turn + 1) && !state_.manual_energy_used &&
+        state_.active && state_.active->card == Card::RegidragoV &&
+        state_.active->grass == 0 && state_.active->fire == 0 &&
+        state_.active->double_dragon == 0 && hand_count(Card::Grass) >= 2;
+  }
+
+  std::optional<int> issue_3458_1797_projected_finish_turn() const {
     if (state_.supporter_used) return std::nullopt;
 
-    int steven_turn = state_.turn;
-    if (!supporter_allowed()) {
-      const bool first_turn_bank = scenario_.going_first && state_.turn == 1 &&
-          supporter_rules_allow_turn(state_.turn + 1);
-      if (!first_turn_bank) return std::nullopt;
-      steven_turn = state_.turn + 1;
-    }
-
-    const int finish_turn = steven_turn + 1;
-    // Earthen Vessel is required on the finish turn. Project the actual Item lock
-    // instead of requiring a historical no-lock scenario identity.
-    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-    // Turn-two Item-lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
-    // Semantic continuation: https://github.com/FlareZ123/pokemon-sims/issues/3316
-    // Confirmed connector bug: https://github.com/FlareZ123/pokemon-sims/issues/3458
-    if (finish_turn > scenario_.max_turn || item_locked_on_turn(finish_turn)) {
+    int finish_turn = 0;
+    if (issue_3458_1797_current_steven_bank_state_available()) {
+      finish_turn = state_.turn + 1;
+    } else if (issue_3458_1797_first_player_t1_bank_state_available()) {
+      finish_turn = state_.turn + 2;
+    } else {
       return std::nullopt;
     }
-    return finish_turn;
+
+    // Earthen Vessel is the payload outlet on the ready turn, so project the real
+    // Item legality of that turn instead of requiring LockMode::None globally.
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Projected lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+    // Confirmed connector bug: https://github.com/FlareZ123/pokemon-sims/issues/3458
+    return finish_turn <= scenario_.max_turn && !item_locked_on_turn(finish_turn)
+        ? std::optional<int>{finish_turn}
+        : std::nullopt;
   }
 
   bool issue_3458_1797_connector_common_available() const {
     const int deck_grass = deck_count_after_search_started(Card::Grass);
     const int deck_fire = deck_count_after_search_started(Card::Fire);
-    const bool deck_payload = std::any_of(
-        state_.deck.begin(), state_.deck.end(), is_payload);
+    const bool deck_payload =
+        std::any_of(state_.deck.begin(), state_.deck.end(), is_payload);
 
-    // This is the shared semantic contract for both sides of the physical Quick Ball
-    // transaction. K1 may come from any legal deck or Prize inspection. Quick Ball
-    // must be legal now, Wonder Tag must be available now, and the held VSTAR plus
-    // two-Grass package and known Steven/Crispin/Vessel/Energy/payload resources must
-    // survive into the relative #3316 bank/finish continuation.
+    // K1 may come from any legal deck or Prize inspection. The connector is governed
+    // by current Item legality, current Tapu Rule Box Ability legality, the relative
+    // Steven bank/finish horizon, and the package resources that #1797/#3316 consume.
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
@@ -89,16 +108,12 @@
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Advanced Item, Ability, search, Bench, attachment, evolution, and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // K1/JIT/lock/route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Semantic downstream continuation: https://github.com/FlareZ123/pokemon-sims/issues/3316
+    // Original and semantic continuation: https://github.com/FlareZ123/pokemon-sims/issues/1797 https://github.com/FlareZ123/pokemon-sims/issues/3316
     // Confirmed connector bug: https://github.com/FlareZ123/pokemon-sims/issues/3458
     return strict_payload_timing() && prizes_known() && !item_locked() &&
         issue_3458_1797_projected_finish_turn().has_value() &&
-        !state_.manual_energy_used && state_.active &&
-        state_.active->card == Card::RegidragoV &&
-        state_.active->grass == 0 && state_.active->fire == 0 &&
-        state_.active->double_dragon == 0 &&
         ability_available_for_pokemon(Card::TapuLeleGX) &&
-        hand_count(Card::RegidragoVstar) > 0 && hand_count(Card::Grass) >= 2 &&
+        hand_count(Card::RegidragoVstar) > 0 &&
         deck_count_after_search_started(Card::StevensResolve) > 0 &&
         deck_count_after_search_started(Card::Crispin) > 0 &&
         deck_count_after_search_started(Card::EarthenVessel) > 0 &&
@@ -110,11 +125,14 @@
     const bool legal_discard_cost = hand_count(Card::TateLiza) > 0 ||
         hand_count(Card::Lusamine) > 0;
 
-    // The pre-search stage owns only the physical Quick Ball/Tapu requirements.
-    // K1 provenance is deliberately absent: prizes_known() in the shared contract
-    // is sufficient regardless of which legal inspection established it.
+    // The pre-search side owns only the physical Quick Ball/Tapu requirements. K1
+    // provenance is intentionally absent because prizes_known() already proves the
+    // repository knowledge state. Preserve the confirmed Tate & Liza/Lusamine DCI
+    // payment set and the protected VSTAR/Energy package.
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
     // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // Confirmed connector bug: https://github.com/FlareZ123/pokemon-sims/issues/3458
@@ -125,13 +143,31 @@
         deck_count_after_search_started(Card::TapuLeleGX) > 0;
   }
 
+  std::optional<Card> issue_3458_1797_quick_ball_cost() const {
+    if (!issue_3458_1797_quick_ball_tapu_steven_route_available()) {
+      return std::nullopt;
+    }
+    // Preserve #1797's confirmed dynamic-DCI payment order without binding it to
+    // seed coordinates. The connector replaces the next-turn Supporter role of the
+    // paid card, while VSTAR and required Grass remain protected.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
+    // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Confirmed connector bug: https://github.com/FlareZ123/pokemon-sims/issues/3458
+    if (hand_count(Card::TateLiza) > 0) return Card::TateLiza;
+    return hand_count(Card::Lusamine) > 0
+        ? std::optional<Card>{Card::Lusamine}
+        : std::nullopt;
+  }
+
   bool issue_3458_1797_wonder_tag_steven_route_available() const {
     const bool route_cost_paid = count_of(state_.discard, Card::TateLiza) > 0 ||
         count_of(state_.discard, Card::Lusamine) > 0;
 
-    // After Quick Ball resolves, the same semantic contract is reused. Only the
-    // transaction provenance changes: Quick Ball and its approved DCI cost are now
-    // in discard and the searched Tapu Lele-GX is in play resolving Wonder Tag.
+    // After Quick Ball resolves, the same semantic contract applies. Only transaction
+    // provenance changes: Quick Ball and the approved DCI cost are in discard, while
+    // Tapu Lele-GX is in play and Wonder Tag is resolving.
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
@@ -150,9 +186,10 @@
   }
 
   Card choose_supporter_after_search_started() {
-    if (issue_3458_1797_wonder_tag_steven_route_available()) {
-      // Wonder Tag searches Steven under the same semantic contract that admitted
-      // the preceding Quick Ball, including the relative bank/finish horizon.
+    if (issue_3458_1797_wonder_tag_steven_route_available() &&
+        deck_count_after_search_started(Card::StevensResolve) > 0) {
+      // Wonder Tag chooses Steven under the same semantic contract that admitted
+      // Quick Ball, including the relative bank/finish and current Ability legality.
       // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
       // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
       // Confirmed connector bug: https://github.com/FlareZ123/pokemon-sims/issues/3458

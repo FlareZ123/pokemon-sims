@@ -43,6 +43,9 @@ static_assert(cards::GuzmaHala::definition.name == "Guzma & Hala");
 static_assert(cards::Powerglass::definition.id == Card::Powerglass); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
 static_assert(cards::Powerglass::definition.canonical_id == "sv6pt5-63");
 static_assert(cards::Powerglass::definition.name == "Powerglass");
+static_assert(cards::TateLiza::definition.id == Card::TateLiza); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm7-148
+static_assert(cards::TateLiza::definition.canonical_id == "sm7-148");
+static_assert(cards::TateLiza::definition.name == "Tate & Liza");
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},         {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
@@ -91,7 +94,6 @@ constexpr std::string_view name(const Card card) {
     case Card::Crispin: return "Crispin";
     case Card::ProfessorBurnet: return "Professor Burnet";
     case Card::Serena: return "Serena";
-    case Card::TateLiza: return "Tate & Liza";
     case Card::StevensResolve: return "Steven's Resolve";
     case Card::Guzma: return "Guzma";
     case Card::Channeler: return "Channeler";
@@ -120,6 +122,7 @@ constexpr std::string_view name(const Card card) {
     case Card::Powerglass:
     case Card::ProfessorsLetter:
     case Card::QuickBall:
+    case Card::TateLiza:  // Registered exact metadata: https://api.pokemontcg.io/v2/cards/sm7-148
       break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
   }
   return "Unknown";

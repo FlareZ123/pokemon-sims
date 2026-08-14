@@ -1,16 +1,29 @@
   void choose_supporter_issue3545_projection() {
-    // The production turn runs the current Item fixed point before the Supporter
-    // action. A BC/VS projection must reproduce that boundary before deciding whether
-    // the recovered Supporter is actually consumed. Otherwise an Item search may
-    // change the best Supporter after VS has already been spent, as seen when a
-    // recovered Gladion lost to an already-held Steven's Resolve after Mysterious
-    // Treasure completed the Regidrago axis.
+    // Battle Compressor and VS Seeker can be evaluated from an early Item fixed point,
+    // while the production turn still has deterministic setup actions before the one
+    // Supporter play. Reproduce that same public sequence so the candidate is scored
+    // after manual Energy, Forest Seal Stone, lock-removal, and Steven-specific
+    // Powerglass attachment have reached the state the real Supporter chooser sees.
+    // Strict and matchup-flex JIT also preserve payload through these early Item
+    // passes, exactly as run_turn does.
     // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
     // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
     // Production turn order: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
+    // JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
-    play_items_until_stable_issue_3057(true);
+    advance_forretress_combo();
+    play_basics_from_hand();
+    play_items_until_stable_issue_3057(!strict_payload_timing());
+    attach_live_fss();
+    use_fss();
+    play_chaotic_swell();
+    play_field_blower();
+    play_basics_from_hand();
+    play_items_until_stable_issue_3057(!strict_payload_timing());
+    attach_manual();
+    if (should_play_steven()) attach_powerglass();
 
     const State before_supporter = state_;
     TraceLog projection_trace{true};

@@ -1,8 +1,8 @@
 #pragma once
 
 // Canonical paid-retreat continuation for a banked Tapu Lele-GX Active.
-// Keep the compatibility include at core/banked_tapu_retreat_policy.inc until the
-// parent composition boundary can include this route owner directly.
+// The parent composition includes this owner directly at the proven post-search
+// class-member boundary; keep route behavior and rule sources centralized here.
 // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
 // Advanced Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 

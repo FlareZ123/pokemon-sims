@@ -46,6 +46,7 @@ constexpr bool is_pokemon(const Card card) {
 // https://compendium.pokegym.net/category/5-trainers/forest-seal-stone/
 constexpr bool is_pokemon_v(const Card card) {
   return card == Card::RegidragoV || card == Card::RegidragoVstar ||
+         card == Card::GoodraVstar ||  // Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136 ; Pokémon V ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/ ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3608
          card == Card::CrobatV;  // Pokémon V: https://api.pokemontcg.io/v2/cards/swsh3-104
 }
 constexpr bool is_rule_box_pokemon(const Card card) {

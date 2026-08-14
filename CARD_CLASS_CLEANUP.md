@@ -272,3 +272,11 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - `src/cards/trainers/powerglass.hpp` and `kRegisteredCardDefinitions` now own Powerglass identity, display name, Trainer kind, and Pokémon Tool subtype.
 - Legacy `name()` and `is_tool()` compatibility paths delegate registered Powerglass metadata to the registry while retaining fallbacks for unmigrated Tools. Focused coverage: `tests/powerglass_card_class_tests.cpp`.
 - Existing end-of-turn Basic Energy attachment resolution, Active-position requirement, attachment-destination strategy, DCI/UDP/AMR, K0/K1, connector domination, and setup-axis policy remain in Engine. A later resolver migration must first locate the single live Powerglass resolution boundary and preserve end-of-turn sequencing through `CardContext`.
+
+## Chaotic Swell metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3563
+- Canonical print: `sm12-187`; exact card data: https://api.pokemontcg.io/v2/cards/sm12-187
+- `src/cards/trainers/chaotic_swell.hpp` and `kRegisteredCardDefinitions` own Chaotic Swell identity, display name, Trainer kind, and Stadium subtype.
+- Legacy `name()` and `is_stadium()` compatibility paths delegate registered Chaotic Swell metadata to the registry while retaining Stadium fallbacks only for unmigrated cards. Focused coverage: `tests/chaotic_swell_card_class_tests.cpp`.
+- Existing Stadium placement and replacement behavior, opponent-Stadium cancellation, strategy, DCI/UDP/AMR, K0/K1, connector domination, and lock interactions remain in Engine. A later resolver migration must locate the single live Chaotic Swell effect owner before moving printed Stadium cancellation through `CardContext`. Printed effect: https://api.pokemontcg.io/v2/cards/sm12-187

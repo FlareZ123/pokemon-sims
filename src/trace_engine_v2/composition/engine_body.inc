@@ -99,28 +99,44 @@
 
 // Keep the first validated BC/VS scheduler available as a base fixed point. The
 // hidden-route layer may intercept a BC or VS action when a strictly better public
-// continuation is proved, then delegates the rest of the turn to this base policy.
-// The projection-only Supporter alias reproduces the same pre-Supporter legacy Item
-// fixed point and the current production Supporter selector before scoring a route.
+// continuation is proved, then the cross-profile refinement layer compares one
+// public turn farther without consulting the unknown next draw.
 // C++ textual macro replacement: https://eel.is/c++draft/cpp.replace
 // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
-#if defined(play_items_until_stable_issue3545) || defined(choose_supporter)
+#if defined(play_items_until_stable_issue3545) || defined(choose_supporter) || \
+    defined(play_battle_compressor_hidden_routes)
 #error "Issue-3545 policy aliases must be undefined on entry"
 #endif
+
+// The deterministic Steven package is needed by both production Supporter dispatch
+// and the oracle-safe projection adapter, so define it before the projection layer.
+#include "../core/battle_compressor_steven_route.inc"
 #include "../core/battle_compressor_projection_adapter.inc"
+
 #define play_items_until_stable_issue3545 play_items_until_stable_issue3545_base
 #define choose_supporter choose_supporter_issue3545_projection
 #include "../core/battle_compressor_vs_seeker_policy.inc"
 #undef choose_supporter
 #undef play_items_until_stable_issue3545
+
+// Preserve the validated hidden-route executor under private names. The refinement
+// layer may substitute a strictly better target vector, then delegates all remaining
+// Item work to the same base scheduler.
+#define play_battle_compressor_hidden_routes \
+    play_battle_compressor_hidden_routes_issue3545_base
+#define play_items_until_stable_issue3545 \
+    play_items_until_stable_issue3545_hidden_base
 #include "../core/battle_compressor_hidden_routes.inc"
-#include "../core/battle_compressor_steven_route.inc"
+#undef play_items_until_stable_issue3545
+#undef play_battle_compressor_hidden_routes
+#include "../core/battle_compressor_route_refinements.inc"
 
 #undef play_field_blower
 #undef play_chaotic_swell
 
 #if defined(play_chaotic_swell) || defined(play_field_blower) || \
-    defined(play_items_until_stable_issue3545) || defined(choose_supporter)
+    defined(play_items_until_stable_issue3545) || defined(choose_supporter) || \
+    defined(play_battle_compressor_hidden_routes)
 #error "Issue-3057/3545 composition leaked a temporary policy alias"
 #endif
 

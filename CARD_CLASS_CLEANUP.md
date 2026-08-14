@@ -297,6 +297,7 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Existing Stadium placement and replacement behavior, opponent-Stadium cancellation, strategy, DCI/UDP/AMR, K0/K1, connector domination, and lock interactions remain in Engine. A later resolver migration must locate the single live Chaotic Swell effect owner before moving printed Stadium cancellation through `CardContext`. Printed effect: https://api.pokemontcg.io/v2/cards/sm12-187
 
 ## Dawn metadata migration
+
 - Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3560
 - Canonical print: `me2-87`; exact card data: https://api.pokemontcg.io/v2/cards/me2-87
 - `src/cards/trainers/dawn.hpp` and `kRegisteredCardDefinitions` now own Dawn identity, display name, Trainer kind, and Supporter subtype.
@@ -356,6 +357,7 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - A later resolver migration must locate the single live Lusamine resolution boundary and preserve its Supporter/Stadium recovery ordering through `CardContext` without moving strategic recovery choice into card code.
 
 ## Klara metadata migration
+
 - Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3625
 - Canonical print: `swsh6-145`; exact card data: https://api.pokemontcg.io/v2/cards/swsh6-145
 - `src/cards/trainers/klara.hpp` and `kRegisteredCardDefinitions` own Klara identity, display name, Trainer kind, and Supporter subtype.
@@ -434,6 +436,16 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Completed: `src/trace_engine_v2/composition/post_014a_overrides.inc` now includes `src/trace_engine_v2/core/routes/oricorio_connector_policy.inc` directly at the previously proven late-search member boundary, and the former `src/trace_engine_v2/core/oricorio_connector_policy.inc` compatibility forwarder is retired. Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/oricorio_connector_policy.inc
 - This is a textual-include ownership cleanup only. It preserves the substantive route-policy body, declaration order, DCI/UDP/AMR, connector domination, K0/K1 timing, lock admission, action ordering, and readiness behavior. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 - Next safe follow-up: continue retiring compatibility forwarders only after a live parent boundary is independently proven, and do not recreate the retired Oricorio path.
+
+## Regidrago V metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3683
+- Canonical print: `swsh12-135`; exact card data: https://api.pokemontcg.io/v2/cards/swsh12-135
+- `src/cards/pokemon/regidrago_v.hpp` and `kRegisteredCardDefinitions` now own Regidrago V identity, display name, Basic stage, Dragon type, Pokémon V / Rule Box flags, and printed Retreat Cost metadata.
+- Registered Pokémon compatibility now reuses `CardDefinition` for intrinsic Basic, Pokémon, Pokémon V, Rule Box, Dragon, and Dragon-or-Psychic queries instead of duplicating Regidrago V branches across legacy switches. Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+- Live `retreat_cost()` resolution remains in the legacy compatibility table while confirmed bug #3652 is owned by its bug branch, so this cleanup does not silently alter claimed sibling retreat behavior. Bug: https://github.com/FlareZ123/pokemon-sims/issues/3652 Advanced retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- Focused registration and compatibility coverage: `tests/regidrago_v_card_class_tests.cpp`.
+- DCI/UDP/AMR, connector domination, K0/K1 timing, evolution, Energy planning, attack selection, Active-position policy, and ready-turn behavior remain at their existing Engine owners.
 
 ## Mawile-GX metadata migration
 

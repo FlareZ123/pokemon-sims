@@ -64,12 +64,29 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--deck", required=True)
+    # CI already uploads build/Testing as validation evidence. Generate the readable
+    # summary in that artifact tree during the existing post-matrix extraction step:
+    # https://github.com/FlareZ123/pokemon-sims/issues/3764
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/.github/workflows/ci.yml
+    parser.add_argument(
+        "--summary-output",
+        type=Path,
+        default=Path("build/Testing/t2-t3-summary.md"),
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     extract_deck_rows(args.input, args.output, args.deck)
+
+    # Import after this module is initialized so summarize_matrix can reuse the
+    # atomic/locked file helpers without creating a module-import cycle:
+    # https://docs.python.org/3/reference/import.html
+    # https://github.com/FlareZ123/pokemon-sims/issues/3764
+    from summarize_matrix import write_summary
+
+    write_summary(args.input, args.summary_output)
     return 0
 
 

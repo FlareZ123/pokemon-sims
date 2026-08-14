@@ -15,13 +15,6 @@ using GarbodorScenarioSet = std::array<Scenario, 2>;
 ScenarioList all_scenarios();
 std::optional<Scenario> scenario_by_label(const std::string& label);
 
-const GarbodorScenarioSet kGarbodorScenarios{{
-    {"garbodor-shake-ability-lock/go-first",
-     DciProfile::StrictJit, LockMode::None, true, 5},
-    {"garbodor-shake-ability-lock/go-second",
-     DciProfile::StrictJit, LockMode::None, false, 5},
-}};
-
 template <typename ScenarioRange>
 class ScenarioExtension {
  public:
@@ -50,11 +43,21 @@ class ScenarioExtension {
   }
 
  private:
-  const ScenarioRange& scenarios_;
+  // Own the extension range so append and lookup cannot outlive external storage.
+  // C++ object lifetime rules: https://eel.is/c++draft/basic.life
+  ScenarioRange scenarios_;
 };
 
+// Keep the Garbodor rows inside their sole append/lookup owner instead of exposing
+// a second namespace-scope scenario container with coupled lifetime and ordering.
+// Scenario specification: https://github.com/FlareZ123/pokemon-sims/issues/2808
 const ScenarioExtension<GarbodorScenarioSet> kGarbodorScenarioExtension{
-    kGarbodorScenarios};
+    GarbodorScenarioSet{{
+        {"garbodor-shake-ability-lock/go-first",
+         DciProfile::StrictJit, LockMode::None, true, 5},
+        {"garbodor-shake-ability-lock/go-second",
+         DciProfile::StrictJit, LockMode::None, false, 5},
+    }}};
 
 ScenarioList all_scenarios_with_garbodor() {
   // Garbodor BKP 57 suppresses Pokemon Abilities while it has a Tool. Boost Shake

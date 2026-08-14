@@ -29,9 +29,11 @@ void expect(const bool condition, const char* message) {
 void test_bc_stages_grant_before_ready_turn_when_future_costs_are_public() {
   // Grant is safe to stage before the ready turn because the Dragon remains in hand.
   // The existing Grant recovery path waits until Active VSTAR + GGF are complete,
-  // then discards that Dragon plus an ordinary DCI card on the actual ready turn.
+  // then discards that Dragon plus a currently proved ordinary DCI card on the actual
+  // ready turn. Wishful Baton is stable dead DCI in this goldfish model.
   // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
   // Grant: https://api.pokemontcg.io/v2/cards/swsh10-144
+  // Wishful Baton: https://api.pokemontcg.io/v2/cards/sm3-128
   // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Existing Grant recovery owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
   std::mt19937_64 rng{3545144};
@@ -45,7 +47,7 @@ void test_bc_stages_grant_before_ready_turn_when_future_costs_are_public() {
   state.hand = {sim::Card::BattleCompressor,
                 sim::Card::MegaDragonite,
                 sim::Card::RegidragoVstar,
-                sim::Card::ChaoticSwell};
+                sim::Card::WishfulBaton};
   state.deck = {sim::Card::Grant,
                 sim::Card::Grass,
                 sim::Card::Fire,

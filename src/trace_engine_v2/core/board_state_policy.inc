@@ -1,3 +1,10 @@
+  // Board index 0 is Active; subsequent indexes map to Bench positions. Keep the
+  // representation beside the traversal implementation so every board-index user
+  // shares one mapping contract.
+  // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+  using BoardIndex = std::size_t;
+  using OptionalBoardIndex = std::optional<BoardIndex>;
+
   template <typename ActiveZone, typename BenchZone, typename Predicate>
   [[nodiscard]] static auto find_board_pokemon_matching_in_zones(
       ActiveZone& active, BenchZone& bench, Predicate predicate)
@@ -10,6 +17,30 @@
     return match == bench.end() ? nullptr : &*match;
   }
 
+  template <typename ActiveZone, typename BenchZone>
+  [[nodiscard]] static auto board_pokemon_at_index_in_zones(
+      ActiveZone& active, BenchZone& bench, const BoardIndex index)
+      -> decltype(&*active) {
+    // Centralize the historical Exploding Energy destination mapping before
+    // callers migrate away from raw Active/Bench index arithmetic.
+    // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+    if (index == 0U) return active ? &*active : nullptr;
+    const BoardIndex bench_index = index - 1U;
+    return bench_index < bench.size() ? &bench[bench_index] : nullptr;
+  }
+
+  template <typename ActiveZone, typename BenchZone, typename Predicate>
+  [[nodiscard]] static OptionalBoardIndex find_board_index_matching_in_zones(
+      const ActiveZone& active, const BenchZone& bench, Predicate predicate) {
+    // Keep index discovery on the same Active-first mapping used by lookup.
+    // C++ container indexing semantics: https://eel.is/c++draft/vector.capacity
+    if (active && predicate(*active)) return 0U;
+    for (BoardIndex index = 0; index < bench.size(); ++index) {
+      if (predicate(bench[index])) return index + 1U;
+    }
+    return std::nullopt;
+  }
+
   template <typename Predicate>
   [[nodiscard]] Pokemon* find_board_pokemon_matching(Predicate predicate) {
     return find_board_pokemon_matching_in_zones(
@@ -20,6 +51,22 @@
   [[nodiscard]] const Pokemon* find_board_pokemon_matching(
       Predicate predicate) const {
     return find_board_pokemon_matching_in_zones(
+        state_.active, state_.bench, predicate);
+  }
+
+  [[nodiscard]] Pokemon* board_pokemon_at_index(const BoardIndex index) {
+    return board_pokemon_at_index_in_zones(state_.active, state_.bench, index);
+  }
+
+  [[nodiscard]] const Pokemon* board_pokemon_at_index(
+      const BoardIndex index) const {
+    return board_pokemon_at_index_in_zones(state_.active, state_.bench, index);
+  }
+
+  template <typename Predicate>
+  [[nodiscard]] OptionalBoardIndex board_index_matching(
+      Predicate predicate) const {
+    return find_board_index_matching_in_zones(
         state_.active, state_.bench, predicate);
   }
 

@@ -11,16 +11,15 @@
 
   // Compose the canonical board-query policy through the existing in-class
   // Forretress declaration boundary. Qualified runtime definitions emitted after
-  // Engine closes can then reuse these members without duplicating traversal logic.
+  // Engine closes can then reuse these members without duplicating traversal or
+  // board-index vocabulary.
   // C++ textual include semantics: https://eel.is/c++draft/cpp.include
   // Core evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
 #include "../board_state_policy.inc"
 
-  // Board index 0 is Active; subsequent indexes map to Bench positions. Keep these
-  // spellings centralized so runtime code can migrate away from raw container types
-  // without changing the established Exploding Energy destination representation.
-  using BoardIndex = std::size_t;
-  using OptionalBoardIndex = std::optional<BoardIndex>;
+  // Exploding Energy destinations use the canonical board index type owned by
+  // board_state_policy.inc: 0 is Active and each Bench slot is index + 1.
+  // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
   using AttachmentDestinations = std::vector<BoardIndex>;
 
   // Board and route-state queries.

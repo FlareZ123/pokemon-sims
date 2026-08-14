@@ -65,6 +65,17 @@
         communication_route || arven_search_item_route || arven_communication_route;
   }
 
+  // #869 is a relative bank-turn -> immediately-following-turn packet. The candidate
+  // turn and Steven discard count let the finish prove that a Steven actually resolved
+  // after admission, while the horizon gate keeps the bank inside the modeled game:
+  // https://api.pokemontcg.io/v2/cards/sm7-145
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // https://github.com/FlareZ123/pokemon-sims/issues/869
+  // https://github.com/FlareZ123/pokemon-sims/issues/3601
+  mutable int issue_3601_late_steven_candidate_bank_turn_{0};
+  mutable int issue_3601_late_steven_candidate_discard_count_{0};
+
   bool late_steven_has_known_t3_compression_route() const {
     // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
     // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
@@ -82,7 +93,8 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1199
     if (issue_1199_route_available()) return true;
 
-    if (state_.turn != 2 || scenario_.locks != LockMode::None || !supporter_allowed() ||
+    if (state_.turn >= scenario_.max_turn || scenario_.locks != LockMode::None ||
+        !supporter_allowed() ||
         hand_count(Card::StevensResolve) == 0 || hand_count(Card::TateLiza) == 0 ||
         hand_count(Card::QuickBall) == 0 || !prizes_known() || !state_.active ||
         state_.active->card != Card::TapuLeleGX || state_.retreat_used ||
@@ -122,23 +134,43 @@
     }
 
     // Steven's Resolve can bank Latias ex, Mysterious Treasure, and Mega Dragonite ex
-    // after K1 proves all three remain in deck. Evolving the prior-turn Regidrago V
-    // and attaching Fire before Steven preserves the held Grass attachment for T3;
-    // Treasure then discards the held Dragon payload, Latias grants free Retreat, and
-    // the route reaches Active GGF Regidrago VSTAR one turn earlier than Tate draw mode:
+    // after K1 proves all three remain in deck. Evolution, Supporter use, Item use,
+    // attachment, and retreat are current-state procedures; no printed effect binds
+    // this packet to absolute T2 or T3:
     // https://api.pokemontcg.io/v2/cards/sm7-145
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/me2pt5-152
     // https://api.pokemontcg.io/v2/cards/sv8-76
     // https://api.pokemontcg.io/v2/cards/sm2-60
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/869
-    return before_attachment || after_attachment || after_evolution;
+    // https://github.com/FlareZ123/pokemon-sims/issues/2424
+    // https://github.com/FlareZ123/pokemon-sims/issues/3601
+    const bool route_available = before_attachment || after_attachment || after_evolution;
+    if (route_available) {
+      issue_3601_late_steven_candidate_bank_turn_ = state_.turn;
+      issue_3601_late_steven_candidate_discard_count_ =
+          count_of(state_.discard, Card::StevensResolve);
+    }
+    return route_available;
   }
 
   bool play_known_steven_t3_payload_outlet() {
-    if (state_.turn != 3 || item_locked() || hand_count(Card::MysteriousTreasure) == 0 ||
+    const bool immediately_follows_proven_bank =
+        issue_3601_late_steven_candidate_bank_turn_ > 0 &&
+        state_.turn == issue_3601_late_steven_candidate_bank_turn_ + 1 &&
+        count_of(state_.discard, Card::StevensResolve) >
+            issue_3601_late_steven_candidate_discard_count_;
+    // Steven ends the bank turn, and this specialized continuation is legal only on
+    // its immediately following turn after the admitted Steven was actually discarded:
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // https://github.com/FlareZ123/pokemon-sims/issues/869
+    // https://github.com/FlareZ123/pokemon-sims/issues/3601
+    if (!immediately_follows_proven_bank || item_locked() ||
+        hand_count(Card::MysteriousTreasure) == 0 ||
         hand_count(Card::MegaDragonite) == 0 ||
         state_.manual_energy_used || !need_payload() || !in_play(Card::LatiasEx) ||
         !ability_available_for_pokemon(Card::LatiasEx)) {
@@ -154,16 +186,17 @@
         state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic);
     if (!prepared_vstar || !legal_search_target) return false;
 
-    // This exact K1 continuation uses Mysterious Treasure before Tate & Liza can
-    // shuffle away the held outlet and payload. The printed Item discards one card,
-    // then searches a Psychic or Dragon Pokémon; Mega Dragonite ex is the deliberate
-    // Apex Dragon payload and the held Grass plus Latias ex prove the T3 finish:
+    // Mysterious Treasure pays one discard before its Pokémon search. The banked
+    // Dragon is the Apex Dragon payload, while Latias ex provides the Basic Active's
+    // zero-Retreat route on this proven immediately-following finish turn:
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/me2pt5-152
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/sv8-76
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/869
+    // https://github.com/FlareZ123/pokemon-sims/issues/3601
     remove_one(state_.hand, Card::MysteriousTreasure);
     state_.discard.push_back(Card::MysteriousTreasure);
     discard_from_hand(Card::MegaDragonite, "Known Steven Treasure payload cost", "R-MT-01");
@@ -172,9 +205,11 @@
     const bool found = move_deck_to_hand(target);
     shuffle(state_.deck);
     trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM; P-COMPRESS-01",
-          found ? "Preserved the known Steven T3 payload route and searched " +
+          found ? "Preserved the known Steven next-turn payload route and searched " +
                       std::string(name(target)) + "."
-                : "Preserved the known Steven T3 payload route; no legal target remained after search.");
+                : "Preserved the known Steven next-turn payload route; no legal target remained after search.");
+    issue_3601_late_steven_candidate_bank_turn_ = 0;
+    issue_3601_late_steven_candidate_discard_count_ = 0;
     return true;
   }
 

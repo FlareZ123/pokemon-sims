@@ -43,6 +43,9 @@ static_assert(cards::GuzmaHala::definition.name == "Guzma & Hala");
 static_assert(cards::Arven::definition.id == Card::Arven); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
 static_assert(cards::Arven::definition.canonical_id == "sv1-166");
 static_assert(cards::Arven::definition.name == "Arven");
+static_assert(cards::BattleCompressor::definition.id == Card::BattleCompressor); // Exact Item: https://api.pokemontcg.io/v2/cards/xy4-92
+static_assert(cards::BattleCompressor::definition.canonical_id == "xy4-92");
+static_assert(cards::BattleCompressor::definition.name == "Battle Compressor Team Flare Gear");
 static_assert(cards::Crispin::definition.id == Card::Crispin); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv7-133 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3580
 static_assert(cards::Crispin::definition.canonical_id == "sv7-133");
 static_assert(cards::Crispin::definition.name == "Crispin");
@@ -52,8 +55,9 @@ static_assert(cards::Dawn::definition.name == "Dawn");
 static_assert(cards::Powerglass::definition.id == Card::Powerglass); // Exact Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
 static_assert(cards::Powerglass::definition.canonical_id == "sv6pt5-63");
 static_assert(cards::Powerglass::definition.name == "Powerglass");
-static_assert(cards::BattleCompressor::definition.id == Card::BattleCompressor); // https://api.pokemontcg.io/v2/cards/xy4-92
-static_assert(cards::VsSeeker::definition.id == Card::VsSeeker); // https://api.pokemontcg.io/v2/cards/xy4-109
+static_assert(cards::VsSeeker::definition.id == Card::VsSeeker); // Exact Item: https://api.pokemontcg.io/v2/cards/xy4-109
+static_assert(cards::VsSeeker::definition.canonical_id == "xy4-109");
+static_assert(cards::VsSeeker::definition.name == "VS Seeker");
 
 constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},         {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
@@ -93,7 +97,6 @@ constexpr std::string_view name(const Card card) {
     case Card::Pineco: return "Pineco";
     case Card::ForretressEx: return "Forretress ex";
     case Card::UltraBall: return "Ultra Ball";
-    case Card::PokemonCommunication: return "Pokémon Communication";
     case Card::EarthenVessel: return "Earthen Vessel";
     case Card::Grant: return "Grant";
     case Card::Serena: return "Serena";
@@ -127,13 +130,14 @@ constexpr std::string_view name(const Card card) {
     case Card::GuzmaHala:
     case Card::HisuianHeavyBall:
     case Card::MysteriousTreasure:
+    case Card::PokemonCommunication:
     case Card::Powerglass:
     case Card::ProfessorBurnet:
     case Card::ProfessorsLetter:
     case Card::QuickBall:
     case Card::SecretBox:
     case Card::VsSeeker:
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Secret Box data: https://api.pokemontcg.io/v2/cards/sv6-163
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Pokémon Communication data: https://api.pokemontcg.io/v2/cards/sm9-152 ; Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92 ; VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
   }
   return "Unknown";
 }

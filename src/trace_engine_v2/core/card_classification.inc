@@ -202,12 +202,11 @@ constexpr bool is_tool(const Card card) {
 
 constexpr bool is_stadium(const Card card) {
   // Registered Stadiums own their intrinsic Trainer subtype in CardDefinition.
-  // Registry: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-  // Chaotic Swell exact print: https://api.pokemontcg.io/v2/cards/sm12-187
+  // Forest of Vitality exact print: https://api.pokemontcg.io/v2/cards/me1-117 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3639
   if (cards::has_definition(card)) {
     return cards::registered_is_trainer_kind(card, cards::TrainerKind::Stadium);
   }
-  return card == Card::ForestOfVitality || card == Card::PathToPeak;
+  return card == Card::PathToPeak;
 }
 
 constexpr bool is_ace_spec(const Card card) {

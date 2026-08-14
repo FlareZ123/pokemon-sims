@@ -62,6 +62,12 @@
 #error "Opening composition leaked the temporary might_be_unseen alias"
 #endif
 
+// Define the issue-3545 Treasure admission wrapper at a proven class-member boundary.
+// Its delegate is defined by the following opening composition; complete-class member
+// lookup permits this earlier inline definition while keeping all legacy definitions
+// untouched by the later scheduler-only macro alias.
+#include "../core/battle_compressor_treasure_reservation.inc"
+
 // Phase 3: compose the banked-Tapu replacement at the post-search member boundary.
 // Preserve this order because part_014a closes run_search_items_one_step() before
 // the completed replacement policy is composed at the safe class-member boundary.
@@ -78,10 +84,9 @@
 #error "Banked-Tapu opening composition leaked the temporary retreat alias"
 #endif
 
-// Opening overrides complete the final Mysterious Treasure member before part_014a
-// resumes the search scheduler. Wrap only scheduler calls so matchup-flex can reserve
-// the exact BC-Steven Treasure outlet until its ready-turn payload pass.
-#include "../core/battle_compressor_treasure_reservation.inc"
+// part_014a resumes the search scheduler after opening overrides have defined the
+// final Treasure implementation. Alias only those scheduler calls to the reservation
+// wrapper so the underlying card behavior remains unchanged.
 #if defined(play_mysterious_treasure)
 #error "Issue-3545 Treasure reservation requires its alias to be undefined"
 #endif

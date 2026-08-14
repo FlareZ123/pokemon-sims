@@ -209,7 +209,7 @@
 // Route reporting and the production CLI continue through the appended two rows while
 // the historical public registry remains available to focused tests.
 // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
-// Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7/142
+// Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
 // Model specification: https://github.com/FlareZ123/pokemon-sims/issues/2808
 #if defined(all_scenarios) || defined(scenario_by_label)
 #error "Scenario-registry composition requires aliases to be undefined on entry"

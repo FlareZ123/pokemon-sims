@@ -8,6 +8,15 @@ from contextlib import contextmanager
 from pathlib import Path
 
 
+DEFAULT_SUMMARY_OUTPUT = Path("trace-t2-t3-summary.txt")
+REQUIRED_SUMMARY_COLUMNS = (
+    "deck",
+    "scenario",
+    "ready_by_t2_pct",
+    "ready_by_t3_pct",
+)
+
+
 # The paired aggregate already contains both registered decks, including the
 # canonical regidrago-shell rows, so those rows can be reused byte-for-byte:
 # https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#generate-the-paired-two-deck-matrices
@@ -57,19 +66,65 @@ def extract_deck_rows(source: Path, destination: Path, deck: str) -> None:
         atomic_write_text(destination, lines[0] + "".join(selected))
 
 
+def render_t2_t3_summary(rows: list[dict[str, str]]) -> str:
+    lines = [
+        "# Generated T2/T3 setup summary\n",
+        "\n",
+        "| Deck | Scenario | Ready by T2 | Ready by T3 |\n",
+        "|---|---|---:|---:|\n",
+    ]
+    for row in rows:
+        lines.append(
+            f"| {row['deck']} | {row['scenario']} | "
+            f"{float(row['ready_by_t2_pct']):.3f}% | "
+            f"{float(row['ready_by_t3_pct']):.3f}% |\n"
+        )
+    return "".join(lines)
+
+
+def summarize_matrix(source: Path, destination: Path) -> None:
+    with source.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        fieldnames = tuple(reader.fieldnames or ())
+        missing = [column for column in REQUIRED_SUMMARY_COLUMNS if column not in fieldnames]
+        if missing:
+            raise ValueError(f"matrix is missing required columns {missing}: {source}")
+        rows = list(reader)
+    if not rows:
+        raise ValueError(f"empty matrix: {source}")
+
+    lock_path = Path(f"{destination}.lock")
+    with exclusive_lock(lock_path):
+        atomic_write_text(destination, render_t2_t3_summary(rows))
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Extract one deck's rows from an already-generated paired matrix."
+        description=(
+            "Extract one deck's rows from an already-generated paired matrix and "
+            "emit the canonical human-readable T2/T3 summary used by CI audits."
+        )
     )
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--deck", required=True)
+    parser.add_argument(
+        "--summary-output",
+        type=Path,
+        default=DEFAULT_SUMMARY_OUTPUT,
+        help="human-readable paired T2/T3 summary output",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
     extract_deck_rows(args.input, args.output, args.deck)
+    # CI already uploads trace-*.txt, so this source-derived table becomes part of
+    # the validation artifact without another reporting or transcription step.
+    # Confirmed reporting-boundary defect:
+    # https://github.com/FlareZ123/pokemon-sims/issues/3764
+    summarize_matrix(args.input, args.summary_output)
     return 0
 
 

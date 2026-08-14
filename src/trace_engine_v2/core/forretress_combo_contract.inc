@@ -5,9 +5,19 @@
   // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/972
 
-  using BoardIndex = std::size_t;
-  using OptionalBoardIndex = std::optional<BoardIndex>;
-  using AttachmentDestinations = std::vector<BoardIndex>;
+  // Keep every Forretress board-coordinate type under one contract owner while
+  // preserving the legacy aliases consumed by split implementation units.
+  // Cleanup roadmap: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+  // C++ type aliases: https://eel.is/c++draft/dcl.typedef
+  struct ForretressBoardTypes {
+    using Index = std::size_t;
+    using OptionalIndex = std::optional<Index>;
+    using AttachmentDestinations = std::vector<Index>;
+  };
+
+  using BoardIndex = ForretressBoardTypes::Index;
+  using OptionalBoardIndex = ForretressBoardTypes::OptionalIndex;
+  using AttachmentDestinations = ForretressBoardTypes::AttachmentDestinations;
 
   // Combo state and board queries.
   [[nodiscard]] bool forretress_combo_enabled() const;

@@ -14,7 +14,7 @@ src/cards/card_definition.hpp
 src/cards/card_registry.hpp
 src/cards/trainers/quick_ball.hpp
 src/rules/card_context.hpp
-src/trace_engine_v2/core/card_context_adapter.inc
+src/trace_engine_v2/core/card_context_adapter.hpp
 src/trace_engine_v2/core/quick_ball_card_class_base.inc
 src/trace_engine_v2/core/quick_ball_card_class_tail.inc
 tests/quick_ball_card_class_tests.cpp
@@ -108,7 +108,7 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - `src/cards/trainers/forest_of_vitality.hpp` and `kRegisteredCardDefinitions` own Forest of Vitality identity, display name, Trainer kind, and Stadium subtype.
 - Legacy `name()` and `is_stadium()` compatibility paths no longer duplicate Forest of Vitality intrinsic metadata. Focused coverage: `tests/forest_of_vitality_card_class_tests.cpp`.
 - Existing automatic Grass evolution timing, first-turn restriction, Stadium placement/replacement rules, DCI/UDP/AMR, connector domination, K0/K1 state, and route behavior remain at their current Engine/rules owners. Advanced Stadium procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-- A later printed-effect migration must preserve automatic-effect semantics and keep route choice outside intrinsic card metadata. Printed effect: https://api.pokemontcg.io/v2/cards/me1-117
+- A later printed-effect migration must preserve automatic-effect semantics and keep route choice outside intrinsic metadata. Printed effect: https://api.pokemontcg.io/v2/cards/me1-117
 
 These staged entries advance the card-class plan without changing the simulator's DCI, AMR, connector-domination, K0/K1, or ready-turn policy.
 
@@ -136,6 +136,8 @@ Keep `simulation_runtime.inc` limited to state/runtime data types and trace owne
 The retired `src/trace_engine_v2/part_late_policy_bundle.inc` comment-only compatibility path was deleted after repository-wide reference checks found no live include dependency. Its former Quick Ball, Crispin provenance, Secret Box, and Celestial Roar chain remains solely owned by `composition/post_014a_overrides.inc`; future cleanup must continue at that canonical owner rather than recreating the historical bundle. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
 The former `src/trace_engine_v2/part_issue_989_wonder_tag_complete_route_override.inc` forwarding shim is retired. `composition/opening_engine_overrides.inc` now includes `core/routes/tapu_wonder_tag_route_policy.inc` directly at the same proven member boundary, and the former `core/tapu_wonder_tag_route_policy.inc` compatibility forwarder is retired. Canonical policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/tapu_wonder_tag_route_policy.inc Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
+The reusable `CardContext` adapter is now a normal header at `src/trace_engine_v2/core/card_context_adapter.hpp`; the former `.inc` seam is retired. `card_catalog.inc` remains its single Engine-side include owner, keeping reusable card modules dependent on `rules::CardContext` instead of trace-engine state.
+
 Registered-card compatibility now uses `find_definition()` as the single registry lookup. `has_definition()` and intrinsic Item classification delegate to that lookup instead of maintaining parallel card switches, reducing duplicate ownership as additional cards migrate.
 
 ### Registry consolidation checkpoint
@@ -144,6 +146,7 @@ Registered-card compatibility now uses `find_definition()` as the single registr
 - Registered display-name ownership is now mechanically complete for the current registry inventory: `name()` consults `find_definition()` first and has no duplicate return strings for registered cards.
 - Registered Item ownership is now mechanically complete for the current registry inventory: `is_item()` delegates registered cards before reaching a legacy switch that contains only unmigrated Items.
 - `registered_is_trainer_kind()` is the shared intrinsic Trainer-subtype query. Item, Supporter, Stadium, and Tool compatibility checks should delegate to this helper as those classifications migrate.
+- `definition_matches_registration()` centralizes the compile-time id, canonical-print, and display-name contract for registered definitions; new registry checks should use it instead of repeating three independent assertions.
 - `is_trainer_kind()` belongs with `CardDefinition` because it interprets intrinsic metadata only. Route policy, DCI/UDP, AMR, connector domination, K0/K1, and matchup state remain outside the registry.
 - The next card migration should reuse these registry primitives before adding any new compatibility branch. If a migrated fact still needs a legacy fallback, keep that fallback only for unmigrated cards.
 
@@ -237,7 +240,6 @@ When a legacy function mixes these responsibilities, leave route admission and s
 9. Add focused tests for exact metadata and printed legality/effect boundaries as each phase becomes active.
 10. Run the full CI matrix and representative `--simulate-this` traces before merge.
 If migration reveals a gameplay defect, file it through the normal bug workflow. Do not silently combine the behavior correction with architecture cleanup.
-
 ## Validation gate
 
 A cleanup PR is mergeable only when:

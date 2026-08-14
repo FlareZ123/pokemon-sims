@@ -137,9 +137,9 @@ Pineco / Forretress ex exact cards: https://api.pokemontcg.io/v2/cards/sv4pt5-1 
 
 ## Steven route package cleanup
 
-`src/trace_engine_v2/core/routes/steven_package_policy.inc` now owns the issue-1745 Steven/Latias T3 policy through the colocated `steven_latias_t3_policy.inc`. The historical root `part_issue_1745_steven_latias_t3_override.inc` was retired after its live package include moved, preserving the established textual order and the route's existing rule/card citations. Package owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_package_policy.inc Route specification: https://github.com/FlareZ123/pokemon-sims/issues/1745
+`src/trace_engine_v2/core/routes/steven_package_policy.inc` is the canonical package owner for the source-bounded Steven continuations. The issue-1745 policy remains colocated as `steven_latias_t3_policy.inc`; the issue-1771 deterministic T4 package now lives at `steven_t4_package_policy.inc`; and the issue-2622 Latias/Brilliant Blender package now lives at `steven_latias_blender_policy.inc`. Each migration preserved the implementation byte-for-byte and changed only textual ownership/include paths. Package owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_package_policy.inc Route specifications: https://github.com/FlareZ123/pokemon-sims/issues/1745 https://github.com/FlareZ123/pokemon-sims/issues/1771 https://github.com/FlareZ123/pokemon-sims/issues/2622
 
-Next mechanical Steven step: migrate one remaining root implementation included by `steven_package_policy.inc` into `core/routes/` only after confirming it has no other live raw-source consumer. Keep each move behavior-neutral, preserve include order, preserve direct card/rule URLs beside the existing policy, and remove the historical root file in the same switching commit.
+The remaining root Steven package implementation is issue 1772. Migrate it into `core/routes/` only after confirming it has no other live raw-source consumer. Keep the move behavior-neutral, preserve include order, preserve direct card/rule URLs beside the existing policy, and remove the historical root file in the same switching commit. Route specification: https://github.com/FlareZ123/pokemon-sims/issues/1772
 
 ## Shared policy cleanup plan
 

@@ -318,13 +318,6 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - This consolidation is mechanical. It preserves the exact function bodies, macro lifetimes, helper include, direct card/rule URLs, and declaration order. Future Arven cleanup should continue from `composition/post_014a_overrides.inc` and avoid recreating one-owner `part_*.inc` fragments.
 - Validation gate remains strict Release compilation, the full regression suite, representative `--simulate-this` traces, and the paired T2/T3 matrix. Any matrix movement requires a separately justified behavior change rather than being accepted as cleanup drift.
 
-## Cleanup wave 2026-08-14 classification and Forretress contracts
-
-- `src/trace_engine_v2/core/forretress_combo_contract.inc` now groups board-coordinate vocabulary under `ForretressBoardTypes` while retaining `BoardIndex`, `OptionalBoardIndex`, and `AttachmentDestinations` compatibility aliases. Future Forretress implementation cleanup should consume those contract aliases and avoid reintroducing raw `std::size_t`, `std::optional<std::size_t>`, or `std::vector<std::size_t>` signatures. Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress_combo_contract.inc C++ type aliases: https://eel.is/c++draft/dcl.typedef
-- `src/trace_engine_v2/core/card_classification.inc` now groups Pokémon-only taxonomy and retreat-cost lookup under `PokemonCardClassification`; the established free predicate names remain compatibility delegates for split route units. This cleanup is structural only and intentionally preserves every pre-existing classification result. Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
-- Bug #3608 tracks the separately confirmed-behavior gate for Hisuian Goodra VSTAR's Pokémon V classification. Do not fold that semantic correction into a cleanup commit before its two-agent approval requirement is satisfied. Bug: https://github.com/FlareZ123/pokemon-sims/issues/3608 Hisuian Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136 Pokémon V ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
-- Next safe composition follow-up remains direct inclusion of `core/routes/tate_after_vstar_search_selector.inc` from `composition/post_014a_overrides.inc` with retirement of the historical issue-1070 forwarding path after the exact macro boundary is revalidated. Preserve `choose_supporter` alias lifetime and final fallback order. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
-
 ## Pokémon Communication metadata migration
 
 - Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3552

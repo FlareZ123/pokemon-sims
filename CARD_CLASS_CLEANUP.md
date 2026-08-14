@@ -272,3 +272,11 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - `src/cards/trainers/powerglass.hpp` and `kRegisteredCardDefinitions` now own Powerglass identity, display name, Trainer kind, and Pokémon Tool subtype.
 - Legacy `name()` and `is_tool()` compatibility paths delegate registered Powerglass metadata to the registry while retaining fallbacks for unmigrated Tools. Focused coverage: `tests/powerglass_card_class_tests.cpp`.
 - Existing end-of-turn Basic Energy attachment resolution, Active-position requirement, attachment-destination strategy, DCI/UDP/AMR, K0/K1, connector domination, and setup-axis policy remain in Engine. A later resolver migration must first locate the single live Powerglass resolution boundary and preserve end-of-turn sequencing through `CardContext`.
+
+## Tate & Liza metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3562
+- Canonical print: `sm7-148`; exact card data: https://api.pokemontcg.io/v2/cards/sm7-148
+- `src/cards/trainers/tate_liza.hpp` and `kRegisteredCardDefinitions` now own Tate & Liza identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility paths delegate registered Tate & Liza metadata to the registry and no longer duplicate its intrinsic name/subtype.
+- Existing choice between shuffle-draw and switch modes, Supporter contention, route admission, DCI/UDP/AMR, K0/K1, connector domination, and setup-axis policy remain in Engine. A later printed-resolution migration must first locate the single live Tate & Liza resolver and preserve both printed modes through `CardContext`.

@@ -3,7 +3,7 @@
 #include "core/card_catalog.inc"
 #endif
 
-// Compatibility source-anchor shim. Canonical implementation:
+// Stable source-anchor compatibility for tests and historical links. Canonical owner:
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 // legacy source anchor 8: see core/card_catalog.inc
 // legacy source anchor 9: see core/card_catalog.inc

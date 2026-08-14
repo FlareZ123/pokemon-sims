@@ -357,3 +357,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Focused registration coverage: `tests/klara_card_class_tests.cpp`.
 - This wave preserves Klara's printed discard recovery, strategic target choice, Supporter contention, DCI/UDP/AMR, connector domination, K0/K1 state, and route behavior at their existing Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/swsh6-145
 - A later resolver migration must first locate the single live Klara recovery boundary and preserve the independent up-to-two Pokémon and up-to-two basic-Energy recovery choices through `CardContext` without moving strategic recovery choice into card code. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+## Wishful Baton metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3631
+- Canonical print: `sm3-128`; exact card data: https://api.pokemontcg.io/v2/cards/sm3-128
+- `src/cards/trainers/wishful_baton.hpp` and `kRegisteredCardDefinitions` own Wishful Baton identity, display name, Trainer kind, and Pokémon Tool subtype.
+- Legacy `name()` and `is_tool()` compatibility tables no longer duplicate Wishful Baton's intrinsic facts; registered metadata is the sole owner.
+- Focused registration coverage: `tests/wishful_baton_card_class_tests.cpp`.
+- This wave preserves holder selection, Knock Out and Energy-transfer resolution, DCI/UDP/AMR, connector domination, K0/K1 state, lock handling, and route strategy at their existing Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sm3-128
+- A later resolver migration must preserve the opponent-attack damage Knock Out trigger and the printed choice to move up to 3 Basic Energy cards from the attached Active Pokémon to 1 Benched Pokémon through `CardContext`, while strategic target selection stays in Engine. Rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

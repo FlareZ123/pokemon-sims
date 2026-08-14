@@ -163,10 +163,10 @@ Future policy cleanup should reuse these named seams before adding another paylo
 
 ## Numbered policy-fragment migration
 
-Three previously anonymous trace-engine fragments now have named canonical owners under `src/trace_engine_v2/core/` while their historical `part_*.inc` paths remain compatibility forwarders at the exact same textual include boundaries:
+Three previously anonymous trace-engine fragments now have named canonical owners while their historical `part_*.inc` paths remain compatibility forwarders at the exact same textual include boundaries:
 
 - `part_013.inc` forwards to `core/supporter_legacy_runtime.inc`.
-- `part_014a.inc` forwards to `core/turn_action_policy_runtime.inc`.
+- `part_014a.inc` forwards to `turn_action_policy_runtime.inc`. This owner stays at the trace-engine root because its established nested `core/routes/...` includes are relative to that directory.
 - `part_014b.inc` forwards to `core/recovery_supporter_policy.inc`.
 
 These moves are byte-preserving for the executable bodies. The next mechanical step is to map raw-source readers and same-repository anchors that still require the numbered paths. After those consumers are migrated, `composition/engine_body.inc` may include the named owners directly and the compatibility forwarders may be retired one at a time. Preserve member/declaration order, macro boundaries, rule/card URLs, DCI/UDP/AMR behavior, Supporter contention, connector domination, and K0/K1 semantics during that retirement.

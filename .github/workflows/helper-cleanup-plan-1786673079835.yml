@@ -1,6 +1,7 @@
 name: One-shot cleanup plan updater
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - helper-cleanup-plan-1786673079835

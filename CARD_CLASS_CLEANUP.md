@@ -237,7 +237,6 @@ Rules source for Item/Supporter/search procedure: https://github.com/FlareZ123/p
 Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
 
 ## Cleanup wave 2026-08-13 composition follow-up
-
 - Forest Seal Stone holder selection now has one selector in `src/trace_engine_v2/part_010_attach_fss_override.inc`. The `allow_active` parameter preserves the existing general Active-first attachment order and the Powerglass-specific Bench-only reservation path. Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156 Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
 - The issue-3040 Supporter continuation in `src/trace_engine_v2/part_issue_1070_tate_after_vstar_search_override.inc` now exposes a responsibility-based fallback name while preserving the existing macro boundary and Turo route. Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
 - The issue-962 eligibility, projection, and decision sections now compose directly in `part_014a.inc` at the same proven member boundary. Their three compatibility `.inc` files are retired, while implementation ownership remains in `core/routes/issue_962_route.inc`.
@@ -311,3 +310,13 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Focused registration coverage: `tests/crispin_card_class_tests.cpp`.
 - This wave intentionally leaves Crispin's printed search for up to two Basic Energy cards of different types, one-to-hand/one-attach resolution, reveal and shuffle ordering, Supporter contention, K0/K1 transitions, DCI/UDP/AMR, connector domination, and route strategy at their current Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/sv7-133
 - A later resolver migration must first locate the single live Crispin resolution boundary and preserve printed search/reveal/attachment/hand/shuffle ordering through `CardContext` without moving strategic Energy choice into card code.
+
+## Serena metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3585
+- Canonical print: `swsh12-164`; exact card data: https://api.pokemontcg.io/v2/cards/swsh12-164
+- `src/cards/trainers/serena.hpp` and `kRegisteredCardDefinitions` now own Serena identity, display name, Trainer kind, and Supporter subtype.
+- Legacy `name()` and `is_supporter()` compatibility tables no longer duplicate Serena's intrinsic facts; registered metadata is the sole owner. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- Focused registration coverage: `tests/serena_card_class_tests.cpp`.
+- This wave intentionally leaves Serena's two printed modes, discard/draw selection, Pokémon V gust selection, Supporter contention, DCI/UDP/AMR, connector domination, K0/K1 transitions, and route strategy at their current Engine owners. Printed effect: https://api.pokemontcg.io/v2/cards/swsh12-164
+- A later resolver migration must first locate the single live Serena resolution boundary and preserve mode legality and printed discard/draw or gust resolution through `CardContext` without moving strategic mode or target choice into card code.

@@ -6,23 +6,24 @@
       Card::DialgaGX,
   }};
 
-  static int payload_card_count(const std::vector<Card>& zone) {
+  [[nodiscard]] static int payload_card_count(const std::vector<Card>& zone) {
     return static_cast<int>(std::count_if(zone.begin(), zone.end(), is_payload));
   }
 
-  template <typename Present>
-  static std::optional<Card> first_payload_by_preference(Present present) {
+  template <typename Predicate>
+  [[nodiscard]] static std::optional<Card> first_payload_by_preference(
+      const Predicate& present) {
     for (const Card card : kPayloadHandPreference) {
       if (present(card)) return card;
     }
     return std::nullopt;
   }
 
-  int payload_cards_in_hand_count() const {
+  [[nodiscard]] int payload_cards_in_hand_count() const {
     return payload_card_count(state_.hand);
   }
 
-  std::optional<Card> first_payload_card_in_hand() const {
+  [[nodiscard]] std::optional<Card> first_payload_card_in_hand() const {
     // Keep the simulator's established payload preference order while centralizing
     // repeated DCI/JIT hand scans:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
@@ -32,7 +33,7 @@
         [this](const Card card) { return hand_count(card) > 0; });
   }
 
-  std::optional<Card> first_searchable_payload_in_known_deck() const {
+  [[nodiscard]] std::optional<Card> first_searchable_payload_in_known_deck() const {
     // Once K1 has established the remaining deck, a deck-search Supporter must be
     // gated by a payload that is physically searchable in that deck rather than by
     // a payload already held in hand.

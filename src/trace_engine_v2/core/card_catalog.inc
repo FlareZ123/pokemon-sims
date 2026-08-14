@@ -62,8 +62,6 @@ constexpr std::string_view name(const Card card) {
     case Card::TapuLeleGX: return "Tapu Lele-GX";
     case Card::CrobatV: return "Crobat V";
     case Card::LatiasEx: return "Latias ex";
-    case Card::MawileGX: return "Mawile-GX";
-    case Card::Oricorio: return "Oricorio GRI 55";
     case Card::Dipplin: return "Dipplin TWM 127";
     case Card::Pineco: return "Pineco";
     case Card::ForretressEx: return "Forretress ex";
@@ -81,6 +79,8 @@ constexpr std::string_view name(const Card card) {
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
     case Card::Appletun: // Exact registered label and print: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
+    case Card::MawileGX: // Exact registered label and print: https://api.pokemontcg.io/v2/cards/sm11-141 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3704
+    case Card::Oricorio: // Exact registered label and print: https://api.pokemontcg.io/v2/cards/sm2-55 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3712
     case Card::RegidragoV: // Exact registered label and print: https://api.pokemontcg.io/v2/cards/swsh12-135 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3683
     case Card::Arven:
     case Card::BattleVipPass:
@@ -108,7 +108,7 @@ constexpr std::string_view name(const Card card) {
     case Card::RoseannesBackup: // Exact registered Supporter: https://api.pokemontcg.io/v2/cards/swsh9-148 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3629
     case Card::SecretBox:
     case Card::WishfulBaton: // Exact registered name: https://api.pokemontcg.io/v2/cards/sm3-128
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp ; Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 ; Appletun: https://api.pokemontcg.io/v2/cards/sv8-140 ; Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117 ; Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148
+      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
   }
   return "Unknown";
 }

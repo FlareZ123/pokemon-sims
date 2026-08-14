@@ -76,6 +76,12 @@ The active registry currently contains 30 definitions. The source of truth is `s
 
 Do not create a parallel migration for a card whose enhancement or bug branch is already owned. Migration ownership must be checked before selecting the next card.
 
+### Registered Pokémon compatibility cleanup
+
+`src/trace_engine_v2/core/card_catalog.inc` now treats migrated Pokémon display names as registry-owned compatibility data instead of retaining duplicate literal returns for Mawile-GX and Oricorio. `src/trace_engine_v2/core/card_classification.inc` likewise routes registered Pokémon stage, Pokémon identity, Rule Box/type classification, and Retreat Cost through `registered_pokemon_definition()` and `CardDefinition` before legacy fallbacks. Exact migrated prints: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/sm11-141 https://api.pokemontcg.io/v2/cards/sm2-55 https://api.pokemontcg.io/v2/cards/swsh12-135
+
+Future migrations should use this same ownership path: once exact intrinsic metadata is registered and covered by focused tests, retire only the corresponding legacy compatibility cases. Strategic payload, route, DCI/UDP/AMR, lock, and readiness policy remains in Engine.
+
 ### Oricorio migration
 
 - Enhancement owner: https://github.com/FlareZ123/pokemon-sims/issues/3712

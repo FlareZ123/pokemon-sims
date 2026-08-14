@@ -1,12 +1,20 @@
-  static constexpr std::string_view kGarbodorShakeScenarioPrefix =
-      "garbodor-shake-ability-lock/";
+  struct GarbodorScenarioPolicy {
+    inline static constexpr std::string_view kShakeScenarioPrefix =
+        "garbodor-shake-ability-lock/";
+
+    [[nodiscard]] static constexpr int lock_activation_turn(
+        const bool simulator_goes_first) {
+      return simulator_goes_first ? 2 : 1;
+    }
+  };
 
   [[nodiscard]] bool garbodor_shake_scenario() const {
-    return scenario_.label.starts_with(kGarbodorShakeScenarioPrefix);
+    return scenario_.label.starts_with(
+        GarbodorScenarioPolicy::kShakeScenarioPrefix);
   }
 
   [[nodiscard]] int garbodor_lock_activation_turn() const {
-    return scenario_.going_first ? 2 : 1;
+    return GarbodorScenarioPolicy::lock_activation_turn(scenario_.going_first);
   }
 
   [[nodiscard]] bool garbodor_lock_removed() const {

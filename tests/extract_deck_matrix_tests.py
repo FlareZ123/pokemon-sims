@@ -7,8 +7,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.extract_deck_matrix import DEFAULT_SUMMARY_OUTPUT, extract_deck_rows
-from scripts.summarize_t2_t3_matrix import summarize_matrix
+from scripts.extract_deck_matrix import (
+    DEFAULT_SUMMARY_OUTPUT,
+    extract_deck_rows,
+    summarize_matrix,
+)
 
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ci.yml"
 

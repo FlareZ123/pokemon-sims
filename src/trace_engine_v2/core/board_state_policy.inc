@@ -1,7 +1,17 @@
   template <typename Predicate>
+  [[nodiscard]] const Pokemon* board_first_pokemon_matching(
+      Predicate predicate) const {
+    // Keep Active-first ordering explicit so every board selector shares the same
+    // deterministic traversal before considering Benched Pokémon.
+    if (state_.active && predicate(*state_.active)) return &*state_.active;
+    const auto match = std::find_if(
+        state_.bench.begin(), state_.bench.end(), predicate);
+    return match == state_.bench.end() ? nullptr : &*match;
+  }
+
+  template <typename Predicate>
   [[nodiscard]] bool board_has_pokemon_matching(Predicate predicate) const {
-    if (state_.active && predicate(*state_.active)) return true;
-    return std::any_of(state_.bench.begin(), state_.bench.end(), predicate);
+    return board_first_pokemon_matching(predicate) != nullptr;
   }
 
   [[nodiscard]] static bool pokemon_has_open_v_tool_slot(

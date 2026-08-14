@@ -105,7 +105,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // https://github.com/FlareZ123/pokemon-sims/issues/925
     return scenario_.dci == DciProfile::StrictJit &&
-           scenario_.locks == LockMode::TurnTwoItem && state_.turn == 1 &&
+           uses_turn_two_item_lock(scenario_.locks) && state_.turn == 1 && // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
            !need_regi() && need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
            might_be_unseen(Card::RegidragoVstar) && held_payloads >= 2 &&
            (burnet_outlet || serena_outlet);

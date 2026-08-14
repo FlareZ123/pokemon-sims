@@ -132,6 +132,7 @@ constexpr int retreat_cost(const Card card) {
     case Card::LatiasEx: return 2;  // Exact sv8-76 print: https://api.pokemontcg.io/v2/cards/sv8-76
     case Card::MawileGX: return 1;  // Exact sm11-141 print: https://api.pokemontcg.io/v2/cards/sm11-141 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/1301
     case Card::Oricorio: return 1;
+    case Card::Appletun: return 3;  // Exact sv8-140 print: https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/cards/en/sv8.json
     default: return 0;
   }
 }

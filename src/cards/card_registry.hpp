@@ -9,6 +9,7 @@
 #include "trainers/chaotic_swell.hpp"
 #include "trainers/crispin.hpp"
 #include "trainers/dawn.hpp"
+#include "trainers/erikas_invitation.hpp"
 #include "trainers/evolution_incense.hpp"
 #include "trainers/field_blower.hpp"
 #include "trainers/guzma_hala.hpp"
@@ -21,13 +22,14 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 15> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 16> kRegisteredCardDefinitions{
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
     &ChaoticSwell::definition, // Exact Cosmic Eclipse Stadium: https://api.pokemontcg.io/v2/cards/sm12-187
     &Crispin::definition, // Exact Stellar Crown Supporter: https://api.pokemontcg.io/v2/cards/sv7-133 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3580
     &Dawn::definition, // Exact Mega Evolution Supporter: https://api.pokemontcg.io/v2/cards/me2-87
+    &ErikasInvitation::definition, // Exact Pokémon 151 Supporter: https://api.pokemontcg.io/v2/cards/sv3pt5-160 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3598
     &EvolutionIncense::definition, // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163
     &FieldBlower::definition, // Exact SM 125 metadata: https://api.pokemontcg.io/v2/cards/sm2-125
     &QuickBall::definition,

@@ -256,3 +256,12 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Treat `part_014a_issue_962_eligibility.inc` as the only composition owner for the issue-962 eligibility, projection, and decision sections. The projection and decision marker files contain no members and are deletion targets once their two historical include sites are removed from `part_014a.inc`. Shared route implementation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/issue_962_route.inc
 - Route fragments that contain policy lambdas but no composition aliases should move under `src/trace_engine_v2/core/` behind a temporary forwarding include when direct parent editing would create a large unrelated diff. The forwarding layer may be retired in a later boundary-safe pass after repository-wide references are proven absent. C++ include semantics: https://eel.is/c++draft/cpp.include
 - `part_014a_issue_1447_vessel_hold.inc` is the first relocation candidate because it owns only the issue-1447 Vessel hold/play policy lambdas and already depends on established Engine helpers. Moving its implementation to `core/issue_1447_vessel_hold_policy.inc` is organization-only and must preserve all existing rule, card, policy, and issue URLs beside the unchanged logic.
+
+## Secret Box metadata migration
+
+- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3541
+- Canonical print: `sv6-163`; exact card data: https://api.pokemontcg.io/v2/cards/sv6-163
+- `src/cards/trainers/secret_box.hpp` and `kRegisteredCardDefinitions` own exact identity, display name, Trainer kind, Item subtype, and ACE SPEC metadata for the migrated print.
+- `registered_is_ace_spec()` is the shared registry query for intrinsic ACE SPEC metadata and avoids adding another card-registration switch.
+- Existing Secret Box three-card discard cost, Item/Tool/Supporter/Stadium search resolution, DCI/UDP/AMR, connector domination, K0/K1 timing, lock handling, and action-selection policy remain in Engine during this metadata-only wave.
+- Legacy `.inc` compatibility cases can be retired in a later mechanical pass after the current single-owner boundaries are proven; keep that cleanup separate from Secret Box gameplay behavior.

@@ -14,11 +14,11 @@ Seed: `20260705`.
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, going first | 12.203% | 41.787% | 59.106% |
-| Matchup-flex JIT, going first | 16.934% | 50.09% | 67.634% |
+| Strict JIT, going first | 12.192% | 41.731% | 59.192% |
+| Matchup-flex JIT, going first | 17.3% | 50.921% | 68.213% |
 | No discard control, going first | 19.74% | 56.829% | 73.585% |
-| Strict JIT, going second | 29.762% | 55.426% | 67.367% |
-| Matchup-flex JIT, going second | 36.958% | 63.855% | 75.584% |
+| Strict JIT, going second | 29.665% | 55.502% | 67.514% |
+| Matchup-flex JIT, going second | 37.233% | 64.147% | 75.8% |
 | No discard control, going second | 40.232% | 68.436% | 79.981% |
 
 ## Lock stress tests
@@ -28,15 +28,15 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
 | Strict JIT, turn-two Item lock, first | 4.493% | 10.34% | 18.468% |
-| Strict JIT, Rule Box Ability lock, first | 4.5% | 27.68% | 42.653% |
+| Strict JIT, Rule Box Ability lock, first | 4.518% | 27.734% | 42.674% |
 | Strict JIT, turn-two Item + Rule Box Ability lock, first | 0.779% | 4.558% | 9.673% |
 | Strict JIT, turn-two Item lock, second | 14.127% | 28.377% | 37.109% |
-| Strict JIT, Rule Box Ability lock, second | 18.404% | 37.103% | 49.312% |
+| Strict JIT, Rule Box Ability lock, second | 18.465% | 37.134% | 49.355% |
 | Strict JIT, turn-two Item + Rule Box Ability lock, second | 3.83% | 14.505% | 20.172% |
-| Strict JIT, Supporter lock, first | 0.003% | 15.118% | 22.144% |
-| Strict JIT, Supporter lock, second | 8.01% | 19.379% | 25.885% |
-| Garbodor + Boost Shake Ability lock, first | 5.581% | 26.966% | 40.894% |
-| Garbodor + Boost Shake Ability lock, second | 17.453% | 34.881% | 46.594% |
+| Strict JIT, Supporter lock, first | 0.005% | 16.426% | 23.376% |
+| Strict JIT, Supporter lock, second | 7.85% | 20.357% | 26.735% |
+| Garbodor + Boost Shake Ability lock, first | 5.659% | 26.893% | 40.976% |
+| Garbodor + Boost Shake Ability lock, second | 17.458% | 34.735% | 46.427% |
 
 ## Interpretation boundary
 

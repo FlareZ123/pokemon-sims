@@ -160,7 +160,6 @@ constexpr bool is_supporter(const Card card) {
   switch (card) {
     case Card::Grant:
     case Card::Crispin:
-    case Card::ProfessorBurnet:
     case Card::Serena:
     case Card::TateLiza:
     case Card::StevensResolve:

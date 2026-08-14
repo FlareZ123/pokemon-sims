@@ -1,6 +1,6 @@
 // Preserve established Pineco/Forretress behavior before composing the later
 // namespace-scope Garbodor scenario extension.
-#include "part_forretress_ex_combo_legacy.inc"
+#include "core/forretress/runtime.inc"
 
 // The historical registry is defined later in part_014c.inc. This wrapper is
 // composed at a verified namespace boundary after Engine closes, so a forward

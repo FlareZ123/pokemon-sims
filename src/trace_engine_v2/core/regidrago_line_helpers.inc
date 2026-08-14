@@ -4,7 +4,7 @@
 // Keep the two modeled Regidrago evolution identities in one reusable predicate:
 // https://api.pokemontcg.io/v2/cards/swsh12-135
 // https://api.pokemontcg.io/v2/cards/swsh12-136
-[[nodiscard]] static constexpr bool is_regidrago_v_line(const Card card) {
+[[nodiscard]] static constexpr bool is_regidrago_v_line(Card card) {
   return card == Card::RegidragoV || card == Card::RegidragoVstar;
 }
 

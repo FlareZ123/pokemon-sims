@@ -136,22 +136,20 @@ constexpr int retreat_cost(const Card card) {
   }
 }
 
-// Grass and Fire are the modeled Basic Energy cards. DDE is a Special
-// Energy, so Basic-only searches must continue to use is_basic_energy or
-// their explicit Grass/Fire target lists:
-// https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-// https://github.com/FlareZ123/pokemon-sims/issues/2238
+// Grass and Fire are the modeled Basic Energy cards. Registered Energy cards
+// own intrinsic Energy and Basic/Special classification in CardDefinition.
+// Double Dragon Energy exact Special Energy print: https://api.pokemontcg.io/v2/cards/xy6-97
 constexpr bool is_basic_energy(const Card card) {
+  if (cards::has_definition(card)) return cards::registered_is_basic_energy(card);
   return card == Card::Grass || card == Card::Fire;
 }
 constexpr bool is_energy(const Card card) {
-  return is_basic_energy(card) || card == Card::DoubleDragonEnergy;
+  if (cards::has_definition(card)) return cards::registered_is_energy(card);
+  return is_basic_energy(card);
 }
 constexpr bool is_special_energy(const Card card) {
-  // Double Dragon Energy is Special Energy and remains excluded from Basic-only searches.
-  // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-  // Guzma & Hala: https://www.pokemon.com/uk/pokemon-tcg/pokemon-cards/sm-series/sm12/229/
-  return is_energy(card) && !is_basic_energy(card);
+  if (cards::has_definition(card)) return cards::registered_is_special_energy(card);
+  return false;
 }
 constexpr bool is_supporter(const Card card) {
   // Registered Supporters own intrinsic subtype classification in CardDefinition.

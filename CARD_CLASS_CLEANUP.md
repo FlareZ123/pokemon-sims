@@ -447,11 +447,9 @@ Policy source for K0/K1, DCI/JIT, route priority, and lock modeling: https://git
 - Focused registration and compatibility coverage: `tests/regidrago_v_card_class_tests.cpp`.
 - DCI/UDP/AMR, connector domination, K0/K1 timing, evolution, Energy planning, attack selection, Active-position policy, and ready-turn behavior remain at their existing Engine owners.
 
-## Mawile-GX metadata migration
+## Cleanup wave 2026-08-14 Forretress contract owner checkpoint
 
-- Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3704
-- Canonical print: `sm11-141`; exact card data: https://api.pokemontcg.io/v2/cards/sm11-141
-- `src/cards/pokemon/mawile_gx.hpp` and `kRegisteredCardDefinitions` own Mawile-GX identity, display name, Basic-stage classification, Metal type, Rule Box status, and printed Retreat Cost 1 metadata.
-- The existing legacy Pokémon classifiers and retreat fallback remain compatibility seams for this metadata-only wave; registered display-name ownership now reaches Mawile-GX through `find_definition()` before the legacy `name()` switch. Registry contract: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-- This wave preserves Captivating Wink modeling, board/Bench strategy, DCI/UDP/AMR, connector domination, K0/K1 state, lock behavior, action ordering, and all route policy at their current Engine owners. Exact print: https://api.pokemontcg.io/v2/cards/sm11-141
-- A later safe mechanical cleanup may delegate additional intrinsic Pokémon classification to registered metadata before removing duplicate legacy cases. Gameplay behavior changes require the normal confirmed-bug workflow. Architecture contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+- `src/trace_engine_v2/core/forretress/contract.inc` is the canonical Engine-member declaration owner for the Forretress feature. Runtime definitions remain in `src/trace_engine_v2/core/forretress/runtime.inc`, and scenario extension ownership remains in `src/trace_engine_v2/core/forretress/scenarios.inc`. Canonical contract: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/contract.inc
+- The former `src/trace_engine_v2/core/forretress_combo_contract.inc` compatibility forwarder is retired after the direct declaration owner was established. Future cleanup should include the canonical contract directly at its class-member boundary and should not recreate a second declaration vocabulary. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+- This checkpoint is ownership-only. Pineco/Forretress legality, Exploding Energy resolution, DCI/UDP/AMR, K0/K1, connector domination, lock behavior, action ordering, and readiness remain unchanged. Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1 Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2 Advanced rules source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- Keep the declaration/runtime split while Engine is a textual class body and the runtime is emitted after Engine closes. The next safe Forretress cleanup should target duplicated board traversal or search-helper implementation inside the canonical runtime, with strict compilation and representative `--simulate-this` traces required before merge.

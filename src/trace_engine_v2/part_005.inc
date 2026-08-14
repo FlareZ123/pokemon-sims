@@ -2,7 +2,7 @@
     return out.str();
   }
 
-  #include "core/forretress_combo_contract.inc"
+  #include "core/forretress/contract.inc"
 
   #include "core/simulation_labels.inc"
 

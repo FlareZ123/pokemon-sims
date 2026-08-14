@@ -1,8 +1,10 @@
 #pragma once
 
-  // Test-variant combo support. Definitions are emitted after Engine closes so
-  // these declarations are visible to opening setup, connector policy, and the
-  // active turn composition without disturbing the split translation unit.
+  // Engine declaration contract for the cohesive Forretress module. Definitions
+  // stay beside the namespace-scope runtime and scenario owners rather than being
+  // duplicated across legacy part_*.inc files.
+  // Canonical runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/runtime.inc
+  // Canonical scenarios: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/scenarios.inc
   // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
   // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/972
@@ -11,7 +13,7 @@
   using OptionalBoardIndex = std::optional<BoardIndex>;
   using AttachmentDestinations = std::vector<BoardIndex>;
 
-  // Combo state and board queries.
+  // Board and route-state queries.
   [[nodiscard]] bool forretress_combo_enabled() const;
   [[nodiscard]] bool needs_pineco_connector() const;
   [[nodiscard]] bool needs_forretress_connector() const;
@@ -20,7 +22,7 @@
   [[nodiscard]] Card fallback_combo_basic_after_search_started() const;
   [[nodiscard]] Card fallback_combo_pokemon_after_search_started() const;
 
-  // Board mutation and ability resolution.
+  // Board mutation and Exploding Energy resolution.
   bool bench_pineco_if_useful();
   bool evolve_forretress_ex();
   void discard_forretress_ex_stack(const Pokemon& knocked_out);

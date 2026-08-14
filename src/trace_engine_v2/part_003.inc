@@ -87,6 +87,14 @@ class Engine {
   // issue #1420's direct Crispin plus Mysterious Treasure continuation:
   // https://github.com/FlareZ123/pokemon-sims/issues/1420
   bool issue_1420_direct_t2_treasure_route_{false};
+  // #1447's Vessel preservation is a current-turn to immediately-following-turn
+  // policy. Remember the semantic ready turn so an equivalent T3->T4 state is
+  // admitted without opening the resolver to unrelated later-turn lookalikes:
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Advanced turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed relative-turn bug: https://github.com/FlareZ123/pokemon-sims/issues/3561
+  std::optional<int> issue_1447_vessel_ready_turn_;
 
   static int count_of(const std::vector<Card>& zone, const Card card) {
     return static_cast<int>(std::count(zone.begin(), zone.end(), card));

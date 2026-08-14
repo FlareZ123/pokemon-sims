@@ -137,9 +137,11 @@ Pineco / Forretress ex exact cards: https://api.pokemontcg.io/v2/cards/sv4pt5-1 
 
 ## Steven route package cleanup
 
-`src/trace_engine_v2/core/routes/steven_package_policy.inc` now owns the issue-1745, issue-1771, issue-1772, and issue-2622 Steven package implementations through colocated route files under `core/routes/`. The historical root `part_issue_1745_steven_latias_t3_override.inc`, `part_issue_1771_steven_t4_package_override.inc`, `part_issue_1772_steven_t3_package_override.inc`, and `part_issue_2622_steven_latias_blender_override.inc` files are retired while preserving their established include order and existing direct rule/card citations. Package owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_package_policy.inc Route specifications: https://github.com/FlareZ123/pokemon-sims/issues/1745 https://github.com/FlareZ123/pokemon-sims/issues/1771 https://github.com/FlareZ123/pokemon-sims/issues/1772 https://github.com/FlareZ123/pokemon-sims/issues/2622
+`src/trace_engine_v2/core/routes/steven_package_policy.inc` now owns the issue-1745, issue-1771, issue-1772, and issue-2622 Steven package implementations through colocated route files under `core/routes/`. The historical root implementation files for all four routes are retired while preserving their established include order and existing direct rule/card citations. Package owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_package_policy.inc Route specifications: https://github.com/FlareZ123/pokemon-sims/issues/1745 https://github.com/FlareZ123/pokemon-sims/issues/1771 https://github.com/FlareZ123/pokemon-sims/issues/1772 https://github.com/FlareZ123/pokemon-sims/issues/2622
 
-Next mechanical Steven step: inspect any remaining Steven-specific root route fragments before another move. Migrate only a fragment whose sole live raw-source consumer is a `core/routes/` package owner, preserve textual include order and all direct rule/card URLs, and leave behavior changes to separately confirmed bug branches.
+The issue-3653 Steven free-slot connector now has canonical policy ownership at `src/trace_engine_v2/core/routes/steven_free_slot_connector_policy.inc`. The historical `part_issue_3653_steven_free_slot_connector.inc` path is a source-contract forwarder because `composition/opening_engine_overrides.inc` still includes that path inside the existing `play_steven` macro boundary. Connector policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_free_slot_connector_policy.inc Confirmed connector-domination bug: https://github.com/FlareZ123/pokemon-sims/issues/3653
+
+Next mechanical Steven step: retire the issue-3653 root forwarder only after the opening composition owner can include the canonical route path at the identical macro boundary and every raw-source consumer of the historical path is migrated. Keep that change behavior-neutral and preserve the direct Steven, Blender, Quick Ball, Regidrago, advanced-manual, and decision-priority URLs with the canonical route policy. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 ## Shared policy cleanup plan
 
@@ -168,4 +170,4 @@ A cleanup PR is mergeable only when:
 - the paired T2/T3 probability matrix has no unexplained drift;
 - the PR contains no unrelated card migration or gameplay behavior change.
 
-Known baseline failures must be identified by their existing issue and shown unchanged before merge. Any new gameplay defect discovered during cleanup must follow the bug-confirmation workflow instead of silently combining it with architecture cleanup.
+Known baseline failures must be identified by their existing issue and shown unchanged before merge. Any new gameplay defect discovered during cleanup must follow the bug-confirmation workflow.

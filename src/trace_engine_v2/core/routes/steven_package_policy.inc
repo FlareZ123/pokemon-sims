@@ -12,4 +12,4 @@
 // Route: https://github.com/FlareZ123/pokemon-sims/issues/1772
 #include "issue_1772_steven_t3_package_override.inc"
 // Route: https://github.com/FlareZ123/pokemon-sims/issues/2622
-#include "issue_2622_steven_latias_blender_override.inc"
+#include "steven_latias_blender_policy.inc"

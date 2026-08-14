@@ -3,13 +3,13 @@
 // sections consume lambdas introduced by the preceding section.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
 #define REGIDRAGO_ISSUE_962_SECTION_ELIGIBILITY
-#include "core/issue_962_route.inc"
+#include "core/routes/issue_962_route.inc"
 #undef REGIDRAGO_ISSUE_962_SECTION_ELIGIBILITY
 
 #define REGIDRAGO_ISSUE_962_SECTION_PROJECTION
-#include "core/issue_962_route.inc"
+#include "core/routes/issue_962_route.inc"
 #undef REGIDRAGO_ISSUE_962_SECTION_PROJECTION
 
 #define REGIDRAGO_ISSUE_962_SECTION_DECISION
-#include "core/issue_962_route.inc"
+#include "core/routes/issue_962_route.inc"
 #undef REGIDRAGO_ISSUE_962_SECTION_DECISION

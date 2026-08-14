@@ -68,11 +68,11 @@ When a legacy function mixes these responsibilities, keep route admission and st
 
 ## Registered-card inventory
 
-The active registry currently contains 29 definitions. The source of truth is `src/cards/card_registry.hpp`; this list is a planning index rather than a second registry.
+The active registry currently contains 30 definitions. The source of truth is `src/cards/card_registry.hpp`; this list is a planning index rather than a second registry.
 
 - Pokémon: Appletun (`sv8-140`), Mawile-GX (`sm11-141`), Oricorio (`sm2-55`), Regidrago V (`swsh12-135`). Sources: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/sm11-141 https://api.pokemontcg.io/v2/cards/sm2-55 https://api.pokemontcg.io/v2/cards/swsh12-135
 - Energy: Double Dragon Energy (`xy6-97`). Source: https://api.pokemontcg.io/v2/cards/xy6-97
-- Trainers: Arven, Battle VIP Pass, Brilliant Blender, Chaotic Swell, Channeler, Crispin, Dawn, Evolution Incense, Field Blower, Forest of Vitality, Forest Seal Stone, Guzma & Hala, Hisuian Heavy Ball, Klara, Lusamine, Mysterious Treasure, Pokémon Communication, Powerglass, Professor Burnet, Professor Turo's Scenario, Professor's Letter, Quick Ball, Secret Box, Wishful Baton. Registry with exact-print URLs: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+- Trainers: Arven, Battle VIP Pass, Brilliant Blender, Chaotic Swell, Channeler, Crispin, Dawn, Evolution Incense, Field Blower, Forest of Vitality, Forest Seal Stone, Guzma & Hala, Hisuian Heavy Ball, Klara, Lusamine, Mysterious Treasure, Pokémon Communication, Powerglass, Professor Burnet, Professor Turo's Scenario, Professor's Letter, Quick Ball, Roseanne's Backup, Secret Box, Wishful Baton. Registry with exact-print URLs: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
 Do not create a parallel migration for a card whose enhancement or bug branch is already owned. Migration ownership must be checked before selecting the next card.
 
@@ -140,6 +140,14 @@ Pineco / Forretress ex exact cards: https://api.pokemontcg.io/v2/cards/sv4pt5-1 
 `src/trace_engine_v2/core/routes/steven_package_policy.inc` now owns the issue-1745 Steven/Latias T3 policy through the colocated `steven_latias_t3_policy.inc`. The historical root `part_issue_1745_steven_latias_t3_override.inc` was retired after its live package include moved, preserving the established textual order and the route's existing rule/card citations. Package owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_package_policy.inc Route specification: https://github.com/FlareZ123/pokemon-sims/issues/1745
 
 Next mechanical Steven step: migrate one remaining root implementation included by `steven_package_policy.inc` into `core/routes/` only after confirming it has no other live raw-source consumer. Keep each move behavior-neutral, preserve include order, preserve direct card/rule URLs beside the existing policy, and remove the historical root file in the same switching commit.
+
+## Shared policy cleanup plan
+
+`src/trace_engine_v2/core/payload_hand_policy.inc` owns payload preference order and payload-zone scans through `PayloadPreferencePolicy`. Keep payload role, DCI/UDP, strict-JIT admission, and connector priority in Engine strategy. Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+
+`src/trace_engine_v2/core/garbodor_lock_policy.inc` owns Garbodor scenario recognition and activation timing through `GarbodorScenarioPolicy`. Garbotoxin semantics, shared lock-removal state, and Rule Box lock interaction remain at their existing policy owners. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142 Scenario specification: https://github.com/FlareZ123/pokemon-sims/issues/2808
+
+Future policy cleanup should reuse these named seams before adding another payload preference loop or Garbodor scenario-label/timing branch. Keep behavior changes on separately confirmed bug branches.
 
 ## Rules and policy anchors
 

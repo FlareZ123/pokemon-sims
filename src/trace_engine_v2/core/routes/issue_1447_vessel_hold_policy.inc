@@ -19,6 +19,21 @@
         // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2437
         if (pays_apex_energy_cost(*state_.active)) return false;
 
+        // Powerglass resolves at end of the turn while its holder is Active. In a
+        // post-Crispin GF state, a Basic Grass already in discard therefore completes
+        // GGF this turn. Vessel should spend the live Dragon payload now instead of
+        // preserving it for a later turn merely because another Grass remains in deck:
+        // Powerglass: https://api.pokemontcg.io/v2/cards/sv6pt5-63
+        // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+        // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // End-of-turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+        // Strict-JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3675
+        const bool powerglass_completes_gf_this_turn =
+            state_.active->tool == Tool::Powerglass &&
+            std::find(state_.discard.begin(), state_.discard.end(), Card::Grass) !=
+                state_.discard.end();
+
         // Preserve Earthen Vessel only when the public K1 shell route proves that
         // Crispin plus the unused T2 manual attachment creates GF, then a held or
         // newly drawn Dragon can pay Vessel's T3 cost while its searched Grass
@@ -47,7 +62,8 @@
         const bool after_crispin_and_manual = state_.supporter_used &&
             state_.manual_energy_used && state_.active->grass == 1 &&
             state_.active->fire == 1 &&
-            deck_count_after_search_started(Card::Grass) >= 1;
+            deck_count_after_search_started(Card::Grass) >= 1 &&
+            !powerglass_completes_gf_this_turn;
         return before_crispin || after_crispin_before_manual ||
             after_crispin_and_manual;
       };

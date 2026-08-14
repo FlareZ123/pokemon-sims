@@ -110,8 +110,66 @@
 #include "../part_012_override.inc"
 #undef play_arven
 
+// Keep the Powerglass continuation at the sole post-search Arven owner. This is
+// the former part_012_powerglass_override.inc body at the same macro boundary.
 #define play_arven play_arven_fss_blender_contention_original
-#include "../part_012_powerglass_override.inc"
+#include "../core/regidrago_line_helpers.inc"
+
+  bool arven_powerglass_tool_route_live() const {
+    if (!state_.active || state_.active->tool != Tool::None ||
+        !is_regidrago_v_line(state_.active->card)) {
+      return false;
+    }
+
+    // Arven consumes the turn's Supporter play before the searched Tool can resolve.
+    // When Energy is the only missing axis, Forest Seal Stone can advance that axis
+    // after Arven only while the manual attachment remains unused. Powerglass can
+    // still attach the needed Basic Energy from discard at end of turn:
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    const bool forest_seal_route_available = !state_.vstar_power_used &&
+        (hand_count(Card::ForestSealStone) > 0 || might_be_unseen(Card::ForestSealStone));
+    const bool energy_is_only_missing_axis = need_energy() && !need_regi() && !need_vstar() &&
+        !need_active_vstar() && !need_payload();
+    const bool forest_seal_can_advance_after_arven =
+        !energy_is_only_missing_axis || !state_.manual_energy_used;
+    if ((forest_seal_route_available && forest_seal_can_advance_after_arven) ||
+        !might_be_unseen(Card::Powerglass)) {
+      return false;
+    }
+
+    const bool needed_grass_in_discard =
+        state_.active->grass < 2 && count_of(state_.discard, Card::Grass) > 0;
+    const bool needed_fire_in_discard =
+        state_.active->fire < 1 && count_of(state_.discard, Card::Fire) > 0;
+    return needed_grass_in_discard || needed_fire_in_discard;
+  }
+
+  bool play_arven() {
+    if (!supporter_allowed() || hand_count(Card::Arven) == 0 ||
+        !arven_powerglass_tool_route_live()) {
+      return play_arven_powerglass_original();
+    }
+
+    // Arven may search for a Pokémon Tool, and Powerglass remains a Pokémon Tool
+    // rather than an Item under the Tool erratum, so this route is legal through
+    // Item lock. Powerglass then checks its Active holder at end of turn:
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://www.pokemon.com/us/pokemon-news/2023-pokemon-tcg-standard-format-rotation-and-pokemon-tool-errata
+    // https://api.pokemontcg.io/v2/cards/sv6pt5-63
+    remove_one(state_.hand, Card::Arven);
+    state_.discard.push_back(Card::Arven);
+    state_.supporter_used = true;
+    record_deck_search_knowledge("Arven");
+    const bool found = move_deck_to_hand(Card::Powerglass);
+    shuffle(state_.deck);
+    trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER; R-POWERGLASS-01",
+          found ? "Searched Powerglass as the live Pokémon Tool target."
+                : "Powerglass was not in the deck after legal search.");
+    return true;
+  }
 #undef play_arven
 
 #define play_arven play_arven_empty_deck_original
@@ -188,7 +246,63 @@
 #if defined(play_arven)
 #error "Arven wrapper alias must be released before the Garbodor continuation"
 #endif
-#include "../part_arven_garbodor_field_blower_override.inc"
+
+// The Garbodor/Field Blower Arven continuation has one live composition site, so
+// keep its implementation here beside the alias release that makes play_arven final.
+  bool arven_garbodor_field_blower_route_live() {
+    if (!garbodor_abilities_locked() || item_locked() || !supporter_allowed() ||
+        hand_count(Card::Arven) == 0 || hand_count(Card::FieldBlower) > 0 ||
+        !deck_search_available() || !might_be_unseen(Card::FieldBlower)) {
+      return false;
+    }
+
+    // Arven consumes this turn's Supporter action before the searched Item can be
+    // played. Therefore Wonder Tag alone cannot justify fetching Field Blower here;
+    // require a live non-Supporter Pokemon-Ability route such as Dark Asset, Vital
+    // Dance, Skyliner, or Legacy Star:
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/sm2-125
+    // https://api.pokemontcg.io/v2/cards/xy9-57
+    // https://github.com/FlareZ123/pokemon-sims/issues/2808
+    return garbodor_removal_unlocks_live_pokemon_route(false);
+  }
+
+  bool play_arven() {
+    if (!arven_garbodor_field_blower_route_live()) {
+      return play_arven_garbodor_original();
+    }
+
+    remove_one(state_.hand, Card::Arven);
+    state_.discard.push_back(Card::Arven);
+    state_.supporter_used = true;
+    record_deck_search_knowledge("Arven Garbodor Field Blower route");
+
+    std::vector<Card> found;
+    if (move_deck_to_hand(Card::FieldBlower)) found.push_back(Card::FieldBlower);
+
+    // Arven may also search a Pokemon Tool. Preserve the established Forest Seal
+    // Stone role when Star Alchemy is unused and a Pokemon V has an open Tool slot.
+    // Garbotoxin suppresses Pokemon Abilities; Star Alchemy remains the Tool's own
+    // Ability under the repository's existing source-bound ruling:
+    // https://api.pokemontcg.io/v2/cards/sv1-166
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011.inc
+    const bool open_v_tool_slot =
+        (state_.active && is_pokemon_v(state_.active->card) &&
+         state_.active->tool == Tool::None) ||
+        std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
+          return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
+        });
+    if (!state_.vstar_power_used && open_v_tool_slot &&
+        move_deck_to_hand(Card::ForestSealStone)) {
+      found.push_back(Card::ForestSealStone);
+    }
+
+    shuffle(state_.deck);
+    trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER; P-CONNECTOR-01",
+          "Arven searched the live Garbotoxin answer: " + join_cards(found) + ".");
+    return true;
+  }
 
 #undef use_fss
 #undef play_steven

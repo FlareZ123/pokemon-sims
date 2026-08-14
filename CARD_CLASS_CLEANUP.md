@@ -78,7 +78,7 @@ Quick Ball is the reference because it demonstrates explicit registration, exact
 - Canonical print: `swsh10-146`.
 - Card data: https://api.pokemontcg.io/v2/cards/swsh10-146
 - Status: exact identity, display name, Trainer kind, and Item subtype are owned by `src/cards/trainers/hisuian_heavy_ball.hpp` and `kRegisteredCardDefinitions`.
-- Existing Hisuian Heavy Ball strategy and resolution remain in Engine for this wave. Prize inspection, Basic-Pokémon choice, Prize replacement, shuffle, K0/K1 timing, DCI/AMR, connector priority, and readiness behavior remain unchanged.
+- Existing Hisuian Heavy Ball strategy and resolution remain in Engine for this metadata-only wave. Prize inspection, Basic-Pokémon choice, Prize replacement, shuffle, K0/K1 timing, DCI/AMR, connector priority, and readiness behavior remain unchanged.
 - Legacy `name()` and `is_item()` compatibility cases are removed. The registered definition is now the sole owner of those intrinsic facts.
 - Follow-up for this card must locate the single live Hisuian Heavy Ball resolver before moving printed Prize inspection and replacement through `CardContext`; preserve the printed branch that discards the Item when no Basic Pokémon is revealed. Printed effect: https://api.pokemontcg.io/v2/cards/swsh10-146
 

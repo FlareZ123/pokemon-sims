@@ -5,6 +5,7 @@
 #include "card_definition.hpp"
 #include "energy/double_dragon_energy.hpp"
 #include "pokemon/appletun.hpp"
+#include "pokemon/mawile_gx.hpp"
 #include "pokemon/regidrago_v.hpp"
 #include "trainers/arven.hpp"
 #include "trainers/battle_vip_pass.hpp"
@@ -33,8 +34,9 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 27> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 28> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
+    &MawileGX::definition, // Exact Unified Minds Basic Metal Pokémon-GX: https://api.pokemontcg.io/v2/cards/sm11-141 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3704
     &RegidragoV::definition, // Exact Silver Tempest Basic Dragon Pokémon V: https://api.pokemontcg.io/v2/cards/swsh12-135 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3683
     &DoubleDragonEnergy::definition, // Exact Roaring Skies Special Energy: https://api.pokemontcg.io/v2/cards/xy6-97
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
@@ -147,5 +149,7 @@ static_assert(definition_matches_registration(Channeler::definition, Card::Chann
 static_assert(definition_matches_registration(ProfessorTuroScenario::definition,
                                               Card::ProfessorTuro, "sv4-171",
                                               "Professor Turo's Scenario")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
+static_assert(definition_matches_registration(MawileGX::definition, Card::MawileGX,
+                                              "sm11-141", "Mawile-GX")); // Exact Basic Metal Pokémon-GX: https://api.pokemontcg.io/v2/cards/sm11-141 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3704
 
 }  // namespace sim::cards

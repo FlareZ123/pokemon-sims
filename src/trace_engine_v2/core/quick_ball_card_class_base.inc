@@ -158,8 +158,12 @@
         bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
         !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
         might_be_unseen(Card::LatiasEx);
+    // The live card-class route uses #3458's shared semantic connector contract.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Confirmed connector bug: https://github.com/FlareZ123/pokemon-sims/issues/3458
     const bool issue_1797_tapu_route =
-        issue_1797_quick_ball_tapu_steven_route_available();
+        issue_3458_1797_quick_ball_tapu_steven_route_available();
     const bool want_tapu =
         hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
         bench_space() > 0 &&
@@ -199,7 +203,20 @@
 
     std::optional<Card> cost;
     if (issue_1797_tapu_route) {
-      cost = issue_1797_quick_ball_cost();
+      // Preserve #1797's confirmed dynamic-DCI payment rule while removing the
+      // historical seed coordinates from route admission. Tate & Liza is spent
+      // before Lusamine; the VSTAR and two Grass remain protected for the bank and
+      // finish sequence.
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+      // Lusamine: https://api.pokemontcg.io/v2/cards/sm4-96
+      // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+      // Confirmed connector bug: https://github.com/FlareZ123/pokemon-sims/issues/3458
+      if (hand_count(Card::TateLiza) > 0) {
+        cost = Card::TateLiza;
+      } else if (hand_count(Card::Lusamine) > 0) {
+        cost = Card::Lusamine;
+      }
     }
     if (!cost) {
       // `choose_discard_issue1876` is the current named top of the established

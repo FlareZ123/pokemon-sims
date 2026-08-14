@@ -14,6 +14,12 @@ const GarbodorScenarioSet kGarbodorScenarios{{
      DciProfile::StrictJit, LockMode::None, false, 5},
 }};
 
+template <typename ScenarioRange>
+void append_scenarios(ScenarioList& result, const ScenarioRange& scenarios) {
+  result.reserve(result.size() + scenarios.size());
+  result.insert(result.end(), scenarios.begin(), scenarios.end());
+}
+
 const Scenario* find_garbodor_scenario(const std::string& label) {
   const auto match = std::find_if(
       kGarbodorScenarios.begin(), kGarbodorScenarios.end(),
@@ -30,8 +36,7 @@ ScenarioList all_scenarios_with_garbodor() {
   // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
   // Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
   // Scenario model: https://github.com/FlareZ123/pokemon-sims/issues/2808
-  result.reserve(result.size() + kGarbodorScenarios.size());
-  result.insert(result.end(), kGarbodorScenarios.begin(), kGarbodorScenarios.end());
+  append_scenarios(result, kGarbodorScenarios);
   return result;
 }
 

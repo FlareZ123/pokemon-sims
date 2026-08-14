@@ -22,6 +22,21 @@
            state_.active->grass == 1 && state_.active->fire >= 1;
   }
 
+  bool late_steven_burnet_route_has_resources() const {
+    // Keep the route's two held Supporters, known-deck payload, VSTAR, and finishing
+    // Grass Energy requirements together so the availability check reads as a route
+    // contract instead of repeating raw zone queries at its call site.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Basic Energy / deck-search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    return hand_count(Card::StevensResolve) > 0 &&
+           hand_count(Card::ProfessorBurnet) > 0 &&
+           first_searchable_payload_in_known_deck().has_value() &&
+           deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
+           deck_count_after_search_started(Card::Grass) > 0;
+  }
+
   bool late_steven_burnet_route_available() const {
     // This route uses Steven's Resolve on the current turn, then ordinary evolution,
     // one manual Energy attachment, and the already-held Professor Burnet next turn.
@@ -36,11 +51,7 @@
     // Confirmed Burnet payload-zone bug: https://github.com/FlareZ123/pokemon-sims/issues/3302
     if (!late_steven_burnet_route_has_turn_window() ||
         !late_steven_burnet_route_has_regidrago_state() ||
-        hand_count(Card::StevensResolve) == 0 ||
-        hand_count(Card::ProfessorBurnet) == 0 ||
-        !first_searchable_payload_in_known_deck().has_value() ||
-        deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
-        deck_count_after_search_started(Card::Grass) == 0) {
+        !late_steven_burnet_route_has_resources()) {
       return false;
     }
 

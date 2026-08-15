@@ -29,8 +29,10 @@
         strict_payload_timing() && need_payload() && !need_regi() &&
         !need_vstar() && !need_energy() && !need_active_vstar() &&
         can_play_payload_this_turn();
-    const bool held_dragon =
-        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    // Keep physical hand membership on the shared payload-zone owner so this route
+    // cannot drift from equivalent held-Dragon checks elsewhere in Engine.
+    // Payload cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+    const bool held_dragon = payload_zone_contains(state_.hand);
     const bool burnet_and_serena_equal_turn_finish =
         payload_is_only_missing_axis && prizes_known() && held_dragon &&
         hand_count(Card::ProfessorBurnet) > 0 && hand_count(Card::Serena) > 0 &&

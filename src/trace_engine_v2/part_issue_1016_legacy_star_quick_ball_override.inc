@@ -1,3 +1,11 @@
+  bool quick_ball_has_live_connector_route() {
+    const bool basic_connector_live = need_regi() || need_active_vstar() ||
+        needs_tapu_connector() || needs_oricorio_connector();
+    const bool payload_search_chain = might_be_unseen(Card::DialgaGX) &&
+        has_payable_payload_outlet_after_costed_search(Card::QuickBall);
+    return basic_connector_live || payload_search_chain;
+  }
+
   bool quick_ball_is_inert_before_legacy_star() {
     if (item_locked() || hand_count(Card::QuickBall) == 0 || !need_payload()) {
       return false;
@@ -17,11 +25,7 @@
     // Regidrago VSTAR and Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Decision priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1016
-    const bool basic_connector_live = need_regi() || need_active_vstar() ||
-        needs_tapu_connector() || needs_oricorio_connector();
-    const bool payload_search_chain = might_be_unseen(Card::DialgaGX) &&
-        has_payable_payload_outlet_after_costed_search(Card::QuickBall);
-    return !basic_connector_live && !payload_search_chain;
+    return !quick_ball_has_live_connector_route();
   }
 
   bool use_legacy_star() {

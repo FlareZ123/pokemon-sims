@@ -1,9 +1,12 @@
+  bool issue_1674_turo_promotion_ready() {
+    return !state_.turn_ended && state_.turn == scenario_.max_turn &&
+        need_active_vstar() && !need_regi() && !need_vstar() &&
+        !need_energy() && !need_payload() &&
+        hand_count(Card::ProfessorTuro) > 0 && benched_vstar_promotion_ready();
+  }
+
   bool complete_issue_1674_turo_late_promotion() {
-    if (state_.turn_ended || state_.turn != scenario_.max_turn ||
-        !need_active_vstar() || need_regi() || need_vstar() ||
-        need_energy() || need_payload() ||
-        hand_count(Card::ProfessorTuro) == 0 ||
-        !benched_vstar_promotion_ready()) {
+    if (!issue_1674_turo_promotion_ready()) {
       return false;
     }
 

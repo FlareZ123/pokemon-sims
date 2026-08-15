@@ -189,19 +189,6 @@ Next mechanical Steven step: inventory the remaining Steven-named root `part_*.i
 
 Route specifications: https://github.com/FlareZ123/pokemon-sims/issues/1745 https://github.com/FlareZ123/pokemon-sims/issues/1771 https://github.com/FlareZ123/pokemon-sims/issues/1772 https://github.com/FlareZ123/pokemon-sims/issues/2622 https://github.com/FlareZ123/pokemon-sims/issues/3653
 
-### Late Steven/Burnet route ownership
-
-`src/trace_engine_v2/core/routes/late_steven_burnet_route_policy.inc` now exposes the existing route-admission conjunction as three named strategy gates: the K1/JIT/Supporter turn window, the Active Regidrago V board state, and the held/known-deck resource package. `late_steven_burnet_route_available()` composes those helpers without changing the admitted state set.
-
-Keep these helpers in strategy ownership. Printed Supporter resolution, evolution, manual Energy attachment, deck search, and discard procedure remain with their established action/card owners. Preserve direct rule and card URLs beside the gate logic when this route is consolidated further.
-
-Late route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_burnet_route_policy.inc
-Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
-Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
-Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-
 ## Shared policy cleanup plan
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` owns payload preference order, payload-zone membership, payload-zone counts, and physical-order first-payload selection through `PayloadPreferencePolicy`. Route files should reuse `payload_zone_contains()` and `first_payload_card_in_zone()` where their existing semantics match.
@@ -211,6 +198,17 @@ Keep payload role, DCI/UDP, strict-JIT admission, connector priority, and K0/K1 
 `src/trace_engine_v2/core/garbodor_lock_policy.inc` owns Garbodor scenario-prefix matching and seat-relative activation timing. Preserve Garbotoxin semantics and Rule Box lock interaction at their current policy owners. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
 
 Future policy cleanup should reuse these named seams before adding another payload preference loop or Garbodor scenario-label/timing branch.
+
+## Route predicate consolidation
+
+Keep route predicates named when a single policy question is repeated or would otherwise be buried in a resolver. `quick_ball_has_live_connector_route()` owns the issue-1016 Quick Ball connector test, while `issue_1674_turo_promotion_ready()` owns the deadline Turo promotion readiness test. Both remain Engine strategy predicates because they depend on route state, readiness, DCI/JIT timing, and connector value. Their callers continue to own the actual Legacy Star and Professor Turo resolution paths.
+
+Future cleanup should prefer one named predicate for an established policy question before adding another inline conjunction in a resolver. Preserve the exact card/rule URLs beside the resolver that consumes the predicate, and keep printed card validation in card/rules code rather than moving route policy into `src/cards/`.
+
+Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+Decision priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
 
 ## Numbered policy-fragment migration
 

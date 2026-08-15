@@ -159,16 +159,19 @@ bool issue_1605_arven_crobat_route_available() const {
       might_be_unseen(Card::QuickBall) ||
       might_be_unseen(Card::MysteriousTreasure);
   // Historical function name retained for call-site compatibility. Arven's route
-  // admission follows the same generic one-discard Regidrago V setup condition;
-  // Crobat V and Forest Seal Stone are optional continuations rather than costs:
+  // admission is state-relative and follows the generic one-discard Regidrago V
+  // setup condition. Supporter legality carries the only first-player first-turn
+  // restriction, so later legal turns and either seat use the same connector:
   // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
   // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
-  // One Supporter per turn: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-  // Confirmed systemic bug: https://github.com/FlareZ123/pokemon-sims/issues/3467
+  // Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+  // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Generic predecessor: https://github.com/FlareZ123/pokemon-sims/issues/3467
+  // Confirmed residual bug: https://github.com/FlareZ123/pokemon-sims/issues/3788
   return scenario_.dci == DciProfile::StrictJit &&
-         !scenario_.going_first && state_.turn == 1 &&
          supporter_allowed() && !item_locked() && need_regi() &&
          bench_space() > 0 && hand_count(Card::Arven) > 0 &&
          might_be_unseen(Card::RegidragoV) &&

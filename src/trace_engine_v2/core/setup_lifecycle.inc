@@ -1,3 +1,63 @@
+#ifndef SIM_TRACE_SETUP_LIFECYCLE_INCLUDED
+#define SIM_TRACE_SETUP_LIFECYCLE_INCLUDED
+
+  bool simulation_deck_contains(Card card) const {
+    return total_copies(card) > 0;
+  }
+
+  bool is_regidrago_shell_recipe() const {
+    return total_copies(Card::RegidragoV) == 4 &&
+           total_copies(Card::BrilliantBlender) == 1;
+  }
+
+  std::string current_deck_id() const {
+    if (simulation_deck_contains(Card::DoubleDragonEnergy)) {
+      return "regidrago-dde-model";  // Modeling recipe: https://github.com/FlareZ123/pokemon-sims/issues/2238 ; DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    }
+    if (simulation_deck_contains(Card::CrobatV)) {
+      return "modeling-crobat-variant";
+    }
+    if (simulation_deck_contains(Card::SecretBox) &&
+        simulation_deck_contains(Card::Pineco)) {
+      return "regidrago-pineco";
+    }
+    if (is_regidrago_shell_recipe()) {
+      return "regidrago-shell";
+    }
+    return "custom";
+  }
+
+  static const char* dci_label(DciProfile profile) {
+    // DCI/JIT policy vocabulary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    switch (profile) {
+      case DciProfile::StrictJit: return "strict-JIT";
+      case DciProfile::MatchupFlexJit: return "matchup-flex-JIT";
+      case DciProfile::NoDiscardControl: return "no-discard-control";
+    }
+    return "unknown";
+  }
+
+  static const char* lock_label(LockMode mode) {
+    // Scenario lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    switch (mode) {
+      case LockMode::None: return "none";
+      case LockMode::TurnTwoItem: return "turn-two Item lock";
+      case LockMode::FullItem: return "full Item lock";
+      case LockMode::FullRuleBoxAbility: return "full Rule Box Ability lock";
+      case LockMode::FullCombined: return "full Item + Rule Box Ability lock";
+      case LockMode::FullSupporter: return "full Supporter lock";
+    }
+    return "unknown";
+  }
+
+  std::string dci_name() const {
+    return dci_label(scenario_.dci);
+  }
+
+  std::string lock_name() const {
+    return lock_label(scenario_.locks);
+  }
+
   // Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   inline static constexpr int kOpeningHandSize = 7;
   inline static constexpr int kStartingPrizeCount = 6;
@@ -23,13 +83,25 @@
     prizes_revealed_ = false;
   }
 
+  bool opening_hand_has_basic() const {
+    // A valid opening hand must contain at least one Basic Pokémon before setup can continue:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    return std::any_of(state_.hand.begin(), state_.hand.end(), is_basic);
+  }
+
+  void return_mulligan_hand_to_deck() {
+    // A mulligan returns the seven-card hand to the deck before the deck is shuffled again:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    state_.deck.insert(state_.deck.end(), state_.hand.begin(), state_.hand.end());
+    state_.hand.clear();
+  }
+
   void draw_opening_hand_with_mulligans() {
     while (true) {
       state_.hand.clear();
       move_top_cards_from_deck(state_.hand, kOpeningHandSize);
-      if (std::any_of(state_.hand.begin(), state_.hand.end(), is_basic)) return;
-      state_.deck.insert(state_.deck.end(), state_.hand.begin(), state_.hand.end());
-      state_.hand.clear();
+      if (opening_hand_has_basic()) return;
+      return_mulligan_hand_to_deck();
       shuffle(state_.deck);
       ++outcome_.mulligans;
     }
@@ -65,3 +137,5 @@
     deal_prizes_after_opening_setup();
     emit_setup_trace();
   }
+
+#endif  // SIM_TRACE_SETUP_LIFECYCLE_INCLUDED

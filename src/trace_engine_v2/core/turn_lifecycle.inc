@@ -12,25 +12,23 @@
     }
   };
 
-  void reset_turn_action_state() {
-    TurnActionStatePolicy::reset(state_);
-  }
-
-  void reset_transient_turn_locks() {
-    // In the Garbodor pressure scenario path_lock_removed is the current-turn
-    // "opponent Tool removed" flag. The maximum-pressure opponent reattaches a
-    // Tool before each following Regidrago turn, so Field Blower's unlock does not
-    // persist across turns:
-    // https://api.pokemontcg.io/v2/cards/xy9-57
-    // https://api.pokemontcg.io/v2/cards/sm2-125
-    // https://github.com/FlareZ123/pokemon-sims/issues/2808
-    if (garbodor_shake_scenario()) state_.path_lock_removed = false;
-  }
+  struct TransientTurnLockPolicy {
+    static void reset(State& state, const bool garbodor_shake_active) {
+      // In the Garbodor pressure scenario path_lock_removed is the current-turn
+      // "opponent Tool removed" flag. The maximum-pressure opponent reattaches a
+      // Tool before each following Regidrago turn, so Field Blower's unlock does not
+      // persist across turns:
+      // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
+      // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+      // Scenario contract: https://github.com/FlareZ123/pokemon-sims/issues/2808
+      if (garbodor_shake_active) state.path_lock_removed = false;
+    }
+  };
 
   void reset_per_turn_state(const int turn) {
     state_.turn = turn;
-    reset_turn_action_state();
-    reset_transient_turn_locks();
+    TurnActionStatePolicy::reset(state_);
+    TransientTurnLockPolicy::reset(state_, garbodor_shake_scenario());
   }
 
   bool draw_start_of_turn_card() {

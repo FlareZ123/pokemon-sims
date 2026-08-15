@@ -1,0 +1,33 @@
+name: Matrix audit output
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  matrix-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --parallel 2 --target regidrago_sim
+      - name: Generate paired matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
+      - name: Derive canonical shell matrix
+        run: python scripts/extract_deck_matrix.py --input multi-deck-matrix.csv --output t2-t3-matrix.csv --deck regidrago-shell
+      - name: Print generated matrices
+        run: |
+          printf '%s\n' '=== t2-t3-matrix.csv ==='
+          cat t2-t3-matrix.csv
+          printf '%s\n' '=== multi-deck-matrix.csv ==='
+          cat multi-deck-matrix.csv

@@ -137,6 +137,11 @@ std::string pokemon_summary(const Pokemon& p) {
 // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
 #include "../core/battle_compressor_vs_seeker_policy.inc"
 
+// Restore the semantic same-turn Powerglass completion before the final strict-JIT
+// Item fixed point, then delegate to the existing Battle Compressor-aware loop.
+// Regression: https://github.com/FlareZ123/pokemon-sims/issues/3990
+#include "../core/routes/issue_3990_powerglass_item_order_policy.inc"
+
 // Late stage: own the complete historical late boundary at the canonical Engine
 // composition point. The aliases created for part_014c deliberately remain live
 // through part_015 and part_016, so their setup and teardown stay adjacent here.
@@ -156,7 +161,7 @@ std::string pokemon_summary(const Pokemon& p) {
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #define hand_count hand_count_issue_3057
-#define play_items_until_stable play_items_until_stable_issue3545
+#define play_items_until_stable play_items_until_stable_issue3990
 #include "../part_014c.inc"
 #undef play_items_until_stable
 #undef hand_count

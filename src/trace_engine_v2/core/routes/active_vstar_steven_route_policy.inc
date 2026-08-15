@@ -1,7 +1,6 @@
   bool issue_3203_active_vstar_steven_crispin_treasure_route_available() const {
-    const bool next_turn_items_locked =
-        scenario_.locks == LockMode::FullItem ||
-        (uses_turn_two_item_lock(scenario_.locks) && state_.turn + 1 >= 2);
+    const bool next_turn_items_locked = item_locked_on_turn(state_.turn + 1);
+    // Shared projected Item-lock timing: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
 
     // Steven ends the current turn after reserving Crispin plus one Grass. On the
     // following turn Crispin supplies one Grass, the normal manual attachment supplies

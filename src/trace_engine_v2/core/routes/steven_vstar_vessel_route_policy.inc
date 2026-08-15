@@ -1,8 +1,6 @@
   bool late_steven_vstar_vessel_route_available() const {
-    const bool next_turn_item_locked =
-        scenario_.locks == LockMode::FullItem ||
-        scenario_.locks == LockMode::FullCombined ||
-        (uses_turn_two_item_lock(scenario_.locks) && state_.turn + 1 >= 2);
+    const bool next_turn_item_locked = item_locked_on_turn(state_.turn + 1);
+    // Shared projected Item-lock timing: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
 
     // Steven ends the current turn after reserving VSTAR/Vessel. On the following
     // turn the prior-turn Regidrago V may evolve and Earthen Vessel pays its printed

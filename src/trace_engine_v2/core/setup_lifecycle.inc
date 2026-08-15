@@ -18,6 +18,11 @@
     }
   }
 
+  void prepare_setup_deck() {
+    add_recipe_cards_to_deck();
+    shuffle(state_.deck);
+  }
+
   void reset_setup_knowledge() {
     deck_seen_ = false;
     prizes_revealed_ = false;
@@ -55,8 +60,7 @@
 
   void setup() {
     reset_setup_knowledge();
-    add_recipe_cards_to_deck();
-    shuffle(state_.deck);
+    prepare_setup_deck();
     draw_opening_hand_with_mulligans();
 
     choose_opening_active();

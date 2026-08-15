@@ -26,9 +26,23 @@
   // Keep repeated Forretress/Regidrago board-role questions in one card-facing
   // contract while delegating intrinsic Regidrago-line identity to the canonical
   // card classifier.
+  [[nodiscard]] static constexpr bool is_pineco_board_pokemon(
+      const Pokemon& pokemon) {
+    return pokemon.card == Card::Pineco; // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+  }
+
   [[nodiscard]] static constexpr bool is_forretress_ex_board_pokemon(
       const Pokemon& pokemon) {
     return pokemon.card == Card::ForretressEx; // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  }
+
+  [[nodiscard]] static constexpr bool is_forretress_line_board_pokemon(
+      const Pokemon& pokemon) {
+    // Centralize the Pineco -> Forretress ex board-line identity used by setup
+    // orchestration without moving evolution timing or route policy out of Engine.
+    // Pineco / Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    return is_pineco_board_pokemon(pokemon) ||
+           is_forretress_ex_board_pokemon(pokemon);
   }
 
   [[nodiscard]] static constexpr bool is_regidrago_board_pokemon(

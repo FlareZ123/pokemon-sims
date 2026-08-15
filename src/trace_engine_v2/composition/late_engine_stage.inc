@@ -40,8 +40,11 @@
 #undef run_turn
 #undef play_field_blower
 
+// The Garbotoxin wrapper is released immediately after part_014c and must remain
+// released through translation-unit closure just like the late execution aliases.
+// Garbodor / Garbotoxin source: https://api.pokemontcg.io/v2/cards/xy9-57
 #if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || \
-    defined(play_items_until_stable) || defined(all_scenarios) || \
-    defined(scenario_by_label)
+    defined(play_items_until_stable) || defined(ability_available_for_pokemon) || \
+    defined(all_scenarios) || defined(scenario_by_label)
 #error "Canonical engine composition leaked a late alias"
 #endif

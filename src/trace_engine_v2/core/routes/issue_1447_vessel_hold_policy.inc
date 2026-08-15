@@ -5,6 +5,7 @@
         // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
         // Advanced turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
         // Repository route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
         // Confirmed relative-turn bug: https://github.com/FlareZ123/pokemon-sims/issues/3561
         const int ready_turn = state_.turn + 1;
         if (state_.issue_1447_vessel_ready_turn == state_.turn || // A recorded next-turn continuation resolves now; never re-bank it: https://github.com/FlareZ123/pokemon-sims/issues/3561
@@ -14,7 +15,7 @@
             scenario_.max_turn < ready_turn || !deck_seen_ || !state_.active ||
             state_.active->card != Card::RegidragoVstar ||
             hand_count(Card::EarthenVessel) == 0 ||
-            !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+            !payload_zone_contains(state_.hand)) {
           return false;
         }
 
@@ -99,6 +100,7 @@
         // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
         // Core Item, discard, search, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
         // Strict-JIT definition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
+        // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
         // Pineco direct route: https://github.com/FlareZ123/pokemon-sims/issues/1420
         // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1447
         // Relative-turn correction: https://github.com/FlareZ123/pokemon-sims/issues/3561
@@ -111,5 +113,5 @@
             !state_.manual_energy_used && need_energy() && need_payload() &&
             hand_count(Card::EarthenVessel) > 0 &&
             completing_basic.has_value() &&
-            std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+            payload_zone_contains(state_.hand);
       };

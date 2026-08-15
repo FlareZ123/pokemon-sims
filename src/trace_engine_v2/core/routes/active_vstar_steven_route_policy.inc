@@ -17,6 +17,7 @@
     // Advanced Supporter, Item, discard, search, attachment, and turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Persistent T2 Item-lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
     // K1/JIT/lock/priority policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3203
     if (!prizes_known() || !strict_payload_timing() || next_turn_items_locked ||
         state_.turn >= scenario_.max_turn || !supporter_allowed() ||
@@ -27,7 +28,7 @@
         hand_count(Card::MysteriousTreasure) == 0 ||
         hand_count(Card::Grass) > 0 || hand_count(Card::Crispin) > 0 ||
         !need_energy() || !need_payload() ||
-        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+        !payload_zone_contains(state_.hand)) {
       return false;
     }
 

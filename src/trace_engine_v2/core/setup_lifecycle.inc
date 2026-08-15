@@ -88,6 +88,12 @@
     prizes_revealed_ = false;
   }
 
+  void prepare_opening_deck() {
+    reset_setup_knowledge();
+    add_recipe_cards_to_deck();
+    shuffle(state_.deck);
+  }
+
   bool opening_hand_has_basic() const {
     // A valid opening hand must contain at least one Basic Pokémon before setup can continue:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
@@ -101,10 +107,14 @@
     state_.hand.clear();
   }
 
+  void draw_opening_hand_once() {
+    state_.hand.clear();
+    move_top_cards_from_deck(state_.hand, SetupLifecycleConfig::kOpeningHandSize);
+  }
+
   void draw_opening_hand_with_mulligans() {
     while (true) {
-      state_.hand.clear();
-      move_top_cards_from_deck(state_.hand, SetupLifecycleConfig::kOpeningHandSize);
+      draw_opening_hand_once();
       if (opening_hand_has_basic()) return;
       return_mulligan_hand_to_deck();
       shuffle(state_.deck);
@@ -131,9 +141,7 @@
   }
 
   void setup() {
-    reset_setup_knowledge();
-    add_recipe_cards_to_deck();
-    shuffle(state_.deck);
+    prepare_opening_deck();
     draw_opening_hand_with_mulligans();
 
     choose_opening_active();

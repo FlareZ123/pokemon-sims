@@ -70,15 +70,15 @@ If migration exposes gameplay behavior that is wrong, use the normal bug-confirm
 
 ## Composition ownership
 
-`src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered Engine composition owner. It sequences `opening_legacy_stage.inc`, `banked_tapu_policy_stage.inc`, `lock_removal_policy_stage.inc`, then `late_engine_stage.inc` at the established textual boundaries.
+`src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered Engine composition owner. It sequences `opening_legacy_stage.inc`, then directly owns the Banked-Tapu and lock-removal macro/include/teardown sequences at their established middle-stage textual boundaries, then includes `late_engine_stage.inc`.
+
+The former forwarding-only `banked_tapu_policy_stage.inc` and `lock_removal_policy_stage.inc` layers have been retired. Their entry assertions, temporary aliases, include order, teardown, exit assertions, source URLs, and relative include roots now live together in `engine_body.inc`, reducing two `.inc` indirections while preserving the exact compiler-visible token order. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 `composition/late_engine_stage.inc` owns the complete historical `part_014c.inc` -> `part_015.inc` -> `part_016.inc` chain because `play_field_blower` and `run_turn` intentionally span those fragments. Keeping setup, continuation, and teardown in one stage makes the real macro lifetime the ownership boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_engine_stage.inc
 
-`composition/opening_legacy_stage.inc` remains separate while it owns live alias setup and delegates to `opening_state_completion_stage.inc`. The banked-Tapu and lock-removal stages remain separate because each owns a complete local alias setup/include/teardown boundary.
+`composition/opening_legacy_stage.inc` remains separate while it owns live alias setup and delegates to `opening_state_completion_stage.inc`. Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. Route admission/projection/decision policy stays under `src/trace_engine_v2/core/routes/`.
 
-Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. Route admission/projection/decision policy stays under `src/trace_engine_v2/core/routes/`. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
-
-Next composition step: inventory `opening_legacy_stage.inc` and `opening_state_completion_stage.inc` only after exact source-contract coverage exists for their cross-fragment aliases. Do not recreate forwarding-only sequencers.
+Next composition step: inventory `opening_legacy_stage.inc` and `opening_state_completion_stage.inc` only after exact source-contract coverage exists for their cross-fragment aliases. Keep the newly centralized middle-stage sequences in `engine_body.inc`; do not recreate forwarding-only sequencers.
 
 ## Payload policy cleanup
 

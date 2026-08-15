@@ -54,17 +54,10 @@
     }
   };
 
-  [[nodiscard]] std::string dci_name() const {
-    return SetupLifecycleConfig::dci_label(scenario_.dci);
-  }
-
-  [[nodiscard]] std::string lock_name() const {
-    return SetupLifecycleConfig::lock_label(scenario_.locks);
-  }
-
   [[nodiscard]] std::string setup_scenario_summary() const {
-    return "Scenario: " + scenario_.label + " | DCI: " + dci_name() +
-           " | Locks: " + lock_name();
+    return "Scenario: " + scenario_.label + " | DCI: " +
+           SetupLifecycleConfig::dci_label(scenario_.dci) + " | Locks: " +
+           SetupLifecycleConfig::lock_label(scenario_.locks);
   }
 
   void move_top_cards_from_deck(std::vector<Card>& destination, int count) {

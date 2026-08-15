@@ -108,14 +108,10 @@
     state_.hand.clear();
   }
 
-  void draw_opening_hand_once() {
-    state_.hand.clear();
-    move_top_cards_from_deck(state_.hand, SetupLifecycleConfig::kOpeningHandSize);
-  }
-
   void draw_opening_hand_with_mulligans() {
     while (true) {
-      draw_opening_hand_once();
+      state_.hand.clear();
+      move_top_cards_from_deck(state_.hand, SetupLifecycleConfig::kOpeningHandSize);
       if (opening_hand_has_basic()) return;
       return_mulligan_hand_to_deck();
       shuffle(state_.deck);

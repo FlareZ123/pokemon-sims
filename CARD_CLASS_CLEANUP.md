@@ -74,17 +74,17 @@ If migration exposes gameplay behavior that is wrong, use the normal bug-confirm
 
 ## Composition ownership
 
-`src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered Engine composition owner. It sequences `opening_legacy_stage.inc`, `banked_tapu_policy_stage.inc`, `lock_removal_policy_stage.inc`, then `late_engine_stage.inc` at the established textual boundaries.
+`src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered Engine composition owner. It sequences `opening_legacy_stage.inc`, then owns the complete banked-Tapu and lock-removal alias setup/include/teardown lifetimes directly, then composes `late_engine_stage.inc` at the established textual boundaries. The former `banked_tapu_policy_stage.inc` and `lock_removal_policy_stage.inc` forwarding substages have been retired without changing their `#define` / `#include` / `#undef` order. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
 
 `composition/late_engine_stage.inc` owns the complete historical `part_014c.inc` -> `part_015.inc` -> `part_016.inc` chain because `play_field_blower` and `run_turn` intentionally span those fragments. Keeping setup, continuation, and teardown in one stage makes the real macro lifetime the ownership boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_engine_stage.inc
 
 `composition/opening_legacy_stage.inc` directly owns the complete historical `part_003.inc` -> `part_004.inc` -> `part_005.inc` opening chain, the Garbodor Ability alias, and the temporary opening-deck visibility alias teardown. The former forwarding-only `opening_state_completion_stage.inc` has been retired so the real cross-fragment macro lifetime is visible in one owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_legacy_stage.inc
 
-The banked-Tapu and lock-removal stages remain separate because each owns a complete local alias setup/include/teardown boundary.
+The banked-Tapu and lock-removal policy implementations remain separate semantic owners under `core/`, while their composition-only macro lifetimes now sit directly in `engine_body.inc`. This keeps route and lock policy ownership distinct without retaining forwarding-only composition files. Banked-Tapu route: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/banked_tapu_retreat_policy.inc Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forest_field_blower_policy.inc
 
 Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. Route admission/projection/decision policy stays under `src/trace_engine_v2/core/routes/`. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
-Next composition step: inventory `opening_legacy_stage.inc` for another complete semantic boundary only after exact source-contract coverage exists for the remaining cross-fragment aliases. Do not recreate `opening_state_completion_stage.inc` or another forwarding-only sequencer.
+Next composition step: inspect another forwarding-only composition substage only where its complete macro lifetime can move intact into the existing semantic owner at the identical textual boundary. Do not recreate `opening_state_completion_stage.inc`, `banked_tapu_policy_stage.inc`, `lock_removal_policy_stage.inc`, or another forwarding-only sequencer.
 
 ## Payload policy cleanup
 

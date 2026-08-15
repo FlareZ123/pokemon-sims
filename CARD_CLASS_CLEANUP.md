@@ -78,7 +78,9 @@ If migration exposes gameplay behavior that is wrong, use the normal bug-confirm
 
 Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. Route admission/projection/decision policy stays under `src/trace_engine_v2/core/routes/`. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
-Next composition step: inventory `opening_legacy_stage.inc` and `opening_state_completion_stage.inc` only after exact source-contract coverage exists for their cross-fragment aliases. Do not recreate forwarding-only sequencers.
+Completed in `cleanup-1786788934009`: `opening_legacy_stage.inc` now asserts its two intentional cross-stage exports, `begin_turn` and `ability_available_for_pokemon`, after the opening continuation, and `late_engine_stage.inc` includes the Garbotoxin ability wrapper in its final alias-leak guard after the explicit teardown. These are compile-time ownership contracts only; textual order, card resolution, route policy, DCI/UDP/AMR, K0/K1, Supporter contention, connector domination, and lock timing are unchanged. C++ conditional preprocessing: https://eel.is/c++draft/cpp.cond Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
+
+Next composition step: inventory `opening_engine_overrides.inc` for one contiguous alias-owned seam whose setup/include/teardown can move into a named owner without crossing strategy decisions. Do not recreate forwarding-only sequencers.
 
 ## Payload policy cleanup
 

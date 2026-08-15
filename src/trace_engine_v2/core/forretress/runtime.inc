@@ -203,13 +203,17 @@ bool Engine::resolve_exploding_energy(
       return std::tuple{role, semantic_energy_class, attached_energy_units,
                         -pokemon.entered_turn};
     };
-    const auto promoted = std::max_element(
-        state_.bench.begin(), state_.bench.end(),
-        [&promotion_rank](const Pokemon& left, const Pokemon& right) {
-          return promotion_rank(left) < promotion_rank(right);
-        });
-    state_.active = *promoted;
-    state_.bench.erase(promoted);
+    // Keep Forretress strategy ranking local while reusing the canonical Bench
+    // query and first-equal ordering contract:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+    const BoardIndex promoted_index =
+        *best_benched_pokemon_index(promotion_rank);
+    const BoardIndex promoted_bench_position =
+        bench_position_from_board_index(promoted_index);
+    state_.active = state_.bench[promoted_bench_position];
+    state_.bench.erase(
+        state_.bench.begin() +
+        static_cast<std::ptrdiff_t>(promoted_bench_position));
     trace("PROMOTE", "R-GAME-KO; R-FORRETRESS-01",
           std::string(name(state_.active->card)) +
               " was selected from the Bench after the Active Forretress ex "

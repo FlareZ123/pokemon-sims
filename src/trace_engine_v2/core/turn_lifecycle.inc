@@ -25,18 +25,10 @@
     }
   };
 
-  void reset_turn_action_state() {
-    TurnActionStatePolicy::reset(state_);
-  }
-
-  void reset_transient_turn_locks() {
-    TransientTurnLockPolicy::reset(state_, garbodor_shake_scenario());
-  }
-
   void reset_per_turn_state(const int turn) {
     state_.turn = turn;
-    reset_turn_action_state();
-    reset_transient_turn_locks();
+    TurnActionStatePolicy::reset(state_);
+    TransientTurnLockPolicy::reset(state_, garbodor_shake_scenario());
   }
 
   bool draw_start_of_turn_card() {

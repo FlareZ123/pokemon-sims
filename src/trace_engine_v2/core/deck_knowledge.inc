@@ -35,13 +35,9 @@
                                          attached_public_count(card));
   }
 
-  [[nodiscard]] int unresolved_copy_count(
-      const Card card, const int known_copies) const {
-    return KnowledgeCopyPolicy::unresolved(total_copies(card), known_copies);
-  }
-
   [[nodiscard]] int unresolved_fixed_list_copy_count(const Card card) const {
-    return unresolved_copy_count(card, publicly_known_copy_count(card));
+    return KnowledgeCopyPolicy::unresolved(total_copies(card),
+                                           publicly_known_copy_count(card));
   }
 
   [[nodiscard]] int known_deck_copy_count(const Card card) const {

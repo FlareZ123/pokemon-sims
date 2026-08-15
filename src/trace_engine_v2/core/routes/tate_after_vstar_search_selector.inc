@@ -47,11 +47,45 @@
     return true;
   }
 
+  bool issue_3961_play_tate_celestial_roar_preservation_route() {
+    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 || first_turn_going_first() ||
+        !state_.active || state_.active->card == Card::RegidragoV ||
+        state_.active->card == Card::RegidragoVstar ||
+        can_free_retreat_with_latias()) {
+      return false;
+    }
+
+    const auto promoted = std::find_if(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+                 total_energy_units(pokemon) >= 1 &&
+                 !pays_apex_energy_cost(pokemon);
+        });
+    if (promoted == state_.bench.end()) return false;
+
+    // Tate & Liza may switch the Active with any Benched Pokemon. Celestial Roar
+    // costs one Colorless Energy, so the already attached Energy makes this promoted
+    // Regidrago V attack-legal while the searched Regidrago VSTAR remains in hand.
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Regidrago V / Celestial Roar [C]: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Supporter, switching, attack, and turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Connector-domination and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3961
+    std::swap(*state_.active, *promoted);
+    consume_tate_liza_supporter();
+    trace("PLAY SUPPORTER", "R-TATE-01; R-GAME-SUPPORTER; P-COMPRESS-01",
+          "Tate & Liza switch mode preserved the held Regidrago VSTAR and promoted an energized Regidrago V for Celestial Roar.");
+    return true;
+  }
+
   void choose_supporter_with_turo_staging_fallback() {
     if (supporter_allowed() && issue_3040_play_turo_regidrago_staging_route()) return;
     // G&H uses the normal selector path; its policy retains Supporter/DCI/JIT gates.
     // https://api.pokemontcg.io/v2/cards/sm12-229
     if (supporter_allowed() && play_guzma_hala()) return;
+    if (issue_3961_play_tate_celestial_roar_preservation_route()) return;
     choose_supporter_issue1070_original();
   }
 

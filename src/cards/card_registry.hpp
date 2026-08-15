@@ -21,6 +21,7 @@
 #include "trainers/forest_of_vitality.hpp"
 #include "trainers/forest_seal_stone.hpp"
 #include "trainers/gladion.hpp"
+#include "trainers/grant.hpp"
 #include "trainers/guzma.hpp"
 #include "trainers/guzma_hala.hpp"
 #include "trainers/hisuian_heavy_ball.hpp"
@@ -40,7 +41,7 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 35> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 36> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
     &MawileGX::definition, // Exact Unified Minds Basic Metal Pokémon-GX: https://api.pokemontcg.io/v2/cards/sm11-141 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3704
     &Oricorio::definition, // Exact Guardians Rising Basic Psychic Pokémon: https://api.pokemontcg.io/v2/cards/sm2-55 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3712
@@ -60,6 +61,7 @@ inline constexpr std::array<const CardDefinition*, 35> kRegisteredCardDefinition
     &ForestOfVitality::definition, // Exact Mega Evolution Stadium: https://api.pokemontcg.io/v2/cards/me1-117 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3639
     &ForestSealStone::definition, // Exact Silver Tempest Pokémon Tool: https://api.pokemontcg.io/v2/cards/swsh12-156 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3612
     &Gladion::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-95 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3604
+    &Grant::definition, // Exact Astral Radiance Supporter: https://api.pokemontcg.io/v2/cards/swsh10-144 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3589
     &Guzma::definition, // Exact Burning Shadows Supporter: https://api.pokemontcg.io/v2/cards/sm3-115 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3618
     &QuickBall::definition,
     &ProfessorsLetter::definition, // Exact XY 123 metadata: https://api.pokemontcg.io/v2/cards/xy1-123
@@ -179,6 +181,8 @@ static_assert(definition_matches_registration(TeamYellsCheer::definition,
                                               "Team Yell's Cheer")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh9-149 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3620
 static_assert(definition_matches_registration(Gladion::definition, Card::Gladion,
                                               "sm4-95", "Gladion")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm4-95 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3604
+static_assert(definition_matches_registration(Grant::definition, Card::Grant,
+                                              "swsh10-144", "Grant")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh10-144 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3589
 static_assert(definition_matches_registration(Guzma::definition, Card::Guzma,
                                               "sm3-115", "Guzma")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm3-115 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3618
 

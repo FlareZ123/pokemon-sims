@@ -74,17 +74,15 @@ If migration exposes gameplay behavior that is wrong, use the normal bug-confirm
 
 ## Composition ownership
 
-`src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered Engine composition owner. It sequences `opening_legacy_stage.inc`, then owns the complete banked-Tapu and lock-removal alias setup/include/teardown lifetimes directly, then composes `late_engine_stage.inc` at the established textual boundaries. The former `banked_tapu_policy_stage.inc` and `lock_removal_policy_stage.inc` forwarding substages have been retired without changing their `#define` / `#include` / `#undef` order. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
+`src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered Engine composition owner. It now directly owns the complete opening `part_003.inc` -> `part_004.inc` -> `part_005.inc` alias lifetime, the banked-Tapu and lock-removal alias setup/include/teardown lifetimes, and the late `part_014c.inc` -> `part_015.inc` -> `part_016.inc` alias lifetime at their established textual boundaries. The forwarding-only `opening_legacy_stage.inc`, `late_engine_stage.inc`, `banked_tapu_policy_stage.inc`, `lock_removal_policy_stage.inc`, and `opening_state_completion_stage.inc` layers have been retired without changing their `#define` / `#include` / `#undef` order. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
 
-`composition/late_engine_stage.inc` owns the complete historical `part_014c.inc` -> `part_015.inc` -> `part_016.inc` chain because `play_field_blower` and `run_turn` intentionally span those fragments. Keeping setup, continuation, and teardown in one stage makes the real macro lifetime the ownership boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_engine_stage.inc
+The opening boundary keeps `begin_turn`, opening-deck visibility, and the Garbodor Ability alias adjacent to the historical fragments that consume them. The late boundary keeps `play_field_blower`, `run_turn`, scenario-registry aliases, and the final translation-unit closure adjacent for the same reason. Historical opening fragment: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc Historical late fragment: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
 
-`composition/opening_legacy_stage.inc` directly owns the complete historical `part_003.inc` -> `part_004.inc` -> `part_005.inc` opening chain, the Garbodor Ability alias, and the temporary opening-deck visibility alias teardown. The former forwarding-only `opening_state_completion_stage.inc` has been retired so the real cross-fragment macro lifetime is visible in one owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_legacy_stage.inc
-
-The banked-Tapu and lock-removal policy implementations remain separate semantic owners under `core/`, while their composition-only macro lifetimes now sit directly in `engine_body.inc`. This keeps route and lock policy ownership distinct without retaining forwarding-only composition files. Banked-Tapu route: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/banked_tapu_retreat_policy.inc Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forest_field_blower_policy.inc
+The banked-Tapu and lock-removal policy implementations remain separate semantic owners under `core/`, while composition-only macro lifetimes stay in `engine_body.inc`. This keeps route and lock policy ownership distinct without retaining forwarding-only composition files. Banked-Tapu route: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/banked_tapu_retreat_policy.inc Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forest_field_blower_policy.inc
 
 Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. Route admission/projection/decision policy stays under `src/trace_engine_v2/core/routes/`. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
-Next composition step: inspect another forwarding-only composition substage only where its complete macro lifetime can move intact into the existing semantic owner at the identical textual boundary. Do not recreate `opening_state_completion_stage.inc`, `banked_tapu_policy_stage.inc`, `lock_removal_policy_stage.inc`, or another forwarding-only sequencer.
+Next composition step: inspect `post_014a_overrides.inc` and the remaining root `part_*` composition fragments for another forwarding-only seam only where its complete macro lifetime can move intact into an existing semantic owner at the identical textual boundary. Do not recreate retired forwarding-only sequencers.
 
 ## Payload policy cleanup
 
@@ -167,14 +165,6 @@ Next turn-lifecycle step: route only exact duplicate action-flag/reset bundles t
 `src/trace_engine_v2/part_roseanne_multimode_override.inc` now evaluates the Evolution Incense -> Earthen Vessel admission path on a copied `Engine`, matching the neighboring Pokémon Communication projection and avoiding temporary mutation/restoration of live hand state. Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148 Evolution Incense: https://api.pokemontcg.io/v2/cards/swsh1-163 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 
 Next projection step: migrate only admission checks whose semantics are already pure projections onto copied Engine state. Keep physical resolution, trace emission, K0/K1 transitions, and strategic route choice at their current owners.
-
-## Route extraction cleanup
-
-`src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc` now owns the #1016 Quick Ball connector-admission policy around Legacy Star. The historical `part_issue_1016_legacy_star_quick_ball_override.inc` path remains a compatibility include so the `use_legacy_star` alias lifetime in `composition/post_014a_overrides.inc` stays unchanged. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
-
-`src/trace_engine_v2/core/routes/issue_1673_secret_box_payload_deadline_policy.inc` now owns the complete #1673 deadline Secret Box route body. `part_issue_1673_secret_box_deadline_override.inc` retains only its established neighboring include order and `run_turn_issue1674_original()` composition wrapper. Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 Confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1673
-
-Next route-extraction step: retire the #1016 compatibility shim only when `composition/post_014a_overrides.inc` can consume the canonical core route directly at the identical `use_legacy_star` macro boundary. Continue moving complete route predicates/resolvers from root `part_*` files only when their surrounding composition wrappers and neighboring include order remain byte-for-byte equivalent.
 
 ## Validation gate
 

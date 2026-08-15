@@ -5,14 +5,17 @@ constexpr const cards::CardDefinition* registered_pokemon_definition(const Card 
              : nullptr;
 }
 
-constexpr bool is_basic(const Card card) {
-  if (const cards::CardDefinition* definition = registered_pokemon_definition(card)) {
-    return definition->pokemon_stage == cards::PokemonStage::Basic;
-  }
+// Keep the legacy Basic-Pokemon fallback in one intrinsic classifier so Basic
+// checks and broader Pokemon identity do not maintain overlapping switch lists.
+// Registered Pokemon continue to source stage from CardDefinition.
+// Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+// Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
+// Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+constexpr bool is_legacy_basic_pokemon(const Card card) {
   switch (card) {
     case Card::DialgaGX:
     case Card::TapuLeleGX:
-    case Card::CrobatV:  // Basic Pokémon V: https://api.pokemontcg.io/v2/cards/swsh3-104
+    case Card::CrobatV:
     case Card::LatiasEx:
     case Card::MawileGX:
     case Card::Oricorio:
@@ -21,6 +24,13 @@ constexpr bool is_basic(const Card card) {
     default:
       return false;
   }
+}
+
+constexpr bool is_basic(const Card card) {
+  if (const cards::CardDefinition* definition = registered_pokemon_definition(card)) {
+    return definition->pokemon_stage == cards::PokemonStage::Basic;
+  }
+  return is_legacy_basic_pokemon(card);
 }
 
 // Ultra Ball may search any Pokémon, so K1 target legality must recognize every

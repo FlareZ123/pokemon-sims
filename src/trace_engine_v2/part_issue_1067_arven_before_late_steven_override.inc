@@ -66,7 +66,7 @@
   }
 
   #include "part_issue_3222_steven_blender_semantic_override.inc"
-  #include "part_issue_3221_k0_steven_blender_semantic_override.inc"
+  #include "core/routes/k0_steven_blender_semantic_route.inc"
   // Canonical issue-3203 route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/active_vstar_steven_route_policy.inc
   #include "core/routes/active_vstar_steven_route_policy.inc"
 

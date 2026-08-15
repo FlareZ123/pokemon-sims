@@ -28,39 +28,10 @@
 
 #endif  // SIM_TRACE_SIMULATOR_STATE_INCLUDED
 
-// Opening stage. Keep each phase's aliases local while preserving the historical
-// textual include order.
-// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
-
-// Phase 1: open the legacy turn body and expose the Garbotoxin-aware Ability alias.
-#if defined(begin_turn) || defined(might_be_unseen)
-#error "Opening composition requires begin_turn and might_be_unseen aliases to be undefined on entry"
-#endif
-#define begin_turn begin_turn_original
-#define might_be_unseen might_be_unseen_empty_deck_original
-#include "../part_003.inc"
-
-#if defined(ability_available_for_pokemon)
-#error "Garbodor composition requires ability_available_for_pokemon to be undefined on entry"
-#endif
-#define ability_available_for_pokemon ability_available_for_pokemon_garbodor
-
-// Phase 2: complete the legacy member continuation before opening overrides.
-// part_003.inc opens begin_turn(), part_004.inc completes it and later opens
-// state_line(), and part_005.inc closes state_line() before the first override
-// member is introduced.
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L151-L154
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc#L1-L22
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc#L210-L218
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc#L1-L5
-#include "../part_004.inc"
-#include "../part_005.inc"
-#include "../core/garbodor_lock_policy.inc"
-
-#undef might_be_unseen
-#if defined(might_be_unseen)
-#error "Opening composition leaked the temporary might_be_unseen alias"
-#endif
+// Opening stage. The named composition unit owns the historical member fragments
+// and their temporary aliases while preserving the exact textual include order.
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_legacy_stage.inc
+#include "opening_legacy_stage.inc"
 
 // Phase 3: compose the banked-Tapu replacement at the post-search member boundary.
 // Preserve this order because turn_action_policy_runtime.inc closes

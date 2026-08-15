@@ -30,10 +30,10 @@
     }
 
     // K1 proves that Steven can bank every missing next-turn axis. The prior-turn
-    // GGF Regidrago V evolves on T4, Latias ex gives the Basic Active no Retreat
-    // Cost, and Professor Burnet supplies a same-turn strict-JIT Dragon payload.
-    // Tate & Liza draw mode would replace this deterministic package with five
-    // random cards and therefore has lower active-move realism:
+    // GGF Regidrago V evolves on the following turn, Latias ex gives the Basic
+    // Active no Retreat Cost, and Professor Burnet supplies a same-turn strict-JIT
+    // Dragon payload. Tate & Liza draw mode would replace this deterministic package
+    // with five random cards and therefore has lower active-move realism:
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
@@ -74,8 +74,17 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // https://github.com/FlareZ123/pokemon-sims/issues/1771
+    const int completion_turn = state_.turn + 1;
+    // Steven ends the current turn after the search, so the route witness is the
+    // immediately following simulator turn rather than an absolute T4 label:
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed relative-trace bug: https://github.com/FlareZ123/pokemon-sims/issues/3798
+    // Sibling relative-turn route implementation:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1772_steven_t3_package_override.inc
     trace("PLAY SUPPORTER",
           "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
-          "Searched the deterministic T4 VSTAR-Latias-Burnet package. Turn ended.");
+          "Searched the deterministic T" + std::to_string(completion_turn) +
+              " VSTAR-Latias-Burnet package. Turn ended.");
     return true;
   }

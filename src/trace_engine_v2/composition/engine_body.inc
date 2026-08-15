@@ -38,7 +38,9 @@
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/middle_policy_stage.inc
 #include "middle_policy_stage.inc"
 
-// Late stage. The named composition unit owns the turn-execution, scenario-registry,
-// reporting fragments, and aliases that intentionally span their historical files.
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_legacy_stage.inc
-#include "late_legacy_stage.inc"
+// Late stage. Compose the two macro-owning substages directly at the canonical
+// Engine boundary so the forwarding-only late_legacy_stage.inc layer is unnecessary.
+// Execution owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_execution_stage.inc
+#include "late_execution_stage.inc"
+// Registry/reporting owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_registry_reporting_stage.inc
+#include "late_registry_reporting_stage.inc"

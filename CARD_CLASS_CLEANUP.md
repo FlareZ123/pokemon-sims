@@ -79,7 +79,9 @@ The numbered policy fragments `part_013.inc`, `part_014a.inc`, and `part_014b.in
 
 Root `part_000.inc` and `part_001.inc` remain source-contract shims while unified-test generation, raw-source payload contracts, and same-repository anchors depend on their historical paths. Canonical owners: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc and https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
 
-Next composition step: inspect the middle banked-Tapu and lock-removal block still resident in `composition/engine_body.inc`. Extract only a self-contained textual stage whose entry/exit macro contract can be asserted locally. Keep route policy in its existing `core/routes/` owners and preserve the exact boundary around `opening_engine_overrides.inc`, `turn_action_policy_runtime.inc`, and `post_014a_overrides.inc`.
+Completed in `cleanup-1786778314217`: extracted the banked-Tapu post-search macro/include contract into `composition/banked_tapu_stage.inc` and the forest/Field Blower lock-removal macro/include contract into `composition/lock_removal_stage.inc`. `composition/engine_body.inc` now exposes those two named stages between the existing opening and late stages while preserving the exact historical `#define` / `#include` / `#undef` order, member boundaries, relative include roots, and route-policy owners. Banked-Tapu route: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/banked_tapu_retreat_policy.inc Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forest_field_blower_policy.inc
+
+Next composition step: keep `engine_body.inc` as the ordered stage inventory and inspect only the remaining simulator-state bootstrap prelude for a self-contained named owner. Do not move catalog/classification guards unless source-contract tests prove their include-guard and declaration-order behavior is identical; the opening, banked-Tapu, lock-removal, and late stage boundaries are now explicit and should remain stable.
 
 ## Payload policy cleanup
 
@@ -137,4 +139,4 @@ Before adding a new loop or route-local helper, check these owners and reuse a n
 
 A cleanup PR is mergeable only when strict Release compilation succeeds, focused tests and the full regression suite show no new failure, sanitizer/structural checks show no new failure, representative `--simulate-this` traces preserve legal action ordering/readiness, the paired T2/T3 matrix has no unexplained drift, and the PR contains no gameplay behavior change.
 
-Known baseline failures must be tied to their existing issue and shown unchanged. Any newly discovered gameplay defect uses the separate bug-confirmation workflow.
+Known baseline failures must be tied to their existing issue and shown unchanged. Any newly discovered gameplay defect uses the separate bug-confirmation workflow instead.

@@ -41,6 +41,9 @@
          two_basics_complete(Card::Fire, Card::Grass));
     const bool crispin_completes_energy =
         one_found_manual_completion || two_found_crispin_manual_completion;
+    // Keep this route's "payload other than the surplus Regidrago V" test on the
+    // same physical-zone traversal primitive as all other payload membership checks.
+    // Payload cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
     const bool payload_outlet = has_live_blender_payload_line() ||
         has_live_one_discard_hand_payload_line();
 

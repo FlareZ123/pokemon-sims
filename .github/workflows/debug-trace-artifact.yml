@@ -1,148 +1,27 @@
-name: Debug cleanup staging
+name: Debug current shell matrix
 
 on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  cleanup:
+  matrix:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           ref: cleanup-1786819027105
-          fetch-depth: 0
-      - name: Configure commit identity
-        run: |
-          git config user.name "Zyenith"
-          git config user.email "40903650+FlareZ123@users.noreply.github.com"
-      - name: Merge Legacy Star public projection wrapper
-        shell: bash
-        run: |
-          python - <<'PY'
-          import fcntl
-          import os
-          import tempfile
-          from pathlib import Path
-
-          def atomic_locked_write(path: Path, text: str) -> None:
-              lock_path = path.with_name(path.name + ".lock")
-              with lock_path.open("w") as lock:
-                  fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-                  fd, temporary = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".tmp.")
-                  try:
-                      with os.fdopen(fd, "w", newline="\n") as stream:
-                          stream.write(text)
-                          stream.flush()
-                          os.fsync(stream.fileno())
-                      os.replace(temporary, path)
-                  finally:
-                      if os.path.exists(temporary):
-                          os.unlink(temporary)
-                  fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
-              lock_path.unlink()
-
-          post = Path("src/trace_engine_v2/composition/post_014a_overrides.inc")
-          wrapper = Path("src/trace_engine_v2/part_issue_1069_legacy_star_combined_energy_payload_override.inc")
-          text = post.read_text()
-          marker = '#include "../part_issue_1069_legacy_star_combined_energy_payload_override.inc"'
-          assert text.count(marker) == 1
-          body = wrapper.read_text().rstrip().replace(
-              '#include "core/routes/issue_3199_legacy_star_combined_energy_payload_base.inc"',
-              '#include "../core/routes/issue_3199_legacy_star_combined_energy_payload_base.inc"')
-          replacement = (
-              "// Public-projection isolation now lives at the canonical post-search composition boundary.\n"
-              + body)
-          atomic_locked_write(post, text.replace(marker, replacement))
-          wrapper.unlink()
-          PY
-          git add src/trace_engine_v2/composition/post_014a_overrides.inc src/trace_engine_v2/part_issue_1069_legacy_star_combined_energy_payload_override.inc
-          git commit -m "Cleanup: merge Legacy Star projection wrapper"
-      - name: Merge Tate public projection guard
-        shell: bash
-        run: |
-          python - <<'PY'
-          import fcntl
-          import os
-          import tempfile
-          from pathlib import Path
-
-          def atomic_locked_write(path: Path, text: str) -> None:
-              lock_path = path.with_name(path.name + ".lock")
-              with lock_path.open("w") as lock:
-                  fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-                  fd, temporary = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".tmp.")
-                  try:
-                      with os.fdopen(fd, "w", newline="\n") as stream:
-                          stream.write(text)
-                          stream.flush()
-                          os.fsync(stream.fileno())
-                      os.replace(temporary, path)
-                  finally:
-                      if os.path.exists(temporary):
-                          os.unlink(temporary)
-                  fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
-              lock_path.unlink()
-
-          post = Path("src/trace_engine_v2/composition/post_014a_overrides.inc")
-          wrapper = Path("src/trace_engine_v2/part_turo_oricorio_override.inc")
-          text = post.read_text()
-          marker = '#include "../part_turo_oricorio_override.inc"'
-          assert text.count(marker) == 1
-          body = wrapper.read_text().rstrip().replace(
-              '#include "core/routes/issue_3199_turo_oricorio_base.inc"',
-              '#include "../core/routes/issue_3199_turo_oricorio_base.inc"')
-          replacement = (
-              "// Tate/Turo public-projection guard now shares the canonical post-search owner.\n"
-              + body)
-          atomic_locked_write(post, text.replace(marker, replacement))
-          wrapper.unlink()
-          PY
-          git add src/trace_engine_v2/composition/post_014a_overrides.inc src/trace_engine_v2/part_turo_oricorio_override.inc
-          git commit -m "Cleanup: merge Tate projection guard"
-      - name: Advance card-class cleanup plan
-        shell: bash
-        run: |
-          python - <<'PY'
-          import fcntl
-          import os
-          import tempfile
-          from pathlib import Path
-
-          path = Path("CARD_CLASS_CLEANUP.md")
-          lock_path = path.with_name(path.name + ".lock")
-          text = path.read_text()
-          anchor = "`post_014a_overrides.inc` now composes `core/routes/issue_1016_legacy_star_quick_ball_policy.inc` directly under the same `use_legacy_star` alias lifetime that previously wrapped `part_issue_1016_legacy_star_quick_ball_override.inc`. The forwarding-only root shim has been retired without moving the alias boundary or changing route policy. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136 Canonical route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc Composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc\n"
-          addition = "\nThe issue-3199 public-projection isolation and Tate/Turo projection guard now live directly in `post_014a_overrides.inc` at their previous textual positions. The forwarding-only `part_issue_1069_legacy_star_combined_energy_payload_override.inc` and `part_turo_oricorio_override.inc` layers are retired. Their macro setup, thread-local projection depth, RAII guard, and canonical route includes are unchanged apart from the relative include roots required by the composition directory. Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136 Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148 Composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc Canonical Legacy Star route: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_3199_legacy_star_combined_energy_payload_base.inc Canonical Tate/Turo route: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_3199_turo_oricorio_base.inc\n"
-          assert text.count(anchor) == 1
-          text = text.replace(anchor, anchor + addition)
-          old = "`src/trace_engine_v2/part_turo_oricorio_override.inc` now gives the Tate public-projection recursion guard a named Engine member type instead of rebuilding an anonymous RAII type at each call site. The projection still isolates only Legacy Star and restores the same thread-local depth on scope exit: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_turo_oricorio_override.inc"
-          new = "`src/trace_engine_v2/composition/post_014a_overrides.inc` gives the Tate public-projection recursion guard a named Engine member type instead of rebuilding an anonymous RAII type at each call site. The projection still isolates only Legacy Star and restores the same thread-local depth on scope exit: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc"
-          assert text.count(old) == 1
-          text = text.replace(old, new)
-          with lock_path.open("w") as lock:
-              fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-              fd, temporary = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".tmp.")
-              try:
-                  with os.fdopen(fd, "w", newline="\n") as stream:
-                      stream.write(text)
-                      stream.flush()
-                      os.fsync(stream.fileno())
-                  os.replace(temporary, path)
-              finally:
-                  if os.path.exists(temporary):
-                      os.unlink(temporary)
-              fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
-          lock_path.unlink()
-          PY
-          git add CARD_CLASS_CLEANUP.md
-          git commit -m "Cleanup: advance projection ownership plan"
-      - name: Verify preprocessor and push
-        shell: bash
-        run: |
-          c++ -std=c++20 -E src/regidrago_sim.cpp -o /tmp/regidrago_sim.i
-          git log -3 --format='%s' | grep -c '^Cleanup: ' | grep '^3$'
-          git push origin HEAD:cleanup-1786819027105
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Run current shell matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out current-shell-matrix.csv
+      - name: Upload matrix
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-shell-matrix
+          path: current-shell-matrix.csv

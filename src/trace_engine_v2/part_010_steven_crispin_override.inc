@@ -755,6 +755,15 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
     // Turn procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/999
+    // The formerly anonymous Steven-Blender witness now delegates to the named
+    // state-semantic predicate, which owns K1, JIT, lock, horizon, evolution-age,
+    // held-Energy, VSTAR, Blender, and payload legality for every equivalent state.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Historical semantic fix: https://github.com/FlareZ123/pokemon-sims/issues/3222
+    // Selector regression: https://github.com/FlareZ123/pokemon-sims/issues/4017
     return (should_play_steven_original() &&
             !steven_should_yield_to_crispin_mysterious_route()) ||
         wonder_tag_admission_remains_productive ||
@@ -764,18 +773,7 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
         late_steven_vstar_grass_with_held_blender_k0_route_available() ||
         late_steven_vstar_grass_with_held_burnet_route_available() ||
         late_steven_vstar_with_held_blender_route_available() ||
-
-(state_.turn == 2 && scenario_.going_first &&
- scenario_.dci == DciProfile::MatchupFlexJit &&
- scenario_.locks == LockMode::None && supporter_allowed() &&
- state_.active && state_.active->card == Card::RegidragoV &&
- state_.active->entered_turn < state_.turn &&
- hand_count(Card::StevensResolve) > 0 && need_vstar() &&
- need_payload() && payload_might_be_in_deck() &&
- deck_count_after_search_started(Card::RegidragoVstar) > 0 &&
- deck_count_after_search_started(Card::BrilliantBlender) > 0 &&
- ((grass_needed() == 1 && fire_needed() == 0 && hand_count(Card::Grass) > 0) ||
-  (grass_needed() == 0 && fire_needed() == 1 && hand_count(Card::Fire) > 0))) ||
+        issue_3222_steven_blender_fallback_available() ||
         late_steven_has_active_regidrago_t3_blender_route() ||
         late_steven_vstar_vessel_route_available() ||
         late_steven_active_vstar_crispin_treasure_route_available() ||

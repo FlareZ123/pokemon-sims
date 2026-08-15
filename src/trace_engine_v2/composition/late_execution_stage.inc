@@ -1,5 +1,5 @@
-// Compose the historical late turn-execution fragment and keep the aliases that
-// intentionally continue into the registry/reporting substage alive.
+// Compose the historical late turn-execution fragment and keep its temporary alias
+// lifetime contained before the namespace-scope registry/reporting substage begins.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
 // Historical turn/scenario fragment: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
 // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
@@ -18,3 +18,12 @@
 #undef play_items_until_stable
 #undef hand_count
 #undef ability_available_for_pokemon
+
+// part_014c.inc consumes and releases play_field_blower/run_turn internally; the
+// remaining wrappers are released above. Since engine_body.inc now composes the
+// registry/reporting substage directly next, reject any accidental alias leakage.
+// Direct composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
+#if defined(play_field_blower) || defined(run_turn) || defined(hand_count) || \
+    defined(play_items_until_stable) || defined(ability_available_for_pokemon)
+#error "Late execution leaked a temporary alias into registry/reporting composition"
+#endif

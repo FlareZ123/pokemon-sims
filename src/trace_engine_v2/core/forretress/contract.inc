@@ -32,12 +32,10 @@
   bool evolve_forretress_ex();
 
   // Exploding Energy board lookup and printed-effect resolution. BoardIndex,
-  // OptionalBoardIndex, pointer-to-index mapping, and attachment-destination
-  // storage are supplied by board_state_policy.inc rather than card-local
-  // traversal vocabulary.
+  // OptionalBoardIndex, pointer-to-index mapping, attachment-destination storage,
+  // and mutable board lookup are supplied by board_state_policy.inc.
   // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // Board policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
-  [[nodiscard]] Pokemon* pokemon_at_board_index(BoardIndex index);
   [[nodiscard]] OptionalBoardIndex exploding_energy_regidrago_target_index() const;
   void discard_forretress_ex_stack(const Pokemon& knocked_out);
   bool resolve_exploding_energy(

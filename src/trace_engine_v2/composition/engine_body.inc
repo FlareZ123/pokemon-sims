@@ -7,7 +7,6 @@
 // Card catalog: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 // Card classification: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
 // Simulator state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
-// Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/lock_removal_policy_stage.inc
 // Late composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_engine_stage.inc
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
 
@@ -55,8 +54,27 @@
 #endif
 #include "../core/routes/banked_tapu_retreat_policy.inc"
 
-// Lock-removal owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/lock_removal_policy_stage.inc
-#include "lock_removal_policy_stage.inc"
+// Middle stage: lock-removal policy at the same historical post-search boundary.
+// Keep the shared policy include and temporary aliases beside their checks so the
+// canonical composition owner exposes the complete textual lifetime.
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
+// Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+// Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+// Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+#include "../core/forest_field_blower_policy.inc"
+
+#if defined(play_chaotic_swell) || defined(play_field_blower)
+#error "Issue-3057 Pineco composition requires lock-removal aliases to be undefined"
+#endif
+#define play_chaotic_swell play_chaotic_swell_issue_3057
+#define play_field_blower play_field_blower_issue_3057
+#include "post_014a_overrides.inc"
+#undef play_field_blower
+#undef play_chaotic_swell
+
+#if defined(play_chaotic_swell) || defined(play_field_blower)
+#error "Issue-3057 Pineco composition leaked a temporary lock-removal alias"
+#endif
 
 // Late stage. The execution aliases deliberately span part_014c through part_016,
 // so one composition owner now holds their complete textual lifetime.

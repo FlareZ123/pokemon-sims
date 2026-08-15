@@ -69,24 +69,21 @@
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Energy attachment and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2449
-    const auto finishing_basic = [this, energy_target](const auto available)
-        -> std::optional<Card> {
+    const auto can_finish_with_basic = [this, energy_target](const auto available) {
       for (const Card basic : {Card::Grass, Card::Fire}) {
         if (!available(basic)) continue;
         Pokemon projected = *energy_target;
         if (attach_energy_card(projected, basic) &&
             pays_apex_energy_cost(projected)) {
-          return basic;
+          return true;
         }
       }
-      return std::nullopt;
+      return false;
     };
-    const auto held_finishing_energy = finishing_basic(
+    const bool held_energy_route = can_finish_with_basic(
         [this](const Card card) { return hand_count(card) > 0; });
-    const auto deck_finishing_energy = finishing_basic(
+    const bool finishing_energy_might_be_in_deck = can_finish_with_basic(
         [this](const Card card) { return might_be_unseen(card); });
-    const bool held_energy_route = held_finishing_energy.has_value();
-    const bool finishing_energy_might_be_in_deck = deck_finishing_energy.has_value();
     // Vital Dance and Earthen Vessel both put Basic Energy into hand; the still-
     // unused manual attachment then supplies the projected one-card Apex finish:
     // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
@@ -128,9 +125,10 @@
     // https://api.pokemontcg.io/v2/cards/sv8-140
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/issues/1257
-    for (const Card card : {Card::MegaDragonite, Card::Dragapult,
-                            Card::GoodraVstar, Card::DialgaGX,
-                            Card::Appletun}) {
+    static constexpr Card kBurnetPayloadPriority[] = {
+        Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+        Card::DialgaGX, Card::Appletun};
+    for (const Card card : kBurnetPayloadPriority) {
       if (discarded.size() >= 2U) break;
       if (move_deck_to_discard(card)) discarded.push_back(card);
     }
@@ -163,9 +161,10 @@
       // https://api.pokemontcg.io/v2/cards/swsh12-135
       // https://api.pokemontcg.io/v2/cards/sv3pt5-160
       // https://github.com/FlareZ123/pokemon-sims/issues/881
-      for (const Card card : {Card::PathToPeak, Card::ErikasInvitation, Card::Guzma,
-                              Card::Channeler, Card::FieldBlower,
-                              Card::ChaoticSwell}) {
+      static constexpr Card kBurnetDeadThinningPriority[] = {
+          Card::PathToPeak, Card::ErikasInvitation, Card::Guzma,
+          Card::Channeler, Card::FieldBlower, Card::ChaoticSwell};
+      for (const Card card : kBurnetDeadThinningPriority) {
         if (move_deck_to_discard(card)) {
           discarded.push_back(card);
           break;

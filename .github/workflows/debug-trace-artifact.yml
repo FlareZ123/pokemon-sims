@@ -1,27 +1,15 @@
-name: Debug current shell matrix
+name: Debug delete cleanup branch
 
 on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  matrix:
+  delete:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: cleanup-1786819027105
-      - name: Configure Release
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-      - name: Build simulator
-        run: cmake --build build --target regidrago_sim --parallel 2
-      - name: Run current shell matrix
-        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out current-shell-matrix.csv
-      - name: Upload matrix
-        uses: actions/upload-artifact@v4
-        with:
-          name: current-shell-matrix
-          path: current-shell-matrix.csv
+      - name: Delete merged cleanup branch
+        run: git push origin --delete cleanup-1786819027105

@@ -11,6 +11,15 @@
       return first_iterator(zone) != zone.end();
     }
 
+    [[nodiscard]] static bool contains_card(
+        const std::vector<Card>& zone, const Card card) {
+      // Keep concrete-card membership in the same physical-zone abstraction as
+      // payload membership so strategic preference callers do not grow ad hoc scans.
+      // https://eel.is/c++draft/alg.find
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+      return std::find(zone.begin(), zone.end(), card) != zone.end();
+    }
+
     [[nodiscard]] static int count(const std::vector<Card>& zone) {
       return static_cast<int>(std::count_if(zone.begin(), zone.end(), is_payload));
     }
@@ -47,7 +56,7 @@
       // https://eel.is/c++draft/alg.find
       // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
       return first_preferred([&zone](const Card card) {
-        return std::find(zone.begin(), zone.end(), card) != zone.end();
+        return PayloadZonePolicy::contains_card(zone, card);
       });
     }
 

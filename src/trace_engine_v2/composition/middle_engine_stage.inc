@@ -10,7 +10,11 @@
 // Replacement policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/banked_tapu_retreat_policy.inc
 // Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forest_field_blower_policy.inc
 // Lock-removal specification: https://github.com/FlareZ123/pokemon-sims/issues/3057
+// Garbodor Ability gate owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/garbodor_lock_policy.inc
 
+#if !defined(ability_available_for_pokemon)
+#error "Middle composition requires the Garbodor-aware Ability alias from the opening stage"
+#endif
 #if defined(retreat_banked_tapu_to_regidrago)
 #error "Banked-Tapu composition requires the retreat alias to be undefined on entry"
 #endif
@@ -44,4 +48,7 @@
 
 #if defined(play_chaotic_swell) || defined(play_field_blower)
 #error "Issue-3057 Pineco composition leaked a temporary lock-removal alias"
+#endif
+#if !defined(ability_available_for_pokemon)
+#error "Middle composition must preserve the Garbodor-aware Ability alias for the late stage"
 #endif

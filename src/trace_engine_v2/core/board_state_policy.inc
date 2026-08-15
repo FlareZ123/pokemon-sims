@@ -70,6 +70,17 @@
         state_.active, state_.bench, predicate);
   }
 
+  [[nodiscard]] OptionalBoardIndex board_index_of(
+      const Pokemon* target) const {
+    if (target == nullptr) return std::nullopt;
+    // Reuse the canonical Active-first index mapping for callers that already
+    // selected a board Pokémon by pointer.
+    // Board policy owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+    return board_index_matching([target](const Pokemon& pokemon) {
+      return &pokemon == target;
+    });
+  }
+
   template <typename Predicate>
   [[nodiscard]] bool board_has_pokemon_matching(Predicate predicate) const {
     return find_board_pokemon_matching(predicate) != nullptr;

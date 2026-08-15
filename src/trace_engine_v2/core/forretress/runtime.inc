@@ -114,8 +114,7 @@ bool Engine::use_exploding_energy_for_setup() {
 
   AttachmentDestinations destinations;
   const bool active_blocks_regi = !source_is_active && state_.active &&
-      state_.active->card != Card::RegidragoV &&
-      state_.active->card != Card::RegidragoVstar;
+      !is_regidrago_board_pokemon(*state_.active);
   const bool retreat_available = active_blocks_regi && !state_.retreat_used;
   // Skyliner gives every Basic Pokémon in play no Retreat Cost while Latias ex's
   // Rule Box Ability is available. Apply that effective cost before distributing
@@ -204,9 +203,7 @@ bool Engine::use_exploding_energy_for_setup() {
       best_benched_pokemon_index(retreat_rank);
   Pokemon* target = retreat_target_index
       ? board_pokemon_at_index(*retreat_target_index) : nullptr;
-  if (target == nullptr ||
-      (target->card != Card::RegidragoV &&
-       target->card != Card::RegidragoVstar)) {
+  if (target == nullptr || !is_regidrago_board_pokemon(*target)) {
     throw std::logic_error("Exploding Energy retreat target disappeared");
   }
   std::swap(*state_.active, *target);

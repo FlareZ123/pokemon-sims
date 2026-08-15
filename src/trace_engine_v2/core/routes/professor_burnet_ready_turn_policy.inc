@@ -125,9 +125,10 @@
     // https://api.pokemontcg.io/v2/cards/sv8-140
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/issues/1257
-    for (const Card card : {Card::MegaDragonite, Card::Dragapult,
-                            Card::GoodraVstar, Card::DialgaGX,
-                            Card::Appletun}) {
+    static constexpr Card kBurnetPayloadPriority[] = {
+        Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+        Card::DialgaGX, Card::Appletun};
+    for (const Card card : kBurnetPayloadPriority) {
       if (discarded.size() >= 2U) break;
       if (move_deck_to_discard(card)) discarded.push_back(card);
     }
@@ -160,9 +161,10 @@
       // https://api.pokemontcg.io/v2/cards/swsh12-135
       // https://api.pokemontcg.io/v2/cards/sv3pt5-160
       // https://github.com/FlareZ123/pokemon-sims/issues/881
-      for (const Card card : {Card::PathToPeak, Card::ErikasInvitation, Card::Guzma,
-                              Card::Channeler, Card::FieldBlower,
-                              Card::ChaoticSwell}) {
+      static constexpr Card kBurnetDeadThinningPriority[] = {
+          Card::PathToPeak, Card::ErikasInvitation, Card::Guzma,
+          Card::Channeler, Card::FieldBlower, Card::ChaoticSwell};
+      for (const Card card : kBurnetDeadThinningPriority) {
         if (move_deck_to_discard(card)) {
           discarded.push_back(card);
           break;

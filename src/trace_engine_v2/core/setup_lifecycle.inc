@@ -5,7 +5,7 @@
     return total_copies(card) > 0;
   }
 
-  std::string current_deck_id() const {
+  [[nodiscard]] std::string current_deck_id() const {
     if (setup_recipe_contains(Card::DoubleDragonEnergy)) {
       return "regidrago-dde-model";  // Modeling recipe: https://github.com/FlareZ123/pokemon-sims/issues/2238 ; DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
     }
@@ -22,8 +22,11 @@
     return "custom";
   }
 
-  struct SetupLabelPolicy {
-    [[nodiscard]] static const char* dci(const DciProfile profile) {
+  struct SetupLifecycleConfig {
+    inline static constexpr int kOpeningHandSize = 7;
+    inline static constexpr int kStartingPrizeCount = 6;
+
+    [[nodiscard]] static const char* dci_label(const DciProfile profile) {
       // DCI/JIT policy vocabulary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
       switch (profile) {
         case DciProfile::StrictJit: return "strict-JIT";
@@ -33,7 +36,7 @@
       return "unknown";
     }
 
-    [[nodiscard]] static const char* lock(const LockMode mode) {
+    [[nodiscard]] static const char* lock_label(const LockMode mode) {
       // Scenario lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
       switch (mode) {
         case LockMode::None: return "none";
@@ -47,17 +50,13 @@
     }
   };
 
-  std::string dci_name() const {
-    return SetupLabelPolicy::dci(scenario_.dci);
+  [[nodiscard]] std::string dci_name() const {
+    return SetupLifecycleConfig::dci_label(scenario_.dci);
   }
 
-  std::string lock_name() const {
-    return SetupLabelPolicy::lock(scenario_.locks);
+  [[nodiscard]] std::string lock_name() const {
+    return SetupLifecycleConfig::lock_label(scenario_.locks);
   }
-
-  // Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-  inline static constexpr int kOpeningHandSize = 7;
-  inline static constexpr int kStartingPrizeCount = 6;
 
   void move_top_cards_from_deck(std::vector<Card>& destination, int count) {
     // Setup draws and Prize placement both move cards from the already-shuffled deck
@@ -96,7 +95,7 @@
   void draw_opening_hand_with_mulligans() {
     while (true) {
       state_.hand.clear();
-      move_top_cards_from_deck(state_.hand, kOpeningHandSize);
+      move_top_cards_from_deck(state_.hand, SetupLifecycleConfig::kOpeningHandSize);
       if (opening_hand_has_basic()) return;
       return_mulligan_hand_to_deck();
       shuffle(state_.deck);
@@ -108,7 +107,7 @@
     // Place six Prize cards from the already-shuffled remaining deck after the
     // opening Active and optional Bench are selected. The setup procedure does
     // not add another shuffle at this point: https://www.pokemon.com/us/pokemon-tcg/rules
-    move_top_cards_from_deck(state_.prizes, kStartingPrizeCount);
+    move_top_cards_from_deck(state_.prizes, SetupLifecycleConfig::kStartingPrizeCount);
   }
 
   void emit_setup_trace() {

@@ -8,7 +8,7 @@
 // Card classification: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
 // Simulator state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
 // Banked-Tapu replacement policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/banked_tapu_retreat_policy.inc
-// Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/lock_removal_policy_stage.inc
+// Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forest_field_blower_policy.inc
 // Battle Compressor / VS Seeker policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/battle_compressor_vs_seeker_policy.inc
 // Late composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_engine_stage.inc
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
@@ -57,9 +57,26 @@
 #endif
 #include "../core/routes/banked_tapu_retreat_policy.inc"
 
-// Lock-removal remains a named substage until its own forwarding layer is retired.
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/lock_removal_policy_stage.inc
-#include "lock_removal_policy_stage.inc"
+// Own lock-removal aliases at this same canonical post-search boundary instead of
+// forwarding through another composition file.
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
+// Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+// Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+// Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+#include "../core/forest_field_blower_policy.inc"
+
+#if defined(play_chaotic_swell) || defined(play_field_blower)
+#error "Issue-3057 Pineco composition requires lock-removal aliases to be undefined"
+#endif
+#define play_chaotic_swell play_chaotic_swell_issue_3057
+#define play_field_blower play_field_blower_issue_3057
+#include "post_014a_overrides.inc"
+#undef play_field_blower
+#undef play_chaotic_swell
+
+#if defined(play_chaotic_swell) || defined(play_field_blower)
+#error "Issue-3057 Pineco composition leaked a temporary lock-removal alias"
+#endif
 
 // Battle Compressor and VS Seeker must be composed after the current search/DCI
 // policy stack but before part_014c binds the final Item fixed point.

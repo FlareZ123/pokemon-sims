@@ -104,7 +104,9 @@ Next payload step: replace remaining ad hoc Dragon-payload membership scans only
 
 `src/trace_engine_v2/core/board_state_policy.inc` owns Active-first traversal, `BoardIndex` vocabulary, attachment-destination storage, pointer-to-index conversion, index lookup, exact-card source discovery, deterministic ranked board queries, and the prior-turn evolution timing predicate. Canonical board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
 
-Next mechanical Forretress step: replace remaining direct Pineco / Forretress ex board-card identity checks only where they exactly match the contract classifiers, then inventory the remaining orchestration in `runtime.inc` for another complete semantic boundary. Preserve state-count queries, entry-turn evolution timing, route ordering, attachment distribution, retreat planning, and strategic ranking at their existing owners. Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117 Core evolution rules: https://www.pokemon.com/us/pokemon-tcg/rules Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
+Board-object Pineco identity in the evolution-timing queries and Regidrago-line identity in the Exploding Energy retreat path now reuse the contract classifiers. State-count queries still intentionally use exact `Card` counts, and retreat ranking still distinguishes Regidrago VSTAR from Regidrago V because that ordering is strategic rather than a board-family membership question.
+
+Next mechanical Forretress step: inventory the remaining orchestration in `runtime.inc` for another complete semantic boundary, and replace only board-object identity checks whose semantics exactly match an existing contract classifier. Preserve state-count queries, entry-turn evolution timing, route ordering, attachment distribution, retreat planning, and strategic ranking at their existing owners. Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117 Core evolution rules: https://www.pokemon.com/us/pokemon-tcg/rules Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
 
 ## Steven route cleanup
 

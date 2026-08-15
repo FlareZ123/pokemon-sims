@@ -26,6 +26,17 @@
     }
   };
 
+  struct GarbodorAbilityLockPolicy {
+    [[nodiscard]] static constexpr bool garbotoxin_locked(
+        const bool lock_present, const bool lock_removed) {
+      // Garbotoxin removes other Pokemon Abilities only while its modeled lock is
+      // present and has not been removed by the shared lock-removal state:
+      // https://api.pokemontcg.io/v2/cards/xy9-57
+      // https://github.com/FlareZ123/pokemon-sims/issues/2808
+      return lock_present && !lock_removed;
+    }
+  };
+
   [[nodiscard]] bool garbodor_shake_scenario() const {
     return GarbodorScenarioPolicy::matches(scenario_.label);
   }
@@ -58,7 +69,8 @@
   }
 
   [[nodiscard]] bool garbodor_abilities_locked() const {
-    return garbodor_lock_present() && !garbodor_lock_removed();
+    return GarbodorAbilityLockPolicy::garbotoxin_locked(
+        garbodor_lock_present(), garbodor_lock_removed());
   }
 
   [[nodiscard]] bool rule_box_ability_available(const Card card) const {

@@ -154,9 +154,9 @@ Next shared-policy step: route duplicate Garbodor present/removed boolean compos
 
 ## Turn lifecycle cleanup
 
-`src/trace_engine_v2/core/turn_lifecycle.inc` owns the common per-turn action reset through `TurnActionStatePolicy::reset()`, while `reset_transient_turn_locks()` keeps scenario-dependent one-turn Garbodor unlock state separate from generic action-state reset. The established lifecycle order remains: set turn, clear action state, restore transient lock pressure, then perform the mandatory start-of-turn draw. Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104 Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125 Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+`src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn resets through two explicit policy owners. `TurnActionStatePolicy::reset()` clears generic action flags and same-turn discard tracking. `TransientTurnLockPolicy::reset()` owns the scenario-dependent one-turn Garbodor unlock reset. `reset_per_turn_state()` now composes both policies directly, without forwarding-only reset members. The established lifecycle order remains: set turn, clear action state, restore transient lock pressure, then perform the mandatory start-of-turn draw. Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104 Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125 Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Scenario contract: https://github.com/FlareZ123/pokemon-sims/issues/2808
 
-Next turn-lifecycle step: route only exact duplicate action-flag/reset bundles through `TurnActionStatePolicy::reset()`. Keep scenario-specific transient state in lifecycle helpers and preserve the current ordering relative to the required turn draw.
+Next turn-lifecycle step: route only exact duplicate action-flag/reset bundles through `TurnActionStatePolicy::reset()` and exact scenario-scoped transient lock resets through `TransientTurnLockPolicy::reset()`. Preserve the current ordering relative to the required turn draw, and keep persistent matchup state outside these per-turn policy owners.
 
 ## Validation gate
 

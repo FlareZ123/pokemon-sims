@@ -15,8 +15,11 @@
         deck_count_after_search_started(Card::Grass) == 0) {
       return false;
     }
-    const bool separate_payload = std::any_of(
-        state_.hand.begin(), state_.hand.end(),
+    // Preserve the route-specific Regidrago V exclusion while reusing the shared
+    // physical-zone traversal primitive instead of maintaining another ad hoc scan.
+    // Payload cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+    const bool separate_payload = PayloadZonePolicy::contains_matching(
+        state_.hand,
         [](const Card card) { return card != Card::RegidragoV && is_payload(card); });
     if (!separate_payload) return false;
 

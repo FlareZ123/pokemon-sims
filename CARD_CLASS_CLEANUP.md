@@ -167,9 +167,9 @@ Future retirement of either shim requires migrating every raw-source reader and 
 
 `src/trace_engine_v2/part_forretress_ex_combo.inc` owns the Garbodor scenario extension directly beside the `core/forretress/runtime.inc` include. Preserve the local `ScenarioExtension` value ownership and the same `std::optional<Scenario>` lookup shape as the public registry.
 
-`src/trace_engine_v2/core/board_state_policy.inc` owns the shared Active-first mutable/const board traversal, prior-turn evolution timing predicate, and canonical `BoardIndex` / `OptionalBoardIndex` vocabulary. It now also owns `0 == Active`, `Bench index + 1` lookup, predicate-based index discovery, and pointer-to-index discovery through `board_index_of()`. `src/trace_engine_v2/core/forretress/contract.inc` consumes that vocabulary without a card-local board lookup declaration. `src/trace_engine_v2/core/forretress/runtime.inc` now routes Exploding Energy target indexing through `board_index_of()`, source discovery through `board_index_matching()`, and destination lookup through `board_pokemon_at_index()`. Exploding Energy strategy and resolution remain at the Forretress owner. This cleanup changes structure only; DCI/UDP/AMR, K0/K1, connector, readiness, Ability, evolution, attachment distribution, self-Knock-Out, promotion, and route policy remain at their prior owners.
+`src/trace_engine_v2/core/board_state_policy.inc` owns the shared Active-first mutable/const board traversal, prior-turn evolution timing predicate, and canonical `BoardIndex` / `OptionalBoardIndex` vocabulary. The board-index mapping is now named by `kActiveBoardIndex`, `board_index_for_bench_position()`, and `bench_position_from_board_index()`, and mutable/const pointer lookup reuses the same index-discovery plus index-lookup path. This leaves one Active-before-Bench mapping implementation for callers to share instead of duplicating raw `0 == Active` and `Bench + 1` arithmetic. `src/trace_engine_v2/core/forretress/contract.inc` consumes that vocabulary rather than redeclaring it, while `src/trace_engine_v2/core/forretress/runtime.inc` continues to own Exploding Energy strategy and resolution. This cleanup changes structure only; DCI/UDP/AMR, K0/K1, connector, readiness, Ability, and evolution policy remain at their prior owners.
 
-Next mechanical Forretress step: inventory any remaining reusable board-selection mechanics in post-Knock-Out promotion and retreat handling. Extract only representation-level traversal that is shared by another route; keep promotion ranking and strategic target choice in Engine strategy.
+Next mechanical Forretress step: migrate Exploding Energy's remaining Active-versus-Bench source/target scans in `core/forretress/runtime.inc` through `board_pokemon_at_index()` and `board_index_matching()`, then remove the card-local `pokemon_at_board_index()` member once every runtime caller uses the shared board seam. Preserve selection, attachment distribution, self-Knock-Out, promotion, and route policy at the Forretress owner.
 
 Board query owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
 Forretress runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/runtime.inc
@@ -230,6 +230,14 @@ C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 Advanced rules and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 Decision priorities and knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
 
+## Setup lifecycle consolidation
+
+`src/trace_engine_v2/core/setup_lifecycle.inc` now owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `core/simulation_labels.inc` remains only as a compatibility forwarder so historical textual include sites keep compiling while the executable setup support has one owner.
+
+Opening-hand Basic validation and mulligan hand return now use named helpers inside that owner. The helpers preserve the existing seven-card draw, all-card return, reshuffle, and retry sequence. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+Next mechanical setup step: retarget the live parent include from `core/simulation_labels.inc` directly to `core/setup_lifecycle.inc` at the same Engine member boundary, then remove the compatibility forwarder after raw-source readers and same-repository anchors are migrated. Keep setup choice policy, K0/K1 state, mulligan counting, opening Active/Bench selection, and Prize placement semantics unchanged.
+
 ## Rules and policy anchors
 
 Advanced rules procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
@@ -251,4 +259,4 @@ A cleanup PR is mergeable only when:
 - the paired T2/T3 probability matrix has no unexplained drift;
 - the PR contains no unrelated gameplay behavior change.
 
-Known baseline failures must be identified by their existing issue and shown unchanged before merge. Any new gameplay defect discovered during cleanup must go through the separate bug-confirmation workflow.
+Known baseline failures must be identified by their existing issue and shown unchanged before merge. Any new gameplay defect discovered during cleanup must go through the separate bug-confirmation workflow instead of silently combining it with architecture cleanup.

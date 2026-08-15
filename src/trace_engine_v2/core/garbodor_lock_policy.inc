@@ -68,10 +68,6 @@
     }
   };
 
-  [[nodiscard]] bool garbodor_shake_scenario() const {
-    return GarbodorScenarioPolicy::matches(scenario_.label);
-  }
-
   [[nodiscard]] int garbodor_lock_activation_turn() const {
     return GarbodorScenarioPolicy::lock_activation_turn(scenario_.going_first);
   }

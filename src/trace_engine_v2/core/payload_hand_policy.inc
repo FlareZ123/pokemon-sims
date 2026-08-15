@@ -1,6 +1,14 @@
   struct PayloadZonePolicy {
+    [[nodiscard]] static auto first_iterator(const std::vector<Card>& zone) {
+      // Keep the physical-zone membership seam on the same first-match traversal
+      // used by first(); callers that need strategic ordering use PayloadPreferencePolicy.
+      // https://eel.is/c++draft/alg.find
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+      return std::find_if(zone.begin(), zone.end(), is_payload);
+    }
+
     [[nodiscard]] static bool contains(const std::vector<Card>& zone) {
-      return std::any_of(zone.begin(), zone.end(), is_payload);
+      return first_iterator(zone) != zone.end();
     }
 
     [[nodiscard]] static int count(const std::vector<Card>& zone) {
@@ -9,7 +17,7 @@
 
     [[nodiscard]] static std::optional<Card> first(
         const std::vector<Card>& zone) {
-      const auto found = std::find_if(zone.begin(), zone.end(), is_payload);
+      const auto found = first_iterator(zone);
       return found == zone.end() ? std::nullopt : std::optional<Card>{*found};
     }
   };

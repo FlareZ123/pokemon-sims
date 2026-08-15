@@ -230,6 +230,14 @@ C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 Advanced rules and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 Decision priorities and knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
 
+## Setup lifecycle consolidation
+
+`src/trace_engine_v2/core/setup_lifecycle.inc` now owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `core/simulation_labels.inc` remains only as a compatibility forwarder so historical textual include sites keep compiling while the executable setup support has one owner.
+
+Opening-hand Basic validation and mulligan hand return now use named helpers inside that owner. The helpers preserve the existing seven-card draw, all-card return, reshuffle, and retry sequence. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+Next mechanical setup step: retarget the live parent include from `core/simulation_labels.inc` directly to `core/setup_lifecycle.inc` at the same Engine member boundary, then remove the compatibility forwarder after raw-source readers and same-repository anchors are migrated. Keep setup choice policy, K0/K1 state, mulligan counting, opening Active/Bench selection, and Prize placement semantics unchanged.
+
 ## Rules and policy anchors
 
 Advanced rules procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
@@ -251,4 +259,4 @@ A cleanup PR is mergeable only when:
 - the paired T2/T3 probability matrix has no unexplained drift;
 - the PR contains no unrelated gameplay behavior change.
 
-Known baseline failures must be identified by their existing issue and shown unchanged before merge. Any new gameplay defect discovered during cleanup must go through the separate bug-confirmation workflow.
+Known baseline failures must be identified by their existing issue and shown unchanged before merge. Any new gameplay defect discovered during cleanup must go through the separate bug-confirmation workflow instead of silently combining it with architecture cleanup.

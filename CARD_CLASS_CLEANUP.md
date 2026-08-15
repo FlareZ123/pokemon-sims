@@ -43,6 +43,10 @@ Quick Ball is the reference for explicit registration, exact-print metadata, int
 
 Next catalog step: migrate remaining `LegacyCardCatalog` entries one card at a time through the normal ownership workflow. Delete a compatibility row only after that card has an explicit `CardDefinition`, registration, exact-print source, and focused metadata test. Keep gameplay resolution and strategy at their current owners during metadata-only migrations.
 
+Regidrago VSTAR now owns exact Silver Tempest 136/195 metadata beside Regidrago V in `src/cards/pokemon/regidrago_v.hpp`, is explicitly registered, and has focused V/VSTAR metadata/parity coverage. The live Pokémon, Pokémon V, Rule Box, Dragon/Mysterious Treasure target, and Retreat Cost classifiers consume registered metadata for the Regidrago line. Exact print: https://api.pokemontcg.io/v2/cards/swsh12-136 Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Pokémon V ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+
+Next Regidrago metadata step: remove the now-shadowed Regidrago VSTAR compatibility name row from `LegacyCardCatalog` in a later isolated catalog cleanup after its name-path source contract is checked. Keep V -> VSTAR evolution/devolution relations, Legacy Star, Apex Dragon, payload policy, DCI/JIT, and route choice at their existing behavioral owners.
+
 ## Active card migrations
 
 Do not create a parallel migration while one of these owners is active:

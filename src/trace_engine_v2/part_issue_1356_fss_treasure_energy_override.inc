@@ -1,4 +1,4 @@
-#include "part_issue_1411_treasure_tapu_steven_override.inc"
+#include "core/routes/treasure_tapu_steven_policy.inc"
 
   int issue_1417_treasure_hold_turn_ = 0;
 

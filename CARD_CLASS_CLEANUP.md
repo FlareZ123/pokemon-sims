@@ -241,11 +241,11 @@ Decision priorities and knowledge policy: https://github.com/FlareZ123/pokemon-s
 
 ## Setup lifecycle consolidation
 
-`src/trace_engine_v2/core/setup_lifecycle.inc` now owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `core/simulation_labels.inc` remains only as a compatibility forwarder so historical textual include sites keep compiling while the executable setup support has one owner.
+`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `core/simulation_labels.inc` is now an inert deprecated compatibility shell. The live parent `part_005.inc` already includes `core/setup_lifecycle.inc` directly at the same Engine member boundary, so the shell no longer forwards executable declarations.
 
-Opening-hand Basic validation and mulligan hand return now use named helpers inside that owner. The helpers preserve the existing seven-card draw, all-card return, reshuffle, and retry sequence. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+Setup recipe classification is localized inside `current_deck_id()` rather than exposing single-use `simulation_deck_contains()` and `is_regidrago_shell_recipe()` Engine members. Opening-hand Basic validation and mulligan hand return remain named helpers in the canonical lifecycle owner. These structural changes preserve the existing seven-card draw, all-card return, reshuffle, retry, Active/Bench choice, Prize placement, and trace sequence. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
-Next mechanical setup step: retarget the live parent include from `core/simulation_labels.inc` directly to `core/setup_lifecycle.inc` at the same Engine member boundary, then remove the compatibility forwarder after raw-source readers and same-repository anchors are migrated. Keep setup choice policy, K0/K1 state, mulligan counting, opening Active/Bench selection, and Prize placement semantics unchanged.
+Next mechanical setup step: after strict CI and raw-source checks prove no remaining consumer depends on the historical shell contents, delete `core/simulation_labels.inc` and remove its include line from `part_005.inc` together at the same member boundary. Keep setup choice policy, K0/K1 state, mulligan counting, opening Active/Bench selection, and Prize placement semantics unchanged.
 
 ## Rules and policy anchors
 
@@ -259,9 +259,9 @@ Exact migrated-card metadata and source URLs: https://github.com/FlareZ123/pokem
 
 ## Current cleanup wave
 
-`cleanup-1786760569376` centralizes presence-only board queries through `board_index_matching()` and separates registry-owned card names from the shrinking legacy fallback in `core/card_catalog.inc`. These changes preserve gameplay policy while narrowing future board and card-class migrations. Board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc Registry owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp Catalog owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
+`cleanup-1786764747080` retires executable forwarding from `core/simulation_labels.inc` because `part_005.inc` already reaches the canonical `core/setup_lifecycle.inc` directly. It also localizes setup recipe classification to `current_deck_id()`, shrinking the Engine member surface without changing setup or strategy behavior. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/setup_lifecycle.inc Parent boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc
 
-The next Forretress cleanup remains the Active-specific source questions in `use_exploding_energy_for_setup()` and the post-Ability retreat-target ranking described above. Keep attachment selection, self-Knock-Out, promotion, retreat payment, DCI/UDP/AMR, K0/K1, and route policy at their existing owners.
+After this wave is validated, the inert simulation-label shell and its parent include can be deleted together. The next Forretress cleanup remains the Active-specific source questions in `use_exploding_energy_for_setup()` and the post-Ability retreat-target ranking described above. Keep attachment selection, self-Knock-Out, promotion, retreat payment, DCI/UDP/AMR, K0/K1, and route policy at their existing owners.
 
 ## Validation gate
 

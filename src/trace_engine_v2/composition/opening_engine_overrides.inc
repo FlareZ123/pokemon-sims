@@ -170,7 +170,8 @@
 #undef should_play_steven
 #undef choose_supporter_after_search_started
 #undef late_steven_vstar_vessel_route_available
-#include "../part_issue_3202_steven_vstar_vessel_semantic_override.inc"
+// Canonical issue-3202 route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_vstar_vessel_route_policy.inc
+#include "../core/routes/steven_vstar_vessel_route_policy.inc"
 #undef play_brilliant_blender
 
 // Isolate the active Brilliant Blender thinning layer and release the search-item

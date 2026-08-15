@@ -5,6 +5,15 @@
   using BoardIndex = std::size_t;
   using OptionalBoardIndex = std::optional<BoardIndex>;
 
+  [[nodiscard]] static constexpr BoardIndex active_board_index() {
+    return 0U;
+  }
+
+  [[nodiscard]] static constexpr BoardIndex bench_board_index(
+      const std::size_t bench_index) {
+    return bench_index + 1U;
+  }
+
   template <typename ActiveZone, typename BenchZone, typename Predicate>
   [[nodiscard]] static auto find_board_pokemon_matching_in_zones(
       ActiveZone& active, BenchZone& bench, Predicate predicate)
@@ -24,7 +33,7 @@
     // Centralize the historical Exploding Energy destination mapping before
     // callers migrate away from raw Active/Bench index arithmetic.
     // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
-    if (index == 0U) return active ? &*active : nullptr;
+    if (index == active_board_index()) return active ? &*active : nullptr;
     const BoardIndex bench_index = index - 1U;
     return bench_index < bench.size() ? &bench[bench_index] : nullptr;
   }
@@ -34,9 +43,9 @@
       const ActiveZone& active, const BenchZone& bench, Predicate predicate) {
     // Keep index discovery on the same Active-first mapping used by lookup.
     // C++ container indexing semantics: https://eel.is/c++draft/vector.capacity
-    if (active && predicate(*active)) return 0U;
-    for (BoardIndex index = 0; index < bench.size(); ++index) {
-      if (predicate(bench[index])) return index + 1U;
+    if (active && predicate(*active)) return active_board_index();
+    for (std::size_t index = 0; index < bench.size(); ++index) {
+      if (predicate(bench[index])) return bench_board_index(index);
     }
     return std::nullopt;
   }

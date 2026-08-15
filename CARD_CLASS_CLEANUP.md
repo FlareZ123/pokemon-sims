@@ -191,6 +191,12 @@ Next mechanical Steven step: inventory the remaining Steven-named root `part_*.i
 
 Route specifications: https://github.com/FlareZ123/pokemon-sims/issues/1745 https://github.com/FlareZ123/pokemon-sims/issues/1771 https://github.com/FlareZ123/pokemon-sims/issues/1772 https://github.com/FlareZ123/pokemon-sims/issues/2622 https://github.com/FlareZ123/pokemon-sims/issues/3653
 
+## Wonder Tag route cleanup
+
+`src/trace_engine_v2/core/routes/tapu_wonder_tag_route_policy.inc` is now the single executable owner for the issue-989/1016/1443/1419 Wonder Tag connector predicates and the later issue-2270 Arven/Latias continuation. The former `part_issue_989_wonder_tag_complete_route_issue2270_original.inc` fragment has been merged into this canonical route owner, eliminating the `#define needs_tapu_connector` include-renaming seam while preserving the same member order and route behavior.
+
+Future Wonder Tag cleanup should remove source-bound compatibility aliases only after every raw-source test and same-repository anchor has moved to the canonical predicate. Keep DCI/UDP/AMR, K0/K1, Supporter contention, connector domination, Bench-space accounting, and route priority in Engine strategy. Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60 Route priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
 ## Shared policy cleanup plan
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` owns payload preference order, payload-zone membership, payload-zone counts, and physical-order first-payload selection through `PayloadPreferencePolicy`. Route files should reuse `payload_zone_contains()` and `first_payload_card_in_zone()` where their existing semantics match.

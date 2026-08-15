@@ -32,7 +32,11 @@
 
 namespace sim {
 
-constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
+using DeckRecipeEntry = std::pair<Card, int>;
+using DeckRecipe = std::vector<DeckRecipeEntry>;
+using LegacyCardNameEntry = std::pair<Card, std::string_view>;
+
+constexpr std::array<DeckRecipeEntry, 36> kDeckRecipe{{
     {Card::RegidragoV, 4},         {Card::RegidragoVstar, 3}, {Card::Dragapult, 2},
     {Card::MegaDragonite, 2},      {Card::DialgaGX, 1},       {Card::GoodraVstar, 1},
     {Card::TapuLeleGX, 2},         {Card::LatiasEx, 1},       {Card::ErikasInvitation, 1},
@@ -47,10 +51,8 @@ constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
     {Card::HisuianHeavyBall, 1},   {Card::Grass, 6},          {Card::Fire, 3},
 }};
 
-using DeckRecipe = std::vector<std::pair<Card, int>>;
-
 struct LegacyCardCatalog {
-  inline static constexpr std::array<std::pair<Card, std::string_view>, 14> kNames{{
+  inline static constexpr std::array<LegacyCardNameEntry, 14> kNames{{
       {Card::Dragapult, "Dragapult ex"},
       {Card::MegaDragonite, "Mega Dragonite ex"},
       {Card::DialgaGX, "Dialga-GX"},

@@ -4,8 +4,9 @@
 
   #include "core/forretress/contract.inc"
 
-  #include "core/simulation_labels.inc"
-
+  // Setup lifecycle declarations are composed directly from their canonical owner.
+  // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#setup-lifecycle-cleanup
+  // Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/setup_lifecycle.inc
   #include "core/setup_lifecycle.inc"
 
   void choose_opening_active() {
@@ -177,7 +178,7 @@
          held_redundant_one_discard_regi_graph);
 
     // Quick Ball and Mysterious Treasure expose Regidrago V only when the
-    // centralized DCI selector admits their mandatory printed discard. Protected
+    // centralized DCI selector admits their mandatory discard. Protected
     // singleton and payload hands must not advertise an impossible connector:
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     // https://api.pokemontcg.io/v2/cards/sm6-113

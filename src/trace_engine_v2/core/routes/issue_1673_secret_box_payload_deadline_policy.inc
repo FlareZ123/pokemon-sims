@@ -9,11 +9,10 @@
     auto costs = secret_box_cost_plan();
     if (!costs ||
         !std::any_of(costs->begin(), costs->end(), is_payload)) {
-      const auto payload = std::find_if(
-          state_.hand.begin(), state_.hand.end(), is_payload);
+      const auto payload = first_payload_card_in_zone(state_.hand); // Canonical physical-order payload lookup: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
       const Card surplus_energy =
           hand_count(Card::Fire) > 0 ? Card::Fire : Card::Grass;
-      if (payload == state_.hand.end() ||
+      if (!payload ||
           hand_count(Card::WishfulBaton) == 0 ||
           hand_count(surplus_energy) == 0) {
         return false;

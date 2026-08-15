@@ -42,6 +42,14 @@
     return true;
   }
 
+  bool tate_liza_available() const {
+    // Tate & Liza is a Supporter, so availability is the shared Supporter-turn
+    // legality gate plus the physical card in hand:
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    return supporter_allowed() && hand_count(Card::TateLiza) > 0;
+  }
+
   void consume_tate_liza_supporter() {
     // Tate & Liza is a Supporter; playing it consumes the turn's Supporter action:
     // https://api.pokemontcg.io/v2/cards/sm7-148
@@ -53,10 +61,7 @@
 
   bool play_tate_switch() {
     // Card text source: https://api.pokemontcg.io/v2/cards/sm7-148
-    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 ||
-        !need_active_vstar()) {
-      return false;
-    }
+    if (!tate_liza_available() || !need_active_vstar()) return false;
     if (!promote_best_benched_vstar()) return false;
     consume_tate_liza_supporter();
     // Tate & Liza may switch any Benched Pokémon Active. Select the Regidrago
@@ -73,7 +78,7 @@
     // Tate & Liza has no hand-size condition: shuffle the whole hand into the deck,
     // then draw 5 cards: https://api.pokemontcg.io/v2/cards/sm7-148
     // This preserves legal five-or-more-card dead-hand refreshes after direct connectors fail.
-    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0) return false;
+    if (!tate_liza_available()) return false;
     // After the played Supporter leaves hand, an empty deck plus no remaining hand
     // cards makes this draw mode guaranteed to do nothing, so the Trainer is illegal:
     // https://api.pokemontcg.io/v2/cards/sm7-148

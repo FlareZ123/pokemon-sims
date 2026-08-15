@@ -68,10 +68,6 @@
     }
   };
 
-  [[nodiscard]] int garbodor_lock_activation_turn() const {
-    return GarbodorScenarioPolicy::lock_activation_turn(scenario_.going_first);
-  }
-
   [[nodiscard]] bool garbodor_lock_removed() const {
     // The registered Garbodor model reuses the shared lock-removal state:
     // https://github.com/FlareZ123/pokemon-sims/issues/2808

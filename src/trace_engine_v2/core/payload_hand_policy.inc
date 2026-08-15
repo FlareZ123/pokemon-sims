@@ -40,15 +40,22 @@
       return std::nullopt;
     }
 
+    [[nodiscard]] static bool contains_card(const std::vector<Card>& zone,
+                                            const Card card) {
+      // Centralize exact-card membership for strategic preference scans so callers
+      // share one C++20 find seam while preserving the existing priority order.
+      // https://eel.is/c++draft/alg.find
+      return std::find(zone.begin(), zone.end(), card) != zone.end();
+    }
+
     [[nodiscard]] static std::optional<Card> first_preferred_in_zone(
         const std::vector<Card>& zone) {
       // Preserve strategic payload priority while keeping direct zone membership
       // traversal inside the payload policy rather than at Engine callers.
       // https://eel.is/c++draft/alg.find
       // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
-      return first_preferred([&zone](const Card card) {
-        return std::find(zone.begin(), zone.end(), card) != zone.end();
-      });
+      return first_preferred(
+          [&zone](const Card card) { return contains_card(zone, card); });
     }
 
     template <typename CountFunction>

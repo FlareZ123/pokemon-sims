@@ -87,6 +87,7 @@ Next composition step: inventory `opening_legacy_stage.inc` for another complete
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner.
 
 - `PayloadZonePolicy::first_iterator_matching()` owns the shared physical-zone first-match traversal primitive. Payload and exact-card membership build on this seam so they cannot drift into separate scan implementations.
+- `PayloadZonePolicy::contains_matching()` owns generic predicate-based zone membership and keeps boolean membership checks on the same traversal primitive.
 - `PayloadZonePolicy::first()` preserves physical zone order for callers whose historical behavior depends on the first matching payload.
 - `PayloadZonePolicy::contains()` and `PayloadZonePolicy::count()` own generic payload membership/count semantics.
 - `PayloadZonePolicy::contains_card()` owns concrete-card membership in a physical zone so preference code does not duplicate `std::find` scans.
@@ -96,7 +97,7 @@ Next composition step: inventory `opening_legacy_stage.inc` for another complete
 
 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 
-Next payload step: replace remaining ad hoc Dragon-payload membership scans only where semantics exactly match `PayloadZonePolicy::contains()` or `contains_card()`. Preserve physical-order selection when order is observable and preserve the explicit strategic order where preference is required. Keep DCI/JIT predicates and discard timing at strategy owners.
+Next payload step: replace remaining ad hoc Dragon-payload membership scans only where semantics exactly match `PayloadZonePolicy::contains()`, `contains_card()`, or `contains_matching()`. Preserve physical-order selection when order is observable and preserve the explicit strategic order where preference is required. Keep DCI/JIT predicates and discard timing at strategy owners.
 
 ## Forretress cleanup
 
@@ -131,14 +132,14 @@ Next catalog/knowledge step: move only duplicate metadata lookup or copy-count a
 ## Shared policy owners
 
 - Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.
-- Garbodor scenario/timing: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. `GarbodorScenarioPolicy::active()` is the canonical combined scenario-label and activation-turn predicate; Engine wrappers remain compatibility/query seams for callers that need the individual facts. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
+- Garbodor scenario/timing: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. `GarbodorScenarioPolicy::activation_turn_reached()` owns the shared turn-threshold check, and `GarbodorScenarioPolicy::active()` composes that timing with scenario identity. Engine wrappers remain compatibility/query seams for callers that need the individual facts. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
 - Setup lifecycle labels, mulligans, Prize deal, and setup trace mechanics: `src/trace_engine_v2/core/setup_lifecycle.inc`.
 - Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
 - Turn action runtime: `src/trace_engine_v2/turn_action_policy_runtime.inc`.
 
 Before adding a new loop or route-local helper, check these owners and reuse a named seam when ordering and semantics match exactly.
 
-Next shared-policy step: replace duplicated Garbodor scenario-prefix plus activation-turn conjunctions only when they are semantically identical to `GarbodorScenarioPolicy::active()`. Preserve separate `matches()` and `lock_activation_turn()` queries where callers need one fact without the other.
+Next shared-policy step: replace duplicated Garbodor activation-turn comparisons only when they are semantically identical to `GarbodorScenarioPolicy::activation_turn_reached()`, and replace scenario-prefix plus activation conjunctions only when they are semantically identical to `GarbodorScenarioPolicy::active()`. Preserve separate `matches()` and `lock_activation_turn()` queries where callers need one fact without the other.
 
 ## Validation gate
 

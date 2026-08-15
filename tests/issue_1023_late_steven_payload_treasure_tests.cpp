@@ -64,6 +64,26 @@ void test_exact_payload_treasure_bridge_is_admitted() {
          "The exact K1 payload-to-Treasure bridge must select Mega Dragonite ex.");
 }
 
+void test_rule_box_ability_lock_allows_trainer_only_bridge() {
+  const sim::Scenario scenario{"issue-4026-rulebox", sim::DciProfile::MatchupFlexJit,
+                               sim::LockMode::FullRuleBoxAbility, true, 5};
+  std::mt19937_64 rng{4026};
+  sim::Engine engine = make_engine(scenario, rng);
+  sim::EngineTestAccess::set_state(engine, bridge_state());
+
+  // Steven is a Supporter now and Mysterious Treasure is an Item next turn. This
+  // route uses no Rule Box Pokémon Ability, so Path-style Ability suppression does
+  // not prohibit either Trainer action.
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Advanced Supporter and Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Canonical lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4026
+  expect(sim::EngineTestAccess::bridge_payload(engine) == sim::Card::MegaDragonite,
+         "Rule Box Ability lock must admit the Trainer-only Steven-Treasure bridge.");
+}
+
 void test_item_lock_rejects_next_turn_treasure() {
   const sim::Scenario scenario{"issue-1023-lock", sim::DciProfile::MatchupFlexJit,
                                sim::LockMode::TurnTwoItem, true, 5};
@@ -75,8 +95,29 @@ void test_item_lock_rejects_next_turn_treasure() {
   // https://api.pokemontcg.io/v2/cards/sm6-113
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
   // https://github.com/FlareZ123/pokemon-sims/issues/1023
+  // Projected-lock regression: https://github.com/FlareZ123/pokemon-sims/issues/4026
   expect(!sim::EngineTestAccess::bridge_payload(engine),
          "Modeled Item lock must reject the bridge.");
+}
+
+void test_supporter_and_combined_locks_remain_illegal() {
+  for (const sim::LockMode lock : {sim::LockMode::FullSupporter,
+                                   sim::LockMode::FullCombined,
+                                   sim::LockMode::FullItem}) {
+    const sim::Scenario scenario{"issue-4026-negative-lock", sim::DciProfile::MatchupFlexJit,
+                                 lock, true, 5};
+    std::mt19937_64 rng{4027 + static_cast<unsigned>(lock)};
+    sim::Engine engine = make_engine(scenario, rng);
+    sim::EngineTestAccess::set_state(engine, bridge_state());
+
+    // Steven must remain a legal Supporter on the current turn, and Treasure must
+    // remain a legal Item on the projected following turn.
+    // Advanced Supporter and Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Canonical lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4026
+    expect(!sim::EngineTestAccess::bridge_payload(engine),
+           "A required Supporter or projected Item lock admitted the bridge.");
+  }
 }
 
 void test_treasure_must_retain_a_search_target() {
@@ -161,7 +202,9 @@ void test_seed_184_reaches_turn_four() {
 
 int main() {
   test_exact_payload_treasure_bridge_is_admitted();
+  test_rule_box_ability_lock_allows_trainer_only_bridge();
   test_item_lock_rejects_next_turn_treasure();
+  test_supporter_and_combined_locks_remain_illegal();
   test_treasure_must_retain_a_search_target();
   test_unresolved_energy_rejects_payload_only_bridge();
   test_held_payload_preserves_faster_current_turn_route();

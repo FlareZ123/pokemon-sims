@@ -31,6 +31,16 @@
       }
       return std::nullopt;
     }
+
+    template <typename CountFunction>
+    [[nodiscard]] static std::optional<Card> first_preferred_with_positive_count(
+        const CountFunction& count) {
+      // Keep one preference-order implementation for zones exposed through count
+      // accessors. DCI/JIT admission remains at the route caller:
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      return first_preferred(
+          [&count](const Card card) { return count(card) > 0; });
+    }
   };
 
   [[nodiscard]] static bool payload_zone_contains(const std::vector<Card>& zone) {
@@ -64,8 +74,8 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // https://api.pokemontcg.io/v2/cards/swsh12-136
-    return PayloadPreferencePolicy::first_preferred(
-        [this](const Card card) { return hand_count(card) > 0; });
+    return PayloadPreferencePolicy::first_preferred_with_positive_count(
+        [this](const Card card) { return hand_count(card); });
   }
 
   [[nodiscard]] std::optional<Card> first_searchable_payload_in_known_deck() const {
@@ -75,7 +85,6 @@
     // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed Burnet payload-zone bug: https://github.com/FlareZ123/pokemon-sims/issues/3302
-    return PayloadPreferencePolicy::first_preferred([this](const Card card) {
-      return deck_count_after_search_started(card) > 0;
-    });
+    return PayloadPreferencePolicy::first_preferred_with_positive_count(
+        [this](const Card card) { return deck_count_after_search_started(card); });
   }

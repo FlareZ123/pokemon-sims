@@ -320,24 +320,28 @@
       return false;
     }
 
-    const bool issue_1765_hold_for_t3_payload_window =
+    // Preserve Legacy Star whenever this semantic strict-JIT setup can finish on a
+    // following simulated player turn. Seat and absolute turn number are incidental.
+    // Strict-JIT / earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    const bool issue_1765_hold_for_next_turn_payload_window =
         scenario_.dci == DciProfile::StrictJit && scenario_.locks == LockMode::None &&
-        !scenario_.going_first && state_.turn == 2 && scenario_.max_turn >= 3 &&
-        deck_seen_ && state_.manual_energy_used && active_is_vstar() &&
-        grass_needed() == 0 && fire_needed() == 1 && need_payload() &&
-        hand_count(Card::Fire) > 0 && hand_count(Card::EarthenVessel) > 0 &&
+        state_.turn < scenario_.max_turn && deck_seen_ && state_.manual_energy_used &&
+        active_is_vstar() && grass_needed() == 0 && fire_needed() == 1 &&
+        need_payload() && hand_count(Card::Fire) > 0 &&
+        hand_count(Card::EarthenVessel) > 0 &&
         count_of(state_.discard, Card::MysteriousTreasure) > 0;
-    if (issue_1765_hold_for_t3_payload_window) {
-      // The surplus-Grass Treasure route completes the VSTAR and Grass axes on T2,
-      // while the held Fire completes GGF on T3. Strict JIT cannot credit a T2
-      // Legacy Star payload on T3, so preserve the one-use VSTAR Power for the first
-      // turn that can complete every setup axis:
+    if (issue_1765_hold_for_next_turn_payload_window) {
+      // The public Treasure/Vessel/Fire state already establishes the exact axes
+      // needed for the following turn. One manual Fire attachment completes GGF;
+      // strict JIT then permits Legacy Star to establish the Dragon payload in that
+      // same readiness turn, so the one-use VSTAR Power is preserved until then:
       // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
       // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
       // Regidrago VSTAR / Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-      // VSTAR Power and manual-attachment procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+      // Manual attachment and Ability procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
       // Strict-JIT and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-      // Confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1765
+      // Original confirmed witness: https://github.com/FlareZ123/pokemon-sims/issues/1765
+      // Generalization bug: https://github.com/FlareZ123/pokemon-sims/issues/3816
       return false;
     }
 

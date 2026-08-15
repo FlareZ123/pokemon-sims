@@ -73,11 +73,18 @@ struct LegacyCardCatalog {
       {Card::Fire, "Fire Energy"},
   }};
 
+  [[nodiscard]] static constexpr auto find(const Card card) {
+    // Keep the shrinking fallback catalog behind one lookup seam while registered
+    // CardDefinition metadata remains the canonical name owner.
+    // C++20 constexpr find_if: https://eel.is/c++draft/alg.find
+    // Registry owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+    return std::find_if(kNames.begin(), kNames.end(),
+                        [card](const auto& entry) { return entry.first == card; });
+  }
+
   [[nodiscard]] static constexpr std::string_view name(const Card card) {
-    for (const auto& [id, label] : kNames) {
-      if (id == card) return label;
-    }
-    return "Unknown";
+    const auto found = find(card);
+    return found == kNames.end() ? "Unknown" : found->second;
   }
 };
 

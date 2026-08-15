@@ -28,10 +28,10 @@ jobs:
           # Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
           # Policy priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
           ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee trace.txt
-          grep -q "T1 | DISCARD.*Grass Energy (Quick Ball cost)" trace.txt
-          grep -q "T1 | PLAY ITEM.*Quick Ball" trace.txt
-          grep -q "T2 | HOLD SUPPORTER.*Mysterious Treasure to Tapu Lele-GX to Crispin" trace.txt
-          grep -q "T2 | DISCARD.*Dragapult ex (Mysterious Treasure cost)" trace.txt
-          grep -q "T2 | WONDER TAG.*Crispin" trace.txt
-          grep -q "T2 | PLAY SUPPORTER.*R-CRISPIN-01" trace.txt
-          grep -q "T2 | READY" trace.txt
+          grep -Fq "T1 | DISCARD | rules: R-QB-01 | Grass Energy (Quick Ball cost)" trace.txt
+          grep -Fq "T1 | PLAY ITEM | rules: R-QB-01" trace.txt
+          grep -Fq "T2 | HOLD SUPPORTER | rules: R-MT-01; R-TAPU-01; R-CRISPIN-01" trace.txt
+          grep -Fq "T2 | DISCARD | rules: R-MT-01; P-JIT-01 | Dragapult ex (Mysterious Treasure cost)" trace.txt
+          grep -Fq "T2 | WONDER TAG | rules: R-TAPU-01 | Searched and revealed Crispin." trace.txt
+          grep -Fq "T2 | PLAY SUPPORTER | rules: R-CRISPIN-01; R-GAME-SUPPORTER" trace.txt
+          grep -Fq "T2 | READY | rules: R-RVS-01; P-JIT-01" trace.txt

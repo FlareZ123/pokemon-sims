@@ -136,19 +136,14 @@ constexpr bool is_payload(const Card card) {
 }
 
 constexpr int retreat_cost(const Card card) {
-  // Registered Regidrago prints own their exact intrinsic Retreat Cost while
-  // evolution and route policy remain separate engine concerns.
-  // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
-  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
-  if (is_regidrago_v_line(card)) {
-    const cards::CardDefinition* definition = registered_pokemon_definition(card);
-    return definition != nullptr ? definition->retreat_cost : 0;
+  // Registered Pokémon own exact intrinsic Retreat Cost in CardDefinition. Strategy and
+  // retreat route choice remain Engine concerns: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+  // Retreat cost procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  if (const cards::CardDefinition* definition = registered_pokemon_definition(card)) {
+    return definition->retreat_cost;
   }
 
-  // Retreat requires discarding attached Energy whose total meets or exceeds the printed Retreat Cost:
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-  // Printed Retreat Costs for the opening-position recovery modeled by the
-  // Pineco/Forretress ex route:
+  // Printed Retreat Costs for Pokémon that have not yet migrated into CardDefinition:
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
   // Dialga-GX: https://api.pokemontcg.io/v2/cards/sm5-100
@@ -163,9 +158,6 @@ constexpr int retreat_cost(const Card card) {
     case Card::Dipplin: return 2;  // Exact sv6-127 print: https://api.pokemontcg.io/v2/cards/sv6-127
     case Card::ForretressEx: return 3;  // Exact sv4pt5-2 print: https://api.pokemontcg.io/v2/cards/sv4pt5-2
     case Card::LatiasEx: return 2;  // Exact sv8-76 print: https://api.pokemontcg.io/v2/cards/sv8-76
-    case Card::MawileGX: return 1;  // Exact sm11-141 print: https://api.pokemontcg.io/v2/cards/sm11-141 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/1301
-    case Card::Oricorio: return 1;
-    case Card::Appletun: return 3;  // Exact sv8-140 print: https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/cards/en/sv8.json
     default: return 0;
   }
 }

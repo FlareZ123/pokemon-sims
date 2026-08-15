@@ -12,15 +12,7 @@
 #include "core/routes/issue_3199_turo_oricorio_base.inc"
 #undef tate_draw_has_held_non_supporter_completion
 
-  struct PublicProjectionDepthGuard {
-    int& depth;
-
-    explicit PublicProjectionDepthGuard(int& value) : depth(value) { ++depth; }
-    ~PublicProjectionDepthGuard() { --depth; }
-
-    PublicProjectionDepthGuard(const PublicProjectionDepthGuard&) = delete;
-    PublicProjectionDepthGuard& operator=(const PublicProjectionDepthGuard&) = delete;
-  };
+#include "core/routes/issue_3199_public_projection_depth_guard.inc" // Canonical guard owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_3199_public_projection_depth_guard.inc
 
   bool tate_draw_has_held_non_supporter_completion() const {
     PublicProjectionDepthGuard guard(issue_3199_public_projection_depth_);

@@ -203,13 +203,17 @@ bool Engine::resolve_exploding_energy(
       return std::tuple{role, semantic_energy_class, attached_energy_units,
                         -pokemon.entered_turn};
     };
-    const auto promoted = std::max_element(
-        state_.bench.begin(), state_.bench.end(),
-        [&promotion_rank](const Pokemon& left, const Pokemon& right) {
-          return promotion_rank(left) < promotion_rank(right);
-        });
-    state_.active = *promoted;
-    state_.bench.erase(promoted);
+    // Keep Forretress strategy ranking local while reusing the canonical Bench
+    // query and first-equal ordering contract:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+    const BoardIndex promoted_index =
+        *best_benched_pokemon_index(promotion_rank);
+    const BoardIndex promoted_bench_position =
+        bench_position_from_board_index(promoted_index);
+    state_.active = state_.bench[promoted_bench_position];
+    state_.bench.erase(
+        state_.bench.begin() +
+        static_cast<std::ptrdiff_t>(promoted_bench_position));
     trace("PROMOTE", "R-GAME-KO; R-FORRETRESS-01",
           std::string(name(state_.active->card)) +
               " was selected from the Bench after the Active Forretress ex "
@@ -325,19 +329,22 @@ bool Engine::use_exploding_energy_for_setup() {
   if (remaining_cost != 0) {
     throw std::logic_error("Exploding Energy retreat payment disappeared");
   }
-  const auto target = std::max_element(
-      state_.bench.begin(), state_.bench.end(), [](const Pokemon& left,
-                                                   const Pokemon& right) {
-        const auto rank = [](const Pokemon& pokemon) {
-          return std::tuple{
-              pokemon.card == Card::RegidragoVstar ? 2 :
-                  (pokemon.card == Card::RegidragoV ? 1 : 0),
-              pokemon.grass + pokemon.fire,
-              -pokemon.entered_turn};
-        };
-        return rank(left) < rank(right);
-      });
-  if (target == state_.bench.end() ||
+  const auto retreat_rank = [](const Pokemon& pokemon) {
+    return std::tuple{
+        pokemon.card == Card::RegidragoVstar ? 2 :
+            (pokemon.card == Card::RegidragoV ? 1 : 0),
+        pokemon.grass + pokemon.fire,
+        -pokemon.entered_turn};
+  };
+  // Reuse the canonical Bench selector while leaving Forretress route ranking at
+  // its existing strategy owner. Strictly-greater replacement preserves the old
+  // std::max_element first-equal tie behavior:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+  const OptionalBoardIndex retreat_target_index =
+      best_benched_pokemon_index(retreat_rank);
+  Pokemon* target = retreat_target_index
+      ? board_pokemon_at_index(*retreat_target_index) : nullptr;
+  if (target == nullptr ||
       (target->card != Card::RegidragoV &&
        target->card != Card::RegidragoVstar)) {
     throw std::logic_error("Exploding Energy retreat target disappeared");

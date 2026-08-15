@@ -35,7 +35,7 @@
   }
 
   template <typename ActiveZone, typename BenchZone, typename Predicate>
-  [[nodiscard]] static OptionalBoardIndex find_board_index_matching_in_zones(
+  [[nodiscard]] static OptionalBoardIndex board_index_matching_in_zones(
       const ActiveZone& active, const BenchZone& bench, Predicate predicate) {
     // Keep index discovery on the same Active-first mapping used by lookup.
     // C++ container indexing semantics: https://eel.is/c++draft/vector.capacity
@@ -56,7 +56,7 @@
     // of maintaining a second copy of the board-index loop.
     // C++ pointer equality semantics: https://eel.is/c++draft/expr.eq
     if (target == nullptr) return std::nullopt;
-    return find_board_index_matching_in_zones(
+    return board_index_matching_in_zones(
         active, bench,
         [target](const Pokemon& pokemon) { return target == &pokemon; });
   }
@@ -69,7 +69,7 @@
     // board query shares the same Active-before-Bench traversal and index mapping.
     // C++ class-member lookup and find semantics: https://eel.is/c++draft/class.member.lookup
     const OptionalBoardIndex index =
-        find_board_index_matching_in_zones(active, bench, predicate);
+        board_index_matching_in_zones(active, bench, predicate);
     return index ? board_pokemon_at_index_in_zones(active, bench, *index) : nullptr;
   }
 
@@ -98,7 +98,7 @@
   template <typename Predicate>
   [[nodiscard]] OptionalBoardIndex board_index_matching(
       Predicate predicate) const {
-    return find_board_index_matching_in_zones(
+    return board_index_matching_in_zones(
         state_.active, state_.bench, predicate);
   }
 

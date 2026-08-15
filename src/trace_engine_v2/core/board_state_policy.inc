@@ -126,7 +126,10 @@
 
   template <typename Predicate>
   [[nodiscard]] bool board_has_pokemon_matching(Predicate predicate) const {
-    return find_board_pokemon_matching(predicate) != nullptr;
+    // Existence queries share canonical Active-first index discovery instead of
+    // resolving a pointer when the caller only needs presence information.
+    // Canonical board-query owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+    return board_index_matching(predicate).has_value();
   }
 
   [[nodiscard]] static constexpr bool pokemon_has_open_v_tool_slot(

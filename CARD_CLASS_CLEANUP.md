@@ -82,6 +82,8 @@ The banked-Tapu and lock-removal policy implementations remain separate semantic
 
 Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. Route admission/projection/decision policy stays under `src/trace_engine_v2/core/routes/`. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
+`part_issue_1016_legacy_star_quick_ball_override.inc` is a confirmed forwarding-only shim to `core/routes/issue_1016_legacy_star_quick_ball_policy.inc`. Retire it only when `post_014a_overrides.inc` can include that canonical owner directly under the identical `use_legacy_star` alias lifetime without overlapping active composition work. Forwarder: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_1016_legacy_star_quick_ball_override.inc Canonical route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc
+
 Next composition step: inspect `post_014a_overrides.inc` and the remaining root `part_*` composition fragments for another forwarding-only seam only where its complete macro lifetime can move intact into an existing semantic owner at the identical textual boundary. Do not recreate retired forwarding-only sequencers.
 
 ## Payload policy cleanup
@@ -97,6 +99,8 @@ Next composition step: inspect `post_014a_overrides.inc` and the remaining root 
 - `PayloadPreferencePolicy::first_preferred()` preserves the explicit five-card strategic priority.
 - `PayloadPreferencePolicy::first_preferred_in_zone()` composes preference order with physical-zone membership.
 - `PayloadPreferencePolicy::first_preferred_with_positive_count()` adapts count-backed zones without duplicating preference traversal.
+
+The #2408 Burnet-versus-Serena held-Dragon check now delegates to `payload_zone_contains(state_.hand)`. The #2271 surplus-Regidrago route now delegates its exclusion-aware hand scan to `PayloadZonePolicy::contains_matching()` while preserving the `Card::RegidragoV` exclusion. These migrations remove two route-local physical-zone scans while keeping route admission, DCI/JIT timing, and discard strategy at their existing owners. Burnet route: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_2408_burnet_resource_override.inc Surplus route: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_2271_surplus_regidrago_v_route_override.inc
 
 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 

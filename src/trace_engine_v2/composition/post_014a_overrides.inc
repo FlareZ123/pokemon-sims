@@ -19,7 +19,7 @@
 #error "Post-search Burnet composition requires play_professor_burnet to be undefined on entry"
 #endif
 #define play_professor_burnet play_professor_burnet_empty_deck_original
-#include "../part_011_burnet_thinning_override.inc"
+#include "../core/routes/professor_burnet_ready_turn_policy.inc" // Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/professor_burnet_ready_turn_policy.inc
 #undef play_professor_burnet
 #if defined(play_professor_burnet)
 #error "Post-search Burnet composition leaked play_professor_burnet"

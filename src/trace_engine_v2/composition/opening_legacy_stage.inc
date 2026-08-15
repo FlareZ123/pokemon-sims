@@ -18,3 +18,11 @@
 // historical continuation and macro lifetime at this exact textual boundary.
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L151-L154
 #include "opening_state_completion_stage.inc"
+
+// begin_turn and the Garbodor Ability wrapper intentionally cross this stage.
+// opening_engine_overrides.inc releases begin_turn; late_execution_stage.inc
+// releases ability_available_for_pokemon after the historical part_014c boundary.
+// Handoff owners: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_execution_stage.inc
+#if !defined(begin_turn) || !defined(ability_available_for_pokemon)
+#error "Opening composition must export begin_turn and ability_available_for_pokemon"
+#endif

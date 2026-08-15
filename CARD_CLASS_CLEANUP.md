@@ -230,6 +230,14 @@ C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 Advanced rules and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 Decision priorities and knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
 
+## Lifecycle ownership cleanup
+
+`src/trace_engine_v2/core/setup_lifecycle.inc` owns opening deck materialization, the initial shuffle, mulligan handling, opening Active/Bench selection, Prize placement, and setup tracing. `prepare_setup_deck()` now gives recipe expansion plus the initial shuffle one named owner while preserving the existing setup order and advanced-manual procedure.
+
+`src/trace_engine_v2/core/turn_lifecycle.inc` owns turn-number assignment, per-turn action reset, scenario-local lock reset, the mandatory start-of-turn draw, and first-player restriction tracing. `reset_turn_action_state()` owns ordinary action flags, while `reset_turn_lock_state()` owns the Garbodor pressure scenario's turn-local Field Blower flag. Keep those policy families separate when new per-turn state is added.
+
+Next mechanical lifecycle step: inventory any remaining setup/turn composition-only forwarders and retire only a forwarder whose live parent can include these canonical lifecycle owners at the identical Engine member boundary. Preserve textual include order and direct rule/card URLs. Setup and turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Garbodor scenario contract: https://github.com/FlareZ123/pokemon-sims/issues/2808 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+
 ## Rules and policy anchors
 
 Advanced rules procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

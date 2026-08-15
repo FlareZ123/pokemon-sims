@@ -8,13 +8,12 @@
       return first_count + second_count;
     }
 
-    [[nodiscard]] static constexpr int combined(const int first_count,
-                                                const int second_count,
-                                                const int third_count) {
-      // Keep public multi-zone count arithmetic on the same helper as two-zone
-      // aggregation so Engine callers do not grow nested or ad hoc sums.
+    [[nodiscard]] static constexpr int combined_public_zones(
+        const int hand_count, const int discard_count, const int attached_count) {
+      // Keep public hand/discard/attached aggregation behind one named arithmetic
+      // seam after Engine callers have already resolved zone visibility.
       // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#catalog-and-knowledge-cleanup
-      return combined(combined(first_count, second_count), third_count);
+      return combined(combined(hand_count, discard_count), attached_count);
     }
 
     [[nodiscard]] static int unresolved(const int total_copies,
@@ -40,9 +39,8 @@
     // deck-versus-Prize placement:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
-    return KnowledgeCopyPolicy::combined(hand_count(card),
-                                         count_of(state_.discard, card),
-                                         attached_public_count(card));
+    return KnowledgeCopyPolicy::combined_public_zones(
+        hand_count(card), count_of(state_.discard, card), attached_public_count(card));
   }
 
   [[nodiscard]] int unresolved_copy_count(

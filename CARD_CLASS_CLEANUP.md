@@ -130,7 +130,7 @@ Next setup step: route future setup recipe classification through `SetupRecipePo
 
 ## Catalog and knowledge cleanup
 
-`src/trace_engine_v2/core/card_catalog.inc` keeps legacy name metadata behind `LegacyCardCatalog`. `LegacyCardCatalog::find()` is the single fallback-table traversal, and `name()` now falls directly through to `LegacyCardCatalog::name()` after the registered `CardDefinition` lookup. Registered metadata remains canonical: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+`src/trace_engine_v2/core/card_catalog.inc` keeps legacy name metadata behind `LegacyCardCatalog`. `LegacyCardCatalog::name()` now owns the fallback-table traversal and result selection directly, so the compatibility path no longer carries a forwarding-only `find()` member. Registered metadata remains canonical: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
 The catalog now names its structural row types once through `DeckRecipeEntry` and `LegacyCardNameEntry`, while `DeckRecipe` reuses `DeckRecipeEntry`. This keeps recipe and compatibility-table vocabulary centralized without changing card counts, names, registration, or gameplay ownership. Catalog owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 
@@ -138,9 +138,9 @@ The global `name(Card)` compatibility seam now falls directly from registered `C
 
 `src/trace_engine_v2/core/card_classification.inc` now sources Retreat Cost from `CardDefinition::retreat_cost` for every registered Pokémon and keeps the hard-coded switch only for unmigrated Pokémon. This keeps intrinsic print metadata in the card layer while route selection remains in Engine. Regidrago V/VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136 Appletun: https://api.pokemontcg.io/v2/cards/sv8-140 Mawile-GX: https://api.pokemontcg.io/v2/cards/sm11-141 Oricorio GRI 55: https://api.pokemontcg.io/v2/cards/sm2-55
 
-`src/trace_engine_v2/core/deck_knowledge.inc` keeps copy arithmetic behind `KnowledgeCopyPolicy`. `KnowledgeCopyPolicy::combined()` owns both two-source aggregation and three-source public hand/discard/attached aggregation, while K1 hand/deck counts reuse the same arithmetic seam. K0/K1 visibility rules remain unchanged at their Engine callers: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+`src/trace_engine_v2/core/deck_knowledge.inc` keeps copy arithmetic behind `KnowledgeCopyPolicy`. `KnowledgeCopyPolicy::combined()` owns two-source aggregation, while `combined_public_zones()` owns hand/discard/attached arithmetic after Engine callers have resolved visibility. K1 hand/deck counts continue to reuse `combined()`. K0/K1 visibility rules remain unchanged at their Engine callers: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 
-Next catalog/knowledge step: migrate remaining legacy name and intrinsic metadata rows only after their explicit `CardDefinition` is registered and covered. Move repeated copy-count arithmetic into `KnowledgeCopyPolicy` only when visibility has already been resolved by the Engine caller. Do not duplicate registered Retreat Cost or name metadata in compatibility switches. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns.
+Next catalog/knowledge step: migrate remaining legacy name and intrinsic metadata rows only after their explicit `CardDefinition` is registered and covered. Move repeated copy-count arithmetic into `KnowledgeCopyPolicy` only when visibility has already been resolved by the Engine caller. Do not recreate forwarding-only catalog lookup members or duplicate registered Retreat Cost or name metadata in compatibility switches. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns.
 
 ## Shared policy owners
 

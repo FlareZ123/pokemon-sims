@@ -70,17 +70,7 @@ bool play_gladion() {
     // Official Prize inspection/exchange, Item, discard, search, evolution, and Energy procedure: https://www.pokemon.com/us/pokemon-tcg/rules
     // K1 / earliest-route / strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2368
-    remove_one(state_.hand, Card::Gladion);
-    state_.supporter_used = true;
-    prizes_revealed_ = true;
-    const auto prize = std::find(state_.prizes.begin(), state_.prizes.end(),
-                                 Card::MysteriousTreasure);
-    if (prize == state_.prizes.end()) {
-      throw std::logic_error("Issue-2368 revealed Mysterious Treasure Prize disappeared");
-    }
-    *prize = Card::Gladion;
-    state_.hand.push_back(Card::MysteriousTreasure);
-    shuffle(state_.prizes);
+    resolve_gladion_prize_exchange(Card::MysteriousTreasure);
     trace("PLAY SUPPORTER",
           "R-GLADION-01; R-MT-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-JIT-01; P-COMPRESS-01",
           "Gladion revealed and exchanged for Mysterious Treasure because attached DDE had already completed Energy and Treasure immediately covers VSTAR plus payload.");
@@ -103,17 +93,7 @@ bool play_gladion() {
   // Core Prize exchange, Supporter, attachment, Item, discard, return, and promotion procedure: https://www.pokemon.com/us/pokemon-tcg/rules
   // K1, dynamic DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
   // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1595 https://github.com/FlareZ123/pokemon-sims/issues/3408
-  remove_one(state_.hand, Card::Gladion);
-  state_.supporter_used = true;
-  prizes_revealed_ = true;
-  const auto prize = std::find(state_.prizes.begin(), state_.prizes.end(),
-                               Card::Grass);
-  if (prize == state_.prizes.end()) {
-    throw std::logic_error("Issue-1595 known prized Grass Energy disappeared");
-  }
-  *prize = Card::Gladion;
-  state_.hand.push_back(Card::Grass);
-  shuffle(state_.prizes);
+  resolve_gladion_prize_exchange(Card::Grass);
   trace("PLAY SUPPORTER",
         "R-GLADION-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
         "Exchanged Gladion for the known prized Grass Energy to complete the next-turn Blender-Turo route.");

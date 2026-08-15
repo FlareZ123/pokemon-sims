@@ -1,17 +1,17 @@
 #ifndef SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
 #define SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
 
-#ifndef SIM_TRACE_CARD_CATALOG_INCLUDED
-#define SIM_TRACE_CARD_CATALOG_INCLUDED
-#include "core/card_catalog.inc"
-#endif
+// Reuse the legacy catalog bridge instead of duplicating its forwarding guard.
+#include "part_000.inc"
 
-#include "core/card_classification.inc"
+// Classification now shares the canonical card-catalog compatibility owner.
+// Canonical owner:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 
 #endif  // SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
 
 // Compatibility source-contract shim. Canonical implementation:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 // Raw-source contracts inspect the payload predicate here after its executable
 // implementation moved into core; keep this mirror textually synchronized.
 // It is documentation-only and must never become a second executable owner.

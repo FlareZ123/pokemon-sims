@@ -27,6 +27,31 @@
     }
   };
 
+  struct ScenarioLabelPolicy {
+    [[nodiscard]] static const char* dci(const DciProfile profile) {
+      // DCI/JIT policy vocabulary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      switch (profile) {
+        case DciProfile::StrictJit: return "strict-JIT";
+        case DciProfile::MatchupFlexJit: return "matchup-flex-JIT";
+        case DciProfile::NoDiscardControl: return "no-discard-control";
+      }
+      return "unknown";
+    }
+
+    [[nodiscard]] static const char* lock(const LockMode mode) {
+      // Scenario lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+      switch (mode) {
+        case LockMode::None: return "none";
+        case LockMode::TurnTwoItem: return "turn-two Item lock";
+        case LockMode::FullItem: return "full Item lock";
+        case LockMode::FullRuleBoxAbility: return "full Rule Box Ability lock";
+        case LockMode::FullCombined: return "full Item + Rule Box Ability lock";
+        case LockMode::FullSupporter: return "full Supporter lock";
+      }
+      return "unknown";
+    }
+  };
+
   bool simulation_deck_contains(Card card) const {
     return SimulationDeckIdentity::contains(*this, card);
   }
@@ -40,26 +65,11 @@
   }
 
   static const char* dci_label(DciProfile profile) {
-    // DCI/JIT policy vocabulary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    switch (profile) {
-      case DciProfile::StrictJit: return "strict-JIT";
-      case DciProfile::MatchupFlexJit: return "matchup-flex-JIT";
-      case DciProfile::NoDiscardControl: return "no-discard-control";
-    }
-    return "unknown";
+    return ScenarioLabelPolicy::dci(profile);
   }
 
   static const char* lock_label(LockMode mode) {
-    // Scenario lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
-    switch (mode) {
-      case LockMode::None: return "none";
-      case LockMode::TurnTwoItem: return "turn-two Item lock";
-      case LockMode::FullItem: return "full Item lock";
-      case LockMode::FullRuleBoxAbility: return "full Rule Box Ability lock";
-      case LockMode::FullCombined: return "full Item + Rule Box Ability lock";
-      case LockMode::FullSupporter: return "full Supporter lock";
-    }
-    return "unknown";
+    return ScenarioLabelPolicy::lock(mode);
   }
 
   std::string dci_name() const {

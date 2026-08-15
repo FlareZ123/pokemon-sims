@@ -22,6 +22,22 @@
         std::none_of(state_.hand.begin(), state_.hand.end(), is_payload);
   }
 
+  std::vector<Card> search_celestial_roar_vessel_energy() {
+    std::vector<Card> searched;
+    // Search Fire after legal inspection when it exists. If every Fire is outside
+    // the deck, selecting one Grass remains a legal up-to-one fallback without
+    // inventing a hidden Fire target:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // K1 deck inspection: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    if (move_deck_to_hand(Card::Fire)) {
+      searched.push_back(Card::Fire);
+    } else if (move_deck_to_hand(Card::Grass)) {
+      searched.push_back(Card::Grass);
+    }
+    shuffle(state_.deck);
+    return searched;
+  }
+
   bool play_earthen_vessel(const bool permit_payload) {
     if (!earthen_vessel_preserves_grass_for_immediate_celestial_roar()) {
       return play_earthen_vessel_issue1368_original(permit_payload);
@@ -46,18 +62,7 @@
     discard_from_hand(*cost, "Earthen Vessel cost", "R-EV-01");
     record_deck_search_knowledge("Earthen Vessel");
 
-    std::vector<Card> searched;
-    // Search Fire after legal inspection when it exists. If every Fire is outside
-    // the deck, selecting one Grass remains a legal up-to-one fallback without
-    // inventing a hidden Fire target:
-    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-    // K1 deck inspection: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    if (move_deck_to_hand(Card::Fire)) {
-      searched.push_back(Card::Fire);
-    } else if (move_deck_to_hand(Card::Grass)) {
-      searched.push_back(Card::Grass);
-    }
-    shuffle(state_.deck);
+    const auto searched = search_celestial_roar_vessel_energy();
     trace("Earthen Vessel", "R-EV-01; R-GAME-ITEM; P-COMPRESS-01",
           "Searched up to 2 Basic Energy: " + join_cards(searched) + ".");
     return true;

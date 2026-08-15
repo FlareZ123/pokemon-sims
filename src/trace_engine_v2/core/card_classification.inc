@@ -37,19 +37,15 @@ constexpr bool is_basic(const Card card) {
 // Pokémon represented by the simulator rather than only Basic or payload subsets:
 // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
 constexpr bool is_pokemon(const Card card) {
-  if (registered_pokemon_definition(card) != nullptr) return true;
+  if (registered_pokemon_definition(card) != nullptr ||
+      is_legacy_basic_pokemon(card)) {
+    return true;
+  }
   switch (card) {
     case Card::Dragapult:
     case Card::MegaDragonite:
-    case Card::DialgaGX:
     case Card::GoodraVstar:
-    case Card::TapuLeleGX:
-    case Card::CrobatV:  // Pokémon identity: https://api.pokemontcg.io/v2/cards/swsh3-104
-    case Card::LatiasEx:
-    case Card::MawileGX:
-    case Card::Oricorio:
     case Card::Dipplin:
-    case Card::Pineco:
     case Card::ForretressEx:
       return true;
     default:

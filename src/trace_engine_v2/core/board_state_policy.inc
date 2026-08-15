@@ -65,7 +65,7 @@
   }
 
   template <typename ActiveZone, typename BenchZone>
-  [[nodiscard]] static OptionalBoardIndex find_board_index_for_pointer_in_zones(
+  [[nodiscard]] static OptionalBoardIndex board_index_for_pointer_in_zones(
       const ActiveZone& active, const BenchZone& bench, const Pokemon* target) {
     // Pointer lookup reuses the canonical Active-first predicate traversal instead
     // of maintaining a second copy of the board-index loop.
@@ -77,7 +77,7 @@
   }
 
   template <typename ActiveZone, typename BenchZone, typename Predicate>
-  [[nodiscard]] static auto find_board_pokemon_matching_in_zones(
+  [[nodiscard]] static auto board_pokemon_matching_in_zones(
       ActiveZone& active, BenchZone& bench, Predicate predicate)
       -> decltype(&*active) {
     // Reuse canonical index discovery plus index lookup so every mutable and const
@@ -90,14 +90,14 @@
 
   template <typename Predicate>
   [[nodiscard]] Pokemon* find_board_pokemon_matching(Predicate predicate) {
-    return find_board_pokemon_matching_in_zones(
+    return board_pokemon_matching_in_zones(
         state_.active, state_.bench, predicate);
   }
 
   template <typename Predicate>
   [[nodiscard]] const Pokemon* find_board_pokemon_matching(
       Predicate predicate) const {
-    return find_board_pokemon_matching_in_zones(
+    return board_pokemon_matching_in_zones(
         state_.active, state_.bench, predicate);
   }
 
@@ -119,7 +119,7 @@
 
   [[nodiscard]] OptionalBoardIndex board_index_for_pointer(
       const Pokemon* target) const {
-    return find_board_index_for_pointer_in_zones(
+    return board_index_for_pointer_in_zones(
         state_.active, state_.bench, target);
   }
 

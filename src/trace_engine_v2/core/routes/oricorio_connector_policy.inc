@@ -17,10 +17,11 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    return oricorio_needed_basic_energy_might_be_in_deck(
-               Card::Grass, grass_needed()) ||
-           oricorio_needed_basic_energy_might_be_in_deck(
-               Card::Fire, fire_needed());
+    const bool grass_target_live = oricorio_needed_basic_energy_might_be_in_deck(
+        Card::Grass, grass_needed());
+    const bool fire_target_live = oricorio_needed_basic_energy_might_be_in_deck(
+        Card::Fire, fire_needed());
+    return grass_target_live || fire_target_live;
   }
 
   [[nodiscard]] bool needs_oricorio_connector() const {

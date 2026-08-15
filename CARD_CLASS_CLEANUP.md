@@ -257,6 +257,12 @@ Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/d
 
 Exact migrated-card metadata and source URLs: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
+## Current cleanup wave
+
+`cleanup-1786760569376` centralizes presence-only board queries through `board_index_matching()` and separates registry-owned card names from the shrinking legacy fallback in `core/card_catalog.inc`. These changes preserve gameplay policy while narrowing future board and card-class migrations. Board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc Registry owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp Catalog owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
+
+The next Forretress cleanup remains the Active-specific source questions in `use_exploding_energy_for_setup()` and the post-Ability retreat-target ranking described above. Keep attachment selection, self-Knock-Out, promotion, retreat payment, DCI/UDP/AMR, K0/K1, and route policy at their existing owners.
+
 ## Validation gate
 
 A cleanup PR is mergeable only when:

@@ -7,11 +7,11 @@
         Card::DialgaGX,
     }};
 
-    [[nodiscard]] static bool contains(const std::vector<Card>& zone) {
+    [[nodiscard]] static bool contains_in_zone(const std::vector<Card>& zone) {
       return std::any_of(zone.begin(), zone.end(), is_payload);
     }
 
-    [[nodiscard]] static int count(const std::vector<Card>& zone) {
+    [[nodiscard]] static int count_in_zone(const std::vector<Card>& zone) {
       return static_cast<int>(std::count_if(zone.begin(), zone.end(), is_payload));
     }
 
@@ -36,11 +36,11 @@
     // DCI/JIT route admission out of Engine strategy:
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    return PayloadPreferencePolicy::contains(zone);
+    return PayloadPreferencePolicy::contains_in_zone(zone);
   }
 
   [[nodiscard]] static int payload_card_count(const std::vector<Card>& zone) {
-    return PayloadPreferencePolicy::count(zone);
+    return PayloadPreferencePolicy::count_in_zone(zone);
   }
 
   [[nodiscard]] static std::optional<Card> first_payload_card_in_zone(

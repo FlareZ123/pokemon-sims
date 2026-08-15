@@ -47,12 +47,9 @@ std::string pokemon_summary(const Pokemon& p) {
 
 #endif  // SIM_TRACE_SIMULATOR_STATE_INCLUDED
 
-// Opening stage: own the historical member fragments and temporary aliases at the
-// canonical Engine composition boundary. Keeping the setup, continuations, and
-// teardown here removes a forwarding-only .inc layer while preserving include order.
-// Own the historical opening fragments and their temporary aliases as one textual
-// composition stage. This preserves the legacy member-continuation boundary while
-// keeping macro lifetime out of the canonical engine-body overview.
+// Opening stage: own historical member fragments and temporary aliases in one
+// textual composition stage. This preserves the legacy continuation boundaries
+// while keeping macro lifetime visible at the canonical Engine owner.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
 // Historical opening fragment: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
 // Historical continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc

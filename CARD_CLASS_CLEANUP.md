@@ -120,7 +120,9 @@ Named Steven route policies live under `src/trace_engine_v2/core/routes/`. `src/
 
 Projected Item-lock timing for the active-VSTAR Treasure continuation and late VSTAR/Vessel continuation now delegates to the canonical Engine `item_locked_on_turn()` seam instead of re-encoding lock-family identities inside route files. Shared timing owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
 
-Next Steven cleanup step: inventory remaining root `part_*steven*` fragments and retire only composition-only forwarders whose canonical `core/routes/` owner can replace them at the identical textual boundary. Preserve route admission, DCI/UDP/AMR, Supporter contention, connector domination, hidden-information sequencing, and source URLs. Route-local projected lock checks should reuse `item_locked_on_turn()` whenever their semantics are exactly the shared persistent Item-lock schedule.
+The issue-3222 K1 and issue-3221 K0 Steven/Brilliant Blender semantic fallbacks now share `src/trace_engine_v2/core/routes/steven_blender_semantic_routes.inc`. Their route predicates and direct rule/card sources are unchanged, and `part_issue_1067_arven_before_late_steven_override.inc` includes the combined owner at the same member boundary where the two root issue fragments previously appeared. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+
+Next Steven cleanup step: continue inventorying root `part_*steven*` fragments and retire only composition-only forwarders or route-only fragments whose canonical `core/routes/` owner can replace them at the identical textual boundary. Preserve route admission, DCI/UDP/AMR, Supporter contention, connector domination, hidden-information sequencing, and source URLs. Route-local projected lock checks should reuse `item_locked_on_turn()` whenever their semantics are exactly the shared persistent Item-lock schedule.
 
 ## Setup lifecycle cleanup
 

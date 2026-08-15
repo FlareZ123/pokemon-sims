@@ -50,7 +50,9 @@ constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
 using DeckRecipe = std::vector<std::pair<Card, int>>;
 
 struct LegacyCardCatalog {
-  inline static constexpr std::array<std::pair<Card, std::string_view>, 15> kNames{{
+  using Entry = std::pair<Card, std::string_view>;
+
+  inline static constexpr std::array<Entry, 15> kNames{{
       {Card::Dragapult, "Dragapult ex"},
       {Card::MegaDragonite, "Mega Dragonite ex"},
       {Card::DialgaGX, "Dialga-GX"},

@@ -238,3 +238,11 @@ constexpr bool is_stadium(const Card card) {
   }
   return card == Card::PathToPeak;
 }
+
+constexpr bool is_ace_spec(const Card card) {
+  // Registered ACE SPEC cards own this intrinsic rarity rule in CardDefinition.
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+  if (cards::has_definition(card)) return cards::registered_is_ace_spec(card);
+  return false;
+}

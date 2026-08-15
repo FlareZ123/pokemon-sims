@@ -4,17 +4,21 @@
   // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
   using BoardIndex = std::size_t;
   using OptionalBoardIndex = std::optional<BoardIndex>;
+  inline static constexpr BoardIndex kActiveBoardIndex = 0U;
 
-  template <typename ActiveZone, typename BenchZone, typename Predicate>
-  [[nodiscard]] static auto find_board_pokemon_matching_in_zones(
-      ActiveZone& active, BenchZone& bench, Predicate predicate)
-      -> decltype(&*active) {
-    // Keep Active-before-Bench traversal in one implementation so mutable and
-    // const board queries cannot diverge as the policy layer evolves.
-    // C++ find_if semantics: https://eel.is/c++draft/alg.find
-    if (active && predicate(*active)) return &*active;
-    const auto match = std::find_if(bench.begin(), bench.end(), predicate);
-    return match == bench.end() ? nullptr : &*match;
+  [[nodiscard]] static constexpr bool board_index_is_active(
+      const BoardIndex index) {
+    return index == kActiveBoardIndex;
+  }
+
+  [[nodiscard]] static constexpr BoardIndex board_index_for_bench_position(
+      const BoardIndex bench_position) {
+    return bench_position + 1U;
+  }
+
+  [[nodiscard]] static constexpr BoardIndex bench_position_from_board_index(
+      const BoardIndex index) {
+    return index - 1U;
   }
 
   template <typename ActiveZone, typename BenchZone>
@@ -24,9 +28,9 @@
     // Centralize the historical Exploding Energy destination mapping before
     // callers migrate away from raw Active/Bench index arithmetic.
     // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
-    if (index == 0U) return active ? &*active : nullptr;
-    const BoardIndex bench_index = index - 1U;
-    return bench_index < bench.size() ? &bench[bench_index] : nullptr;
+    if (board_index_is_active(index)) return active ? &*active : nullptr;
+    const BoardIndex bench_position = bench_position_from_board_index(index);
+    return bench_position < bench.size() ? &bench[bench_position] : nullptr;
   }
 
   template <typename ActiveZone, typename BenchZone, typename Predicate>
@@ -34,11 +38,26 @@
       const ActiveZone& active, const BenchZone& bench, Predicate predicate) {
     // Keep index discovery on the same Active-first mapping used by lookup.
     // C++ container indexing semantics: https://eel.is/c++draft/vector.capacity
-    if (active && predicate(*active)) return 0U;
-    for (BoardIndex index = 0; index < bench.size(); ++index) {
-      if (predicate(bench[index])) return index + 1U;
+    if (active && predicate(*active)) return kActiveBoardIndex;
+    for (BoardIndex bench_position = 0; bench_position < bench.size();
+         ++bench_position) {
+      if (predicate(bench[bench_position])) {
+        return board_index_for_bench_position(bench_position);
+      }
     }
     return std::nullopt;
+  }
+
+  template <typename ActiveZone, typename BenchZone, typename Predicate>
+  [[nodiscard]] static auto find_board_pokemon_matching_in_zones(
+      ActiveZone& active, BenchZone& bench, Predicate predicate)
+      -> decltype(&*active) {
+    // Reuse canonical index discovery plus index lookup so every mutable and const
+    // board query shares the same Active-before-Bench traversal and index mapping.
+    // C++ class-member lookup and find semantics: https://eel.is/c++draft/class.member.lookup
+    const OptionalBoardIndex index =
+        find_board_index_matching_in_zones(active, bench, predicate);
+    return index ? board_pokemon_at_index_in_zones(active, bench, *index) : nullptr;
   }
 
   template <typename Predicate>

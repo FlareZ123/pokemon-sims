@@ -102,8 +102,11 @@ bool Engine::resolve_exploding_energy(
     const auto promotion_rank = [this](const Pokemon& pokemon) {
       const int role = pokemon.card == Card::RegidragoVstar ? 3 :
           (pokemon.card == Card::RegidragoV ? 2 : 1);
-      const bool regidrago = pokemon.card == Card::RegidragoVstar ||
-          pokemon.card == Card::RegidragoV;
+      // Reuse the Forretress module's canonical Regidrago V-line classifier so
+      // promotion semantics do not duplicate card-family membership checks.
+      // Regidrago V/VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Canonical classifier seam: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/contract.inc
+      const bool regidrago = is_regidrago_board_pokemon(pokemon);
       const bool apex_paid = regidrago && pays_apex_energy_cost(pokemon);
       bool one_basic_from_apex = false;
       if (regidrago && !apex_paid) {

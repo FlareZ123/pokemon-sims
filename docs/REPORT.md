@@ -14,10 +14,10 @@ Seed: `20260705`.
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, going first | 12.17% | 41.748% | 59.209% |
+| Strict JIT, going first | 12.158% | 41.807% | 59.222% |
 | Matchup-flex JIT, going first | 17.232% | 50.806% | 68.194% |
 | No discard control, going first | 19.74% | 56.829% | 73.585% |
-| Strict JIT, going second | 29.719% | 55.564% | 67.539% |
+| Strict JIT, going second | 29.718% | 55.558% | 67.532% |
 | Matchup-flex JIT, going second | 37.286% | 64.176% | 75.82% |
 | No discard control, going second | 40.232% | 68.436% | 79.981% |
 
@@ -35,8 +35,8 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 | Strict JIT, turn-two Item + Rule Box Ability lock, second | 3.9% | 14.51% | 20.154% |
 | Strict JIT, Supporter lock, first | 0.005% | 16.426% | 23.376% |
 | Strict JIT, Supporter lock, second | 7.85% | 20.357% | 26.735% |
-| Garbodor + Boost Shake Ability lock, first | 5.635% | 26.858% | 40.96% |
-| Garbodor + Boost Shake Ability lock, second | 17.459% | 34.732% | 46.426% |
+| Garbodor + Boost Shake Ability lock, first | 5.687% | 26.946% | 41.056% |
+| Garbodor + Boost Shake Ability lock, second | 17.437% | 34.72% | 46.467% |
 
 ## Interpretation boundary
 

@@ -19,7 +19,8 @@ const auto issue_1757_redundant_payload_cost = [this]() -> std::optional<Card> {
 const auto issue_1757_prelock_vessel_available =
     [this, &issue_1757_redundant_payload_cost] {
   if (secret_box_combo_enabled() ||
-      scenario_.locks != LockMode::TurnTwoItem ||
+      // Canonical scheduled Item-lock family: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+      !uses_turn_two_item_lock(scenario_.locks) ||
       state_.turn != 1 || item_locked() || !need_regi() || has_vstar() ||
       hand_count(Card::EarthenVessel) == 0 ||
       !issue_1757_redundant_payload_cost().has_value()) {
@@ -97,7 +98,6 @@ const auto issue_1552_t1_vessel_route_available = [this] {
       !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
     return false;
   }
-
   // At K0, use only fixed-list and public-zone availability. Earthen Vessel
   // may spend Mysterious Treasure because held Regidrago VSTAR replaces its
   // evolution role, while Quick Ball preserves the T2 Tapu Lele-GX connector

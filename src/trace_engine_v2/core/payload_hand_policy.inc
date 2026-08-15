@@ -15,6 +15,16 @@
       return first_iterator_matching(zone, predicate) != zone.end();
     }
 
+    template <typename Predicate>
+    [[nodiscard]] static int count_matching(
+        const std::vector<Card>& zone, Predicate predicate) {
+      // Keep payload cardinality on the same predicate-oriented zone seam as
+      // membership so later cleanup does not recreate route-local count scans.
+      // C++20 count_if: https://eel.is/c++draft/alg.count
+      // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+      return static_cast<int>(std::count_if(zone.begin(), zone.end(), predicate));
+    }
+
     [[nodiscard]] static auto first_iterator(const std::vector<Card>& zone) {
       // Keep the physical-zone membership seam on the same first-match traversal
       // used by first(); callers that need strategic ordering use PayloadPreferencePolicy.
@@ -38,7 +48,7 @@
     }
 
     [[nodiscard]] static int count(const std::vector<Card>& zone) {
-      return static_cast<int>(std::count_if(zone.begin(), zone.end(), is_payload));
+      return count_matching(zone, is_payload);
     }
 
     [[nodiscard]] static std::optional<Card> first(

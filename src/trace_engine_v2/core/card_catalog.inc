@@ -88,13 +88,6 @@ struct LegacyCardCatalog {
   }
 };
 
-constexpr std::string_view legacy_name(const Card card) {
-  // Registered CardDefinition names are resolved by name() before this fallback.
-  // Keep legacy metadata in one data table until each remaining card migrates:
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-  return LegacyCardCatalog::name(card);
-}
-
 constexpr std::string_view name(const Card card) {
   // Registered metadata remains the canonical name owner; this function keeps
   // the shrinking legacy fallback isolated for cards not yet migrated.
@@ -102,5 +95,5 @@ constexpr std::string_view name(const Card card) {
   if (const cards::CardDefinition* definition = cards::find_definition(card)) {
     return definition->name;
   }
-  return legacy_name(card);
+  return LegacyCardCatalog::name(card);
 }

@@ -56,6 +56,12 @@ Current registry source: https://github.com/FlareZ123/pokemon-sims/blob/main/src
 
 Knowledge transitions, zone mutations, shuffle behavior, and trace ordering must stay compatible with the simulator unless a separately confirmed bug authorizes a behavior change.
 
+### Card-context adapter progress
+
+`src/trace_engine_v2/core/card_context_adapter.hpp` now gives the Engine-to-rules callback set one named `CardContextCallbacks` owner. The positional compatibility overload delegates through that bundle, so `rules::CardContext` construction has one structural path while migrated resolvers remain source-compatible. Adapter: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_context_adapter.hpp Context contract: https://github.com/FlareZ123/pokemon-sims/blob/main/src/rules/card_context.hpp
+
+Next mechanical adapter step: convert migrated resolver call sites to construct `CardContextCallbacks` directly in small, independently validated changes. Retire the positional compatibility overload only after all live call sites and raw-source readers are migrated. Preserve printed card resolution, K0/K1 transitions, route admission, DCI/UDP/AMR, Supporter contention, and connector domination throughout this change.
+
 ## Card module contract
 
 A migrated card gets one primary module under `src/cards/pokemon/`, `src/cards/trainers/`, or `src/cards/energy/`.
@@ -251,4 +257,4 @@ A cleanup PR is mergeable only when:
 - the paired T2/T3 probability matrix has no unexplained drift;
 - the PR contains no unrelated gameplay behavior change.
 
-Known baseline failures must be identified by their existing issue and shown unchanged before merge. Any new gameplay defect discovered during cleanup must go through the separate bug-confirmation workflow.
+Known baseline failures must be identified by their existing issue and shown unchanged before merge. Any new gameplay defect discovered during cleanup must go through the separate bug-confirmation workflow instead of silently combining it with architecture cleanup.

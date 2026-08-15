@@ -1,10 +1,20 @@
   struct PayloadZonePolicy {
+    template <typename Predicate>
+    [[nodiscard]] static auto first_iterator_matching(
+        const std::vector<Card>& zone, Predicate predicate) {
+      // Keep physical-zone traversal behind one primitive so payload and concrete
+      // card membership preserve identical first-match ordering.
+      // C++20 find_if: https://eel.is/c++draft/alg.find
+      // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+      return std::find_if(zone.begin(), zone.end(), predicate);
+    }
+
     [[nodiscard]] static auto first_iterator(const std::vector<Card>& zone) {
       // Keep the physical-zone membership seam on the same first-match traversal
       // used by first(); callers that need strategic ordering use PayloadPreferencePolicy.
       // https://eel.is/c++draft/alg.find
       // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
-      return std::find_if(zone.begin(), zone.end(), is_payload);
+      return first_iterator_matching(zone, is_payload);
     }
 
     [[nodiscard]] static bool contains(const std::vector<Card>& zone) {
@@ -17,7 +27,9 @@
       // payload membership so strategic preference callers do not grow ad hoc scans.
       // https://eel.is/c++draft/alg.find
       // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
-      return std::find(zone.begin(), zone.end(), card) != zone.end();
+      return first_iterator_matching(
+                 zone, [card](const Card candidate) { return candidate == card; }) !=
+             zone.end();
     }
 
     [[nodiscard]] static int count(const std::vector<Card>& zone) {

@@ -41,12 +41,13 @@
 #include "trainers/stevens_resolve.hpp"
 #include "trainers/tate_liza.hpp"
 #include "trainers/team_yells_cheer.hpp"
+#include "trainers/ultra_ball.hpp"
 #include "trainers/vs_seeker.hpp"
 #include "trainers/wishful_baton.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 41> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 42> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
     &MawileGX::definition, // Exact Unified Minds Basic Metal Pokémon-GX: https://api.pokemontcg.io/v2/cards/sm11-141 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3704
     &Oricorio::definition, // Exact Guardians Rising Basic Psychic Pokémon: https://api.pokemontcg.io/v2/cards/sm2-55 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3712
@@ -86,6 +87,7 @@ inline constexpr std::array<const CardDefinition*, 41> kRegisteredCardDefinition
     &Lusamine::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
     &Klara::definition, // Exact Chilling Reign Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
     &TeamYellsCheer::definition, // Exact Brilliant Stars Supporter: https://api.pokemontcg.io/v2/cards/swsh9-149 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3620
+    &UltraBall::definition, // Exact Scarlet & Violet Item: https://api.pokemontcg.io/v2/cards/sv1-196 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3517
     &VsSeeker::definition, // Exact Phantom Forces Item: https://api.pokemontcg.io/v2/cards/xy4-109 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3545
     &WishfulBaton::definition, // Exact Burning Shadows Pokémon Tool: https://api.pokemontcg.io/v2/cards/sm3-128 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3631
 };
@@ -157,7 +159,7 @@ static_assert(definition_matches_registration(GuzmaHala::definition, Card::Guzma
 static_assert(definition_matches_registration(Arven::definition, Card::Arven,
                                               "sv1-166", "Arven")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
 static_assert(definition_matches_registration(Crispin::definition, Card::Crispin,
-                                              "sv7-133", "Crispin")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv7-133 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3580
+                                              "sv7-133", "Crispin")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv7-133 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3580
 static_assert(definition_matches_registration(Dawn::definition, Card::Dawn,
                                               "me2-87", "Dawn")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/me2-87
 static_assert(definition_matches_registration(ErikasInvitation::definition,
@@ -207,5 +209,7 @@ static_assert(definition_matches_registration(BattleCompressor::definition,
                                               "Battle Compressor Team Flare Gear")); // Exact Item: https://api.pokemontcg.io/v2/cards/xy4-92 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3545
 static_assert(definition_matches_registration(VsSeeker::definition, Card::VsSeeker,
                                               "xy4-109", "VS Seeker")); // Exact Item: https://api.pokemontcg.io/v2/cards/xy4-109 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3545
+static_assert(definition_matches_registration(UltraBall::definition, Card::UltraBall,
+                                              "sv1-196", "Ultra Ball")); // Exact Item: https://api.pokemontcg.io/v2/cards/sv1-196 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3517
 
 }  // namespace sim::cards

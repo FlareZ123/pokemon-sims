@@ -43,6 +43,10 @@ Quick Ball is the reference for explicit registration, exact-print metadata, int
 
 Next catalog step: migrate remaining `LegacyCardCatalog` entries one card at a time through the normal ownership workflow. Delete a compatibility row only after that card has an explicit `CardDefinition`, registration, exact-print source, and focused metadata test. Keep gameplay resolution and strategy at their current owners during metadata-only migrations.
 
+Regidrago VSTAR now owns exact Silver Tempest 136/195 metadata beside Regidrago V in `src/cards/pokemon/regidrago_v.hpp`, is explicitly registered, and has focused V/VSTAR metadata/parity coverage. The live Pokémon, Pokémon V, Rule Box, Dragon/Mysterious Treasure target, and Retreat Cost classifiers consume registered metadata for the Regidrago line. Exact print: https://api.pokemontcg.io/v2/cards/swsh12-136 Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Pokémon V ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+
+Next Regidrago metadata step: remove the now-shadowed Regidrago VSTAR compatibility name row from `LegacyCardCatalog` in a later isolated catalog cleanup after its name-path source contract is checked. Keep V -> VSTAR evolution/devolution relations, Legacy Star, Apex Dragon, payload policy, DCI/JIT, and route choice at their existing behavioral owners.
+
 ## Active card migrations
 
 Do not create a parallel migration while one of these owners is active:
@@ -86,20 +90,19 @@ Next composition step: inventory `opening_legacy_stage.inc` for another complete
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner.
 
-- `PayloadZonePolicy::first_iterator_matching()` owns the shared physical-zone first-match traversal primitive. Payload selection and predicate membership build directly on this seam so they cannot drift into separate scan implementations.
+- `PayloadZonePolicy::first_iterator_matching()` owns the shared physical-zone first-match traversal primitive. Payload and exact-card membership build on this seam so they cannot drift into separate scan implementations.
 - `PayloadZonePolicy::contains_matching()` owns generic predicate-based zone membership and keeps boolean membership checks on the same traversal primitive.
-- `PayloadZonePolicy::first()` preserves physical zone order for callers whose historical behavior depends on the first matching payload and now calls the canonical first-match primitive directly.
+- `PayloadZonePolicy::count_matching()` owns generic predicate-based zone cardinality so payload counts do not grow independent `std::count_if` scans.
+- `PayloadZonePolicy::first()` preserves physical zone order for callers whose historical behavior depends on the first matching payload.
 - `PayloadZonePolicy::contains()` and `PayloadZonePolicy::count()` own generic payload membership/count semantics.
 - `PayloadZonePolicy::contains_card()` owns concrete-card membership in a physical zone so preference code does not duplicate `std::find` scans.
 - `PayloadPreferencePolicy::first_preferred()` preserves the explicit five-card strategic priority.
 - `PayloadPreferencePolicy::first_preferred_in_zone()` composes preference order with physical-zone membership.
 - `PayloadPreferencePolicy::first_preferred_with_positive_count()` adapts count-backed zones without duplicating preference traversal.
 
-The forwarding-only payload iterator and generic count adapters have been retired. `PayloadZonePolicy::first()` now uses `first_iterator_matching()` directly, and `payload_cards_in_hand_count()` calls `PayloadZonePolicy::count()` directly. This keeps physical-zone mechanics at the canonical owner without adding another Engine-level forwarding seam.
-
 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 
-Next payload step: replace remaining ad hoc Dragon-payload membership scans only where semantics exactly match `PayloadZonePolicy::contains()`, `contains_card()`, or `contains_matching()`. Preserve physical-order selection when order is observable and preserve the explicit strategic order where preference is required. Keep DCI/JIT predicates and discard timing at strategy owners.
+Next payload step: replace remaining ad hoc Dragon-payload membership and cardinality scans only where semantics exactly match `PayloadZonePolicy::contains()`, `contains_card()`, `contains_matching()`, `count()`, or `count_matching()`. Preserve physical-order selection when order is observable and preserve the explicit strategic order where preference is required. Keep DCI/JIT predicates and discard timing at strategy owners.
 
 ## Forretress cleanup
 
@@ -113,15 +116,17 @@ Next mechanical Forretress step: inventory the remaining orchestration in `runti
 
 ## Steven route cleanup
 
-Named Steven route owners live under `src/trace_engine_v2/core/routes/`. Retire a Steven-named root fragment only when it contains composition-only forwarding and its canonical route owner can replace it at the identical textual boundary. Preserve route admission, DCI/UDP/AMR, Supporter contention, connector domination, and source URLs. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+Named Steven route policies live under `src/trace_engine_v2/core/routes/`. `src/trace_engine_v2/part_issue_1191_gladion_steven_override.inc` now owns the single historical Gladion/Steven/Treasure composition continuation at the parent `play_gladion` macro boundary. The former `part_issue_1204_gladion_treasure_override.inc` fragment has been retired; its unchanged continuation now follows `core/routes/gladion_steven_route_policy.inc` in that owner so the canonical route policy, direct rule/card sources, and the next Gladion layer remain adjacent. Parent alias lifetime remains owned by `composition/post_014a_overrides.inc`. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Gladion: https://api.pokemontcg.io/v2/cards/sm4-95 Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+Next Steven cleanup step: inventory remaining root `part_*steven*` fragments and retire only composition-only forwarders whose canonical `core/routes/` owner can replace them at the identical textual boundary. Preserve route admission, DCI/UDP/AMR, Supporter contention, connector domination, hidden-information sequencing, and source URLs.
 
 ## Setup lifecycle cleanup
 
 `src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels together with opening-deck initialization, opening-hand and mulligan mechanics, Prize dealing, and setup-trace output. `src/trace_engine_v2/part_005.inc` composes that canonical owner at the established Engine member boundary.
 
-`prepare_opening_deck()` now owns knowledge reset, recipe population, and the opening shuffle. `draw_opening_hand_once()` owns the repeated seven-card transfer used by the mulligan loop. Scenario summaries call `SetupLifecycleConfig` directly instead of retaining forwarding-only label wrappers. `SetupLifecycleConfig::kUnknownLabel` now centralizes the fallback label shared by DCI and lock rendering, keeping setup display vocabulary in one owner. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+`SetupRecipePolicy` owns setup recipe-presence and exact-count predicates used by deck/scenario classification. `prepare_opening_deck()` owns knowledge reset, recipe population, and the opening shuffle. `draw_opening_hand_once()` owns the repeated seven-card transfer used by the mulligan loop. Scenario summaries call `SetupLifecycleConfig` directly instead of retaining forwarding-only label wrappers. `SetupLifecycleConfig::kUnknownLabel` now centralizes the fallback label shared by DCI and lock rendering, keeping setup display vocabulary in one owner. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
 
-Next setup step: move only state-transition helpers from opening Active/Bench setup into `core/setup_lifecycle.inc` once exact source-contract coverage exists for hand removal, `started_regi`, Bench insertion, and declaration ordering. Keep strategic route predicates in Engine.
+Next setup step: route future setup recipe classification through `SetupRecipePolicy` and move only state-transition helpers from opening Active/Bench setup into `core/setup_lifecycle.inc` once exact source-contract coverage exists for hand removal, `started_regi`, Bench insertion, and declaration ordering. Keep strategic route predicates in Engine.
 
 ## Catalog and knowledge cleanup
 
@@ -136,14 +141,14 @@ Next catalog/knowledge step: move only duplicate metadata lookup or copy-count a
 ## Shared policy owners
 
 - Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.
-- Garbodor scenario/timing: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. `GarbodorScenarioPolicy::activation_turn_reached()` owns the shared turn-threshold check, and `GarbodorScenarioPolicy::active()` composes that timing with scenario identity. Engine wrappers remain compatibility/query seams for callers that need the individual facts. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
+- Garbodor scenario and Ability-lock composition: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. `GarbodorScenarioPolicy::activation_turn_reached()` owns the shared turn threshold, and `GarbodorScenarioPolicy::active()` composes timing with scenario identity. `GarbodorAbilityLockPolicy::garbotoxin_locked()` owns present-versus-removed lock state, `rule_box_ability_available()` owns the separate Path-style Rule Box gate, and `ability_available()` composes both independent Ability gates. Engine wrappers remain compatibility/query seams for callers that need state-derived facts. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
 - Setup lifecycle labels, mulligans, Prize deal, and setup trace mechanics: `src/trace_engine_v2/core/setup_lifecycle.inc`.
 - Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
 - Turn action runtime: `src/trace_engine_v2/turn_action_policy_runtime.inc`.
 
 Before adding a new loop or route-local helper, check these owners and reuse a named seam when ordering and semantics match exactly.
 
-Next shared-policy step: replace duplicated Garbodor activation-turn comparisons only when they are semantically identical to `GarbodorScenarioPolicy::activation_turn_reached()`, and replace scenario-prefix plus activation conjunctions only when they are semantically identical to `GarbodorScenarioPolicy::active()`. Preserve separate `matches()` and `lock_activation_turn()` queries where callers need one fact without the other.
+Next shared-policy step: route duplicate Garbodor present/removed boolean composition through `GarbodorAbilityLockPolicy::garbotoxin_locked()` only when the inputs are semantically identical, and route independent Garbotoxin-plus-Rule-Box Ability gates through `ability_available()` only when both facts are already resolved. Preserve separate scenario identity, activation-turn, lock-removal, and Rule Box queries where callers need one fact without the others.
 
 ## Validation gate
 

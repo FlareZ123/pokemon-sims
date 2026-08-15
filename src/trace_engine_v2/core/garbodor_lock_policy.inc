@@ -26,6 +26,35 @@
     }
   };
 
+  struct GarbodorAbilityLockPolicy {
+    [[nodiscard]] static constexpr bool garbotoxin_locked(
+        const bool lock_present, const bool lock_removed) {
+      // Garbotoxin removes other Pokemon Abilities only while its modeled lock is
+      // present and has not been removed by the shared lock-removal state:
+      // https://api.pokemontcg.io/v2/cards/xy9-57
+      // https://github.com/FlareZ123/pokemon-sims/issues/2808
+      return lock_present && !lock_removed;
+    }
+
+    [[nodiscard]] static constexpr bool rule_box_ability_available(
+        const bool is_rule_box, const bool rule_box_locked) {
+      // Path to the Peak affects Pokemon with a Rule Box while it remains active:
+      // https://api.pokemontcg.io/v2/cards/swsh6-148
+      // https://github.com/FlareZ123/pokemon-sims/issues/2808
+      return !(is_rule_box && rule_box_locked);
+    }
+
+    [[nodiscard]] static constexpr bool ability_available(
+        const bool garbotoxin_locked, const bool rule_box_available) {
+      // The modeled Garbotoxin and Path checks are independent lock axes; an Ability
+      // is available only when both applicable gates admit it:
+      // https://api.pokemontcg.io/v2/cards/xy9-57
+      // https://api.pokemontcg.io/v2/cards/swsh6-148
+      // https://github.com/FlareZ123/pokemon-sims/issues/2808
+      return !garbotoxin_locked && rule_box_available;
+    }
+  };
+
   [[nodiscard]] bool garbodor_shake_scenario() const {
     return GarbodorScenarioPolicy::matches(scenario_.label);
   }
@@ -58,23 +87,16 @@
   }
 
   [[nodiscard]] bool garbodor_abilities_locked() const {
-    return garbodor_lock_present() && !garbodor_lock_removed();
+    return GarbodorAbilityLockPolicy::garbotoxin_locked(
+        garbodor_lock_present(), garbodor_lock_removed());
   }
 
   [[nodiscard]] bool rule_box_ability_available(const Card card) const {
-    // Path to the Peak suppresses Rule Box Pokemon Abilities in the separate
-    // registered Rule Box lock model:
-    // https://api.pokemontcg.io/v2/cards/swsh6-148
-    // https://github.com/FlareZ123/pokemon-sims/issues/2808
-    return !(is_rule_box_pokemon(card) && rule_box_abilities_locked());
+    return GarbodorAbilityLockPolicy::rule_box_ability_available(
+        is_rule_box_pokemon(card), rule_box_abilities_locked());
   }
 
   [[nodiscard]] bool ability_available_for_pokemon_garbodor(const Card card) const {
-    // Garbotoxin removes Abilities from every other Pokemon while Garbodor has a
-    // Pokemon Tool attached. Path to the Peak remains a separate rule-box-only
-    // suppression model:
-    // https://api.pokemontcg.io/v2/cards/xy9-57
-    // https://api.pokemontcg.io/v2/cards/swsh6-148
-    // https://github.com/FlareZ123/pokemon-sims/issues/2808
-    return !garbodor_abilities_locked() && rule_box_ability_available(card);
+    return GarbodorAbilityLockPolicy::ability_available(
+        garbodor_abilities_locked(), rule_box_ability_available(card));
   }

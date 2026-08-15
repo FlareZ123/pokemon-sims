@@ -40,11 +40,12 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 34> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 35> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
     &MawileGX::definition, // Exact Unified Minds Basic Metal Pokémon-GX: https://api.pokemontcg.io/v2/cards/sm11-141 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3704
     &Oricorio::definition, // Exact Guardians Rising Basic Psychic Pokémon: https://api.pokemontcg.io/v2/cards/sm2-55 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3712
     &RegidragoV::definition, // Exact Silver Tempest Basic Dragon Pokémon V: https://api.pokemontcg.io/v2/cards/swsh12-135 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3683
+    &RegidragoVstar::definition, // Exact Silver Tempest Dragon Pokémon VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     &DoubleDragonEnergy::definition, // Exact Roaring Skies Special Energy: https://api.pokemontcg.io/v2/cards/xy6-97
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
     &BattleVipPass::definition,
@@ -137,6 +138,8 @@ static_assert(definition_matches_registration(QuickBall::definition, Card::Quick
                                               "swsh1-179", "Quick Ball"));
 static_assert(definition_matches_registration(RegidragoV::definition, Card::RegidragoV,
                                               "swsh12-135", "Regidrago V")); // Exact print: https://api.pokemontcg.io/v2/cards/swsh12-135 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3683
+static_assert(definition_matches_registration(RegidragoVstar::definition, Card::RegidragoVstar,
+                                              "swsh12-136", "Regidrago VSTAR")); // Exact print: https://api.pokemontcg.io/v2/cards/swsh12-136
 static_assert(definition_matches_registration(GuzmaHala::definition, Card::GuzmaHala,
                                               "sm12-229", "Guzma & Hala"));
 static_assert(definition_matches_registration(Arven::definition, Card::Arven,

@@ -168,6 +168,14 @@ Next turn-lifecycle step: route only exact duplicate action-flag/reset bundles t
 
 Next projection step: migrate only admission checks whose semantics are already pure projections onto copied Engine state. Keep physical resolution, trace emission, K0/K1 transitions, and strategic route choice at their current owners.
 
+## Route extraction cleanup
+
+`src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc` now owns the #1016 Quick Ball connector-admission policy around Legacy Star. The historical `part_issue_1016_legacy_star_quick_ball_override.inc` path remains a compatibility include so the `use_legacy_star` alias lifetime in `composition/post_014a_overrides.inc` stays unchanged. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+
+`src/trace_engine_v2/core/routes/issue_1673_secret_box_payload_deadline_policy.inc` now owns the complete #1673 deadline Secret Box route body. `part_issue_1673_secret_box_deadline_override.inc` retains only its established neighboring include order and `run_turn_issue1674_original()` composition wrapper. Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 Confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1673
+
+Next route-extraction step: retire the #1016 compatibility shim only when `composition/post_014a_overrides.inc` can consume the canonical core route directly at the identical `use_legacy_star` macro boundary. Continue moving complete route predicates/resolvers from root `part_*` files only when their surrounding composition wrappers and neighboring include order remain byte-for-byte equivalent.
+
 ## Validation gate
 
 A cleanup PR is mergeable only when strict Release compilation succeeds, focused tests and the full regression suite show no new failure, sanitizer/structural checks show no new failure, representative `--simulate-this` traces preserve legal action ordering/readiness, the paired T2/T3 matrix has no unexplained drift, and the PR contains no gameplay behavior change.

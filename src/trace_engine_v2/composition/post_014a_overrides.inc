@@ -54,7 +54,7 @@
 #undef remove_one
 
 #define use_legacy_star use_legacy_star_issue1069_original
-#include "../part_issue_1016_legacy_star_quick_ball_override.inc"
+#include "../core/routes/issue_1016_legacy_star_quick_ball_policy.inc" // Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc
 #undef use_legacy_star
 #include "../part_issue_1069_legacy_star_combined_energy_payload_override.inc"
 

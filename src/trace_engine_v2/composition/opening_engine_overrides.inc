@@ -136,7 +136,6 @@
 // Legacy Supporter cards: https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 https://api.pokemontcg.io/v2/cards/sm7-145
 // Supporter selector cards: https://api.pokemontcg.io/v2/cards/sv1-166 https://api.pokemontcg.io/v2/cards/sm4-95 https://api.pokemontcg.io/v2/cards/swsh12-164
 // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
-
 // Centralize the core search, Steven, Forest Seal Stone, Brilliant Blender,
 // Tapu connector, late search-item, and FSS target wrapper stack. Macro
 // entry/exit guards make this composition boundary explicit.
@@ -170,7 +169,7 @@
 #undef should_play_steven
 #undef choose_supporter_after_search_started
 #undef late_steven_vstar_vessel_route_available
-#include "../part_issue_3202_steven_vstar_vessel_semantic_override.inc"
+#include "../core/routes/steven_vstar_vessel_route_policy.inc" // Canonical route: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_vstar_vessel_route_policy.inc
 #undef play_brilliant_blender
 
 // Isolate the active Brilliant Blender thinning layer and release the search-item

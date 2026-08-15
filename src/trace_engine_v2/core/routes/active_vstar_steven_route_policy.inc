@@ -26,14 +26,14 @@
         hand_count(Card::MysteriousTreasure) == 0 ||
         hand_count(Card::Grass) > 0 || hand_count(Card::Crispin) > 0 ||
         !need_energy() || !need_payload() ||
-        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+        !payload_zone_contains(state_.hand)) { // Canonical payload membership: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
       return false;
     }
 
     const int grass_in_deck = deck_count_after_search_started(Card::Grass);
     const int fire_in_deck = deck_count_after_search_started(Card::Fire);
-    const int treasure_targets = static_cast<int>(std::count_if(
-        state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic));
+    const int treasure_targets = PayloadZonePolicy::count_matching(
+        state_.deck, is_dragon_or_psychic); // Canonical predicate cardinality: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
     if (deck_count_after_search_started(Card::Crispin) == 0 ||
         grass_in_deck < 2 || fire_in_deck == 0 || treasure_targets == 0) {
       return false;

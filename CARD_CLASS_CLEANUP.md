@@ -115,7 +115,9 @@ Next mechanical Forretress step: inventory the remaining orchestration in `runti
 
 ## Steven route cleanup
 
-Named Steven route owners live under `src/trace_engine_v2/core/routes/`. Retire a Steven-named root fragment only when it contains composition-only forwarding and its canonical route owner can replace it at the identical textual boundary. Preserve route admission, DCI/UDP/AMR, Supporter contention, connector domination, and source URLs. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+Named Steven route policies live under `src/trace_engine_v2/core/routes/`. `src/trace_engine_v2/part_issue_1191_gladion_steven_override.inc` now owns the single historical Gladion/Steven/Treasure composition continuation at the parent `play_gladion` macro boundary. The former `part_issue_1204_gladion_treasure_override.inc` fragment has been retired; its unchanged continuation now follows `core/routes/gladion_steven_route_policy.inc` in that owner so the canonical route policy, direct rule/card sources, and the next Gladion layer remain adjacent. Parent alias lifetime remains owned by `composition/post_014a_overrides.inc`. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Gladion: https://api.pokemontcg.io/v2/cards/sm4-95 Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+Next Steven cleanup step: inventory remaining root `part_*steven*` fragments and retire only composition-only forwarders whose canonical `core/routes/` owner can replace them at the identical textual boundary. Preserve route admission, DCI/UDP/AMR, Supporter contention, connector domination, hidden-information sequencing, and source URLs.
 
 ## Setup lifecycle cleanup
 

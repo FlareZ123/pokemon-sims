@@ -19,7 +19,7 @@ const auto issue_1757_redundant_payload_cost = [this]() -> std::optional<Card> {
 const auto issue_1757_prelock_vessel_available =
     [this, &issue_1757_redundant_payload_cost] {
   if (secret_box_combo_enabled() ||
-      scenario_.locks != LockMode::TurnTwoItem || scenario_.going_first ||
+      scenario_.locks != LockMode::TurnTwoItem ||
       state_.turn != 1 || item_locked() || !need_regi() || has_vstar() ||
       hand_count(Card::EarthenVessel) == 0 ||
       !issue_1757_redundant_payload_cost().has_value()) {

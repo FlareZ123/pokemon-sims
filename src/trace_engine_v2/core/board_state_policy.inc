@@ -22,6 +22,20 @@
     return index - 1U;
   }
 
+  template <typename ActiveZone, typename BenchZone, typename Visitor>
+  [[nodiscard]] static bool visit_board_pokemon_in_zones(
+      const ActiveZone& active, const BenchZone& bench, Visitor visitor) {
+    if (active && !visitor(kActiveBoardIndex, *active)) return false;
+    for (BoardIndex bench_position = 0; bench_position < bench.size();
+         ++bench_position) {
+      if (!visitor(board_index_for_bench_position(bench_position),
+                   bench[bench_position])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   template <typename ActiveZone, typename BenchZone>
   [[nodiscard]] static auto board_pokemon_at_index_in_zones(
       ActiveZone& active, BenchZone& bench, const BoardIndex index)
@@ -39,14 +53,15 @@
       const ActiveZone& active, const BenchZone& bench, Predicate predicate) {
     // Keep index discovery on the same Active-first mapping used by lookup.
     // C++ container indexing semantics: https://eel.is/c++draft/vector.capacity
-    if (active && predicate(*active)) return kActiveBoardIndex;
-    for (BoardIndex bench_position = 0; bench_position < bench.size();
-         ++bench_position) {
-      if (predicate(bench[bench_position])) {
-        return board_index_for_bench_position(bench_position);
-      }
-    }
-    return std::nullopt;
+    OptionalBoardIndex match;
+    (void)visit_board_pokemon_in_zones(
+        active, bench,
+        [&](const BoardIndex index, const Pokemon& pokemon) {
+          if (!predicate(pokemon)) return true;
+          match = index;
+          return false;
+        });
+    return match;
   }
 
   template <typename ActiveZone, typename BenchZone>

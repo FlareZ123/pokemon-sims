@@ -53,6 +53,19 @@
       // https://github.com/FlareZ123/pokemon-sims/issues/2808
       return !garbotoxin_locked && rule_box_available;
     }
+
+    [[nodiscard]] static constexpr bool ability_available_from_lock_state(
+        const bool lock_present, const bool lock_removed,
+        const bool is_rule_box, const bool rule_box_locked) {
+      // Compose already-modeled Garbotoxin and Rule Box facts in one policy seam so
+      // Engine callers do not duplicate the same two-gate expression.
+      // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
+      // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+      // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#shared-policy-owners
+      return ability_available(
+          garbotoxin_locked(lock_present, lock_removed),
+          rule_box_ability_available(is_rule_box, rule_box_locked));
+    }
   };
 
   [[nodiscard]] bool garbodor_shake_scenario() const {
@@ -97,6 +110,7 @@
   }
 
   [[nodiscard]] bool ability_available_for_pokemon_garbodor(const Card card) const {
-    return GarbodorAbilityLockPolicy::ability_available(
-        garbodor_abilities_locked(), rule_box_ability_available(card));
+    return GarbodorAbilityLockPolicy::ability_available_from_lock_state(
+        garbodor_lock_present(), garbodor_lock_removed(),
+        is_rule_box_pokemon(card), rule_box_abilities_locked());
   }

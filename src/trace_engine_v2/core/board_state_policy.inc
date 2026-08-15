@@ -52,18 +52,13 @@
   template <typename ActiveZone, typename BenchZone>
   [[nodiscard]] static OptionalBoardIndex find_board_index_for_pointer_in_zones(
       const ActiveZone& active, const BenchZone& bench, const Pokemon* target) {
-    // Pointer-to-index conversion shares the same Active-first mapping as all
-    // other board-index queries instead of repeating card-local index arithmetic.
+    // Pointer lookup reuses the canonical Active-first predicate traversal instead
+    // of maintaining a second copy of the board-index loop.
     // C++ pointer equality semantics: https://eel.is/c++draft/expr.eq
     if (target == nullptr) return std::nullopt;
-    if (active && target == &*active) return kActiveBoardIndex;
-    for (BoardIndex bench_position = 0; bench_position < bench.size();
-         ++bench_position) {
-      if (target == &bench[bench_position]) {
-        return board_index_for_bench_position(bench_position);
-      }
-    }
-    return std::nullopt;
+    return find_board_index_matching_in_zones(
+        active, bench,
+        [target](const Pokemon& pokemon) { return target == &pokemon; });
   }
 
   template <typename ActiveZone, typename BenchZone, typename Predicate>

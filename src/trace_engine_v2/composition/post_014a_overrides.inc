@@ -56,7 +56,25 @@
 #define use_legacy_star use_legacy_star_issue1069_original
 #include "../core/routes/issue_1016_legacy_star_quick_ball_policy.inc" // Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc
 #undef use_legacy_star
-#include "../part_issue_1069_legacy_star_combined_energy_payload_override.inc"
+// Public-projection isolation now lives at the canonical post-search composition boundary.
+// #3199 public-projection isolation wrapper. The implementation remains byte-for-byte
+// in the adjacent canonical base include; this boundary only prevents Tate's held-route
+// shadow simulation from resolving Legacy Star against hidden future deck order.
+// Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+// Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+// Future-card-oracle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+// Advanced procedure source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+// Confirmed semantic bug: https://github.com/FlareZ123/pokemon-sims/issues/3199
+#define use_legacy_star use_legacy_star_issue3199_public_projection_original
+#include "../core/routes/issue_3199_legacy_star_combined_energy_payload_base.inc"
+#undef use_legacy_star
+
+  inline static thread_local int issue_3199_public_projection_depth_{0};
+
+  bool use_legacy_star() {
+    if (issue_3199_public_projection_depth_ > 0) return false;
+    return use_legacy_star_issue3199_public_projection_original();
+  }
 
 #if defined(remove_one) || defined(pokemon_communication_plan) || defined(use_legacy_star)
 #error "Legacy Star projection chain leaked a wrapper alias"
@@ -199,7 +217,35 @@
 #include "../part_roseanne_multimode_override.inc"
 
 #define choose_supporter choose_supporter_klara_original
-#include "../part_turo_oricorio_override.inc"
+// Tate/Turo public-projection guard now shares the canonical post-search owner.
+// #3199 isolates only Legacy Star while Tate's public held-route classifier runs.
+// Forest Seal Stone and every other legal deterministic route remain available to
+// the projected Engine. A thread-local depth is used because the classifier creates
+// a second Engine on the same worker thread; RAII restores the guard on exceptions.
+// Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+// Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+// Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+// Future-card-oracle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+// Confirmed semantic bug: https://github.com/FlareZ123/pokemon-sims/issues/3199
+#define tate_draw_has_held_non_supporter_completion \
+  tate_draw_has_held_non_supporter_completion_issue3199_original
+#include "../core/routes/issue_3199_turo_oricorio_base.inc"
+#undef tate_draw_has_held_non_supporter_completion
+
+  struct PublicProjectionDepthGuard {
+    int& depth;
+
+    explicit PublicProjectionDepthGuard(int& value) : depth(value) { ++depth; }
+    ~PublicProjectionDepthGuard() { --depth; }
+
+    PublicProjectionDepthGuard(const PublicProjectionDepthGuard&) = delete;
+    PublicProjectionDepthGuard& operator=(const PublicProjectionDepthGuard&) = delete;
+  };
+
+  bool tate_draw_has_held_non_supporter_completion() const {
+    PublicProjectionDepthGuard guard(issue_3199_public_projection_depth_);
+    return tate_draw_has_held_non_supporter_completion_issue3199_original();
+  }
 #undef choose_supporter
 
 #define choose_supporter choose_supporter_issue1070_original

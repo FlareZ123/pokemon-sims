@@ -91,10 +91,6 @@
     return PayloadZonePolicy::contains(zone);
   }
 
-  [[nodiscard]] static int payload_card_count(const std::vector<Card>& zone) {
-    return PayloadZonePolicy::count(zone);
-  }
-
   [[nodiscard]] static std::optional<Card> first_payload_card_in_zone(
       const std::vector<Card>& zone) {
     // Preserve physical zone order when a route needs the same first Dragon payload
@@ -105,7 +101,9 @@
   }
 
   [[nodiscard]] int payload_cards_in_hand_count() const {
-    return payload_card_count(state_.hand);
+    // Keep count semantics at the canonical physical-zone owner:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+    return PayloadZonePolicy::count(state_.hand);
   }
 
   [[nodiscard]] std::optional<Card> first_payload_card_in_hand() const {

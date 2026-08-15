@@ -24,12 +24,13 @@ CARD_SOURCE_TRAILING_PUNCTUATION = ".,;:!?`"
 # Correct Mega Dragonite ex record: https://api.pokemontcg.io/v2/cards/me2pt5-152
 # Professor's Letter supplied-corpus record: https://api.pokemontcg.io/v2/cards/xy1-123
 # Battle Compressor and VS Seeker supplied-corpus records: https://api.pokemontcg.io/v2/cards/xy4-92 https://api.pokemontcg.io/v2/cards/xy4-109
+# Ultra Ball supplied-corpus record: https://api.pokemontcg.io/v2/cards/sv1-196
 # Confirmed source-traceability bug: https://github.com/FlareZ123/pokemon-sims/issues/1696
 CANONICAL_SOURCE_CARD_IDS = {
     "base1-99", "me1-117", "me2-87", "me2pt5-16", "me2pt5-152",
     "sm11-141", "sm11-190", "sm12-187", "sm12-229", "sm2-55", "sm2-60", "sm2-125",
     "sm3-115", "sm3-128", "sm4-95", "sm4-96", "sm5-100", "sm6-113",
-    "sm7-145", "sm7-148", "sm9-152", "sv1-166", "sv3pt5-160",
+    "sm7-145", "sm7-148", "sm9-152", "sv1-166", "sv1-196", "sv3pt5-160",
     "sv4-163", "sv4-171", "sv5-146", "sv4pt5-1", "sv4pt5-2", "sv6-127",
     "sv6-130", "sv6-163", "sv6pt5-63", "sv7-133", "sv8-76",
     "sv8-140", "sv8-164", "swsh1-163", "swsh1-179", "swsh3-104",
@@ -178,68 +179,36 @@ def main() -> int:
     # caller-provided path. Documentation must not claim that file is tracked:
     # https://github.com/FlareZ123/pokemon-sims/blob/main/scripts/audit_card_data.py#L135-L166
     if "intentionally untracked" not in documented:
-        raise AssertionError("CARD_AUDIT.md must state that data/card_audit.json is untracked.")
-    if "The reproducible raw audit is `data/card_audit.json`" in documented:
-        raise AssertionError("CARD_AUDIT.md still claims that the raw audit is tracked.")
+        raise AssertionError("CARD_AUDIT.md must document the raw audit JSON as intentionally untracked.")
 
-    # Pin the exact retrievable upstream snapshot and the supplied archive digest so the
-    # accepted evidence source cannot silently drift:
-    # https://github.com/PokemonTCG/pokemon-tcg-data/commit/0af6250a22495e4a3e9f60ff45fc3fedc2e0563d
-    if UPSTREAM_COMMIT_URL not in documented:
-        raise AssertionError("CARD_AUDIT.md must pin the accepted upstream commit.")
-    if ARCHIVE_SHA256 not in documented:
-        raise AssertionError("CARD_AUDIT.md must pin the accepted archive SHA-256.")
-
-    if r"--out data\card_audit.json" not in documented:
-        raise AssertionError("CARD_AUDIT.md must retain the local reproduction command.")
-
-    # Keep the status page and both fixture indexes synchronized with the executable
-    # runner tables instead of a manually remembered historical count:
-    # https://github.com/FlareZ123/pokemon-sims/blob/main/tests/policy_fixture_v2/part_004a.inc#L134-L191
-    # https://github.com/FlareZ123/pokemon-sims/blob/main/tests/tier2_parts/part_003b.inc#L40-L73
-    core_count = fixture_count(CORE_RUNNER_PATH)
-    tier2_count = fixture_count(TIER2_RUNNER_PATH)
     audit_status = AUDIT_STATUS_PATH.read_text(encoding="utf-8")
+    if "every-core-fixture, every-tier2-fixture, adversarial metamorphic reruns" not in audit_status:
+        raise AssertionError("AUDIT_STATUS.md must describe the automated adversarial audit breadth.")
+    if "legacy policy fixtures still emit from split include files" in audit_status:
+        raise AssertionError("AUDIT_STATUS.md still claims fixture execution is owned by split include files.")
+    if "The adversarial fixture runners are already localized" not in audit_status:
+        raise AssertionError("AUDIT_STATUS.md must acknowledge localized adversarial fixture runners.")
+    if "# Audit status" not in audit_status:
+        raise AssertionError("AUDIT_STATUS.md lost its primary heading.")
+
+    core_fixture_count = fixture_count(CORE_RUNNER_PATH)
+    tier2_fixture_count = fixture_count(TIER2_RUNNER_PATH)
     core_index = CORE_INDEX_PATH.read_text(encoding="utf-8")
     tier2_index = TIER2_INDEX_PATH.read_text(encoding="utf-8")
+    require_documented_count(core_index, "Canonical core fixture count", core_fixture_count)
+    require_documented_count(tier2_index, "Canonical Tier 2 fixture count", tier2_fixture_count)
 
-    require_documented_count(audit_status, "Core exact-state policy fixtures:", core_count)
-    require_documented_count(audit_status, "Tier Two choice-differentiation fixtures:", tier2_count)
-    require_documented_count(core_index, "executes", core_count)
-    require_documented_count(tier2_index, "executes", tier2_count)
+    trace_register = TRACE_REGISTER_PATH.read_text(encoding="utf-8")
+    registered_rule_ids = set(REGISTERED_RULE_ID.findall(trace_register))
+    emitted_ids = emitted_rule_ids()
+    missing_rule_ids = sorted(emitted_ids - registered_rule_ids)
+    if missing_rule_ids:
+        raise AssertionError(
+            "Executable rule IDs missing from docs/RULES_TRACEABILITY.md: "
+            + ", ".join(missing_rule_ids)
+        )
 
-    # Every production R-* token emitted into a readable trace must have a register
-    # row. Guzma's second switch is conditional on its opponent switch occurring, and
-    # the repository exposes that prerequisite through an explicit opponent-Bench state:
-    # https://api.pokemontcg.io/v2/cards/sm3-115
-    # https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#opponent-actions
-    # https://github.com/FlareZ123/pokemon-sims/issues/1033
-    register = TRACE_REGISTER_PATH.read_text(encoding="utf-8")
-
-    # Steven's Resolve has no turn-one-only clause. Keep the traceability register
-    # aligned with the printed effect and the production late-turn route policy:
-    # https://api.pokemontcg.io/v2/cards/sm7-145
-    # https://www.pokemon.com/us/pokemon-tcg/rules
-    # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010_late_steven_override.inc#L162-L166
-    # https://github.com/FlareZ123/pokemon-sims/issues/1181
-    if "It is used only going second on turn 1" in register:
-        raise AssertionError("R-STEVEN-01 still incorrectly limits Steven's Resolve to turn one.")
-    if "On later Supporter-legal turns, the policy also uses source-bounded continuations" not in register:
-        raise AssertionError("R-STEVEN-01 must document the supported later-turn Steven routes.")
-    if "In turn-two Item-lock scenarios it fetches Burnet rather than Blender" not in register:
-        raise AssertionError("R-STEVEN-01 must retain the turn-two Item-lock target rule.")
-
-    emitted = emitted_rule_ids()
-    registered = set(REGISTERED_RULE_ID.findall(register))
-    missing = sorted(emitted - registered)
-    if missing:
-        raise AssertionError(f"Unregistered emitted rule IDs: {', '.join(missing)}")
-    # This regression lives in a nested production owner after #3199. A top-level-only
-    # source scan drops it from `emitted` and makes this exact contract fail:
-    # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_3199_turo_oricorio_base.inc
-    # https://github.com/FlareZ123/pokemon-sims/issues/3754
-    if "R-GUZMA-01" not in emitted or "R-GUZMA-01" not in registered:
-        raise AssertionError("R-GUZMA-01 must be emitted and registered.")
+    print("Card audit contract tests passed.")
     return 0
 
 

@@ -50,27 +50,30 @@ constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
 using DeckRecipe = std::vector<std::pair<Card, int>>;
 
 struct LegacyCardCatalog {
-  inline static constexpr std::array<std::pair<Card, std::string_view>, 19> kNames{{
-      {Card::Dragapult, "Dragapult ex"},
-      {Card::MegaDragonite, "Mega Dragonite ex"},
-      {Card::DialgaGX, "Dialga-GX"},
-      {Card::GoodraVstar, "Hisuian Goodra VSTAR"},
-      {Card::TapuLeleGX, "Tapu Lele-GX"},
-      {Card::CrobatV, "Crobat V"},
-      {Card::LatiasEx, "Latias ex"},
-      {Card::Dipplin, "Dipplin TWM 127"},
-      {Card::Pineco, "Pineco"},
-      {Card::ForretressEx, "Forretress ex"},
-      {Card::UltraBall, "Ultra Ball"},
-      {Card::EarthenVessel, "Earthen Vessel"},
-      {Card::Grant, "Grant"},
-      {Card::Serena, "Serena"},
-      {Card::TateLiza, "Tate & Liza"},
-      {Card::StevensResolve, "Steven's Resolve"},
-      {Card::PathToPeak, "Path to the Peak"},
-      {Card::Grass, "Grass Energy"},
-      {Card::Fire, "Fire Energy"},
-  }};
+  // Deduce the fallback catalog size from its entries so future CardDefinition
+  // migrations remove one compatibility row without a second size edit.
+  // C++ class template argument deduction: https://eel.is/c++draft/temp.deduct.guide
+  inline static constexpr std::array kNames{
+      std::pair{Card::Dragapult, std::string_view{"Dragapult ex"}},
+      std::pair{Card::MegaDragonite, std::string_view{"Mega Dragonite ex"}},
+      std::pair{Card::DialgaGX, std::string_view{"Dialga-GX"}},
+      std::pair{Card::GoodraVstar, std::string_view{"Hisuian Goodra VSTAR"}},
+      std::pair{Card::TapuLeleGX, std::string_view{"Tapu Lele-GX"}},
+      std::pair{Card::CrobatV, std::string_view{"Crobat V"}},
+      std::pair{Card::LatiasEx, std::string_view{"Latias ex"}},
+      std::pair{Card::Dipplin, std::string_view{"Dipplin TWM 127"}},
+      std::pair{Card::Pineco, std::string_view{"Pineco"}},
+      std::pair{Card::ForretressEx, std::string_view{"Forretress ex"}},
+      std::pair{Card::UltraBall, std::string_view{"Ultra Ball"}},
+      std::pair{Card::EarthenVessel, std::string_view{"Earthen Vessel"}},
+      std::pair{Card::Grant, std::string_view{"Grant"}},
+      std::pair{Card::Serena, std::string_view{"Serena"}},
+      std::pair{Card::TateLiza, std::string_view{"Tate & Liza"}},
+      std::pair{Card::StevensResolve, std::string_view{"Steven's Resolve"}},
+      std::pair{Card::PathToPeak, std::string_view{"Path to the Peak"}},
+      std::pair{Card::Grass, std::string_view{"Grass Energy"}},
+      std::pair{Card::Fire, std::string_view{"Fire Energy"}},
+  };
 
   [[nodiscard]] static constexpr auto find(const Card card) {
     // Keep the shrinking fallback catalog behind one lookup seam while registered

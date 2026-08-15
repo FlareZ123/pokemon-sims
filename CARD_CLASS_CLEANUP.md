@@ -145,6 +145,7 @@ Next catalog/knowledge step: migrate remaining legacy name and intrinsic metadat
 ## Shared policy owners
 
 - Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.
+- Public future projection isolation: `src/trace_engine_v2/core/routes/issue_3199_public_projection_policy.inc`. `Issue3199PublicProjectionPolicy::Scope` owns the thread-local RAII lifetime for model-internal public-information projections, and `active()` is the single Legacy Star suppression query. Future #3199 callers must reuse this scope instead of adding route-local counters or guards. Future-card-oracle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle Confirmed boundary: https://github.com/FlareZ123/pokemon-sims/issues/3199
 - Garbodor scenario and Ability-lock composition: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. `GarbodorScenarioPolicy::activation_turn_reached()` owns the shared turn threshold, and `GarbodorScenarioPolicy::active()` composes timing with scenario identity. `GarbodorAbilityLockPolicy::garbotoxin_locked()` owns present-versus-removed lock state, `rule_box_ability_available()` owns the separate Path-style Rule Box gate, `ability_available()` composes already-resolved lock facts, and `ability_available_from_lock_state()` centralizes the repeated four-input composition for Engine callers that already own those state facts. Engine wrappers remain compatibility/query seams for callers that need individual state-derived facts. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
 - Setup lifecycle labels, mulligans, Prize deal, and setup trace mechanics: `src/trace_engine_v2/core/setup_lifecycle.inc`.
 - Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
@@ -152,7 +153,7 @@ Next catalog/knowledge step: migrate remaining legacy name and intrinsic metadat
 
 Before adding a new loop or route-local helper, check these owners and reuse a named seam when ordering and semantics match exactly.
 
-Next shared-policy step: route duplicate Garbodor present/removed plus Rule Box composition through `ability_available_from_lock_state()` only when all four state facts have the same semantics. Keep `garbotoxin_locked()`, `rule_box_ability_available()`, and `ability_available()` available for callers that already hold narrower or resolved facts. Preserve separate scenario identity, activation-turn, lock-removal, and Rule Box queries where callers need one fact without the others.
+Next shared-policy step: route duplicate public-projection guards through `Issue3199PublicProjectionPolicy::Scope` only when they enforce the same future-card-oracle boundary, and route duplicate Garbodor present/removed plus Rule Box composition through `ability_available_from_lock_state()` only when all four state facts have the same semantics. Keep `garbotoxin_locked()`, `rule_box_ability_available()`, and `ability_available()` available for callers that already hold narrower or resolved facts.
 
 ## Turn lifecycle cleanup
 

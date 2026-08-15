@@ -1,6 +1,6 @@
 // #3199 isolates only Legacy Star while Tate's public held-route classifier runs.
 // Forest Seal Stone and every other legal deterministic route remain available to
-// the projected Engine. A thread-local depth is used because the classifier creates
+// the projected Engine. The shared scope is thread-local because the classifier creates
 // a second Engine on the same worker thread; RAII restores the guard on exceptions.
 // Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
 // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
@@ -13,10 +13,6 @@
 #undef tate_draw_has_held_non_supporter_completion
 
   bool tate_draw_has_held_non_supporter_completion() const {
-    struct ProjectionGuard {
-      int& depth;
-      explicit ProjectionGuard(int& value) : depth(value) { ++depth; }
-      ~ProjectionGuard() { --depth; }
-    } guard(issue_3199_public_projection_depth_);
+    Issue3199PublicProjectionPolicy::Scope guard;
     return tate_draw_has_held_non_supporter_completion_issue3199_original();
   }

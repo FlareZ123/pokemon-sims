@@ -6,13 +6,13 @@
 // Future-card-oracle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
 // Advanced procedure source: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 // Confirmed semantic bug: https://github.com/FlareZ123/pokemon-sims/issues/3199
+#include "core/routes/issue_3199_public_projection_policy.inc"
+
 #define use_legacy_star use_legacy_star_issue3199_public_projection_original
 #include "core/routes/issue_3199_legacy_star_combined_energy_payload_base.inc"
 #undef use_legacy_star
 
-  inline static thread_local int issue_3199_public_projection_depth_{0};
-
   bool use_legacy_star() {
-    if (issue_3199_public_projection_depth_ > 0) return false;
+    if (Issue3199PublicProjectionPolicy::active()) return false;
     return use_legacy_star_issue3199_public_projection_original();
   }

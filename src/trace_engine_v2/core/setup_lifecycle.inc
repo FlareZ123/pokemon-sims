@@ -1,18 +1,18 @@
 #ifndef SIM_TRACE_SETUP_LIFECYCLE_INCLUDED
 #define SIM_TRACE_SETUP_LIFECYCLE_INCLUDED
 
-  std::string current_deck_id() const {
-    const auto recipe_contains = [this](const Card card) {
-      return total_copies(card) > 0;
-    };
+  [[nodiscard]] bool setup_recipe_contains(const Card card) const {
+    return total_copies(card) > 0;
+  }
 
-    if (recipe_contains(Card::DoubleDragonEnergy)) {
+  std::string current_deck_id() const {
+    if (setup_recipe_contains(Card::DoubleDragonEnergy)) {
       return "regidrago-dde-model";  // Modeling recipe: https://github.com/FlareZ123/pokemon-sims/issues/2238 ; DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
     }
-    if (recipe_contains(Card::CrobatV)) {
+    if (setup_recipe_contains(Card::CrobatV)) {
       return "modeling-crobat-variant";
     }
-    if (recipe_contains(Card::SecretBox) && recipe_contains(Card::Pineco)) {
+    if (setup_recipe_contains(Card::SecretBox) && setup_recipe_contains(Card::Pineco)) {
       return "regidrago-pineco";
     }
     if (total_copies(Card::RegidragoV) == 4 &&
@@ -22,35 +22,37 @@
     return "custom";
   }
 
-  static const char* dci_label(DciProfile profile) {
-    // DCI/JIT policy vocabulary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    switch (profile) {
-      case DciProfile::StrictJit: return "strict-JIT";
-      case DciProfile::MatchupFlexJit: return "matchup-flex-JIT";
-      case DciProfile::NoDiscardControl: return "no-discard-control";
+  struct SetupLabelPolicy {
+    [[nodiscard]] static const char* dci(const DciProfile profile) {
+      // DCI/JIT policy vocabulary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      switch (profile) {
+        case DciProfile::StrictJit: return "strict-JIT";
+        case DciProfile::MatchupFlexJit: return "matchup-flex-JIT";
+        case DciProfile::NoDiscardControl: return "no-discard-control";
+      }
+      return "unknown";
     }
-    return "unknown";
-  }
 
-  static const char* lock_label(LockMode mode) {
-    // Scenario lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
-    switch (mode) {
-      case LockMode::None: return "none";
-      case LockMode::TurnTwoItem: return "turn-two Item lock";
-      case LockMode::FullItem: return "full Item lock";
-      case LockMode::FullRuleBoxAbility: return "full Rule Box Ability lock";
-      case LockMode::FullCombined: return "full Item + Rule Box Ability lock";
-      case LockMode::FullSupporter: return "full Supporter lock";
+    [[nodiscard]] static const char* lock(const LockMode mode) {
+      // Scenario lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+      switch (mode) {
+        case LockMode::None: return "none";
+        case LockMode::TurnTwoItem: return "turn-two Item lock";
+        case LockMode::FullItem: return "full Item lock";
+        case LockMode::FullRuleBoxAbility: return "full Rule Box Ability lock";
+        case LockMode::FullCombined: return "full Item + Rule Box Ability lock";
+        case LockMode::FullSupporter: return "full Supporter lock";
+      }
+      return "unknown";
     }
-    return "unknown";
-  }
+  };
 
   std::string dci_name() const {
-    return dci_label(scenario_.dci);
+    return SetupLabelPolicy::dci(scenario_.dci);
   }
 
   std::string lock_name() const {
-    return lock_label(scenario_.locks);
+    return SetupLabelPolicy::lock(scenario_.locks);
   }
 
   // Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

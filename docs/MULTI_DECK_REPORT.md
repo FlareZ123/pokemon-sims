@@ -162,6 +162,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `42c2830c5ec9bcd4bcd3e631ebaec28aa0f7c8e106af9f0b2824ea9df43be819`.
+Simulator policy digest: `1733efffc32c18b9d91d42db72df271dc41a181d7b37109cbf3e1bb1fcd9c74a`.
 
 Comparison CSV SHA-256: `dc95fe93d0c42254e07446aedd39c15194aab55f6312cbfeeca91eb75656235f`.

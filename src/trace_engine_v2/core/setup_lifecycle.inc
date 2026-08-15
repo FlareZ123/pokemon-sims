@@ -83,13 +83,25 @@
     prizes_revealed_ = false;
   }
 
+  bool opening_hand_has_basic() const {
+    // A valid opening hand must contain at least one Basic Pokémon before setup can continue:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    return std::any_of(state_.hand.begin(), state_.hand.end(), is_basic);
+  }
+
+  void return_mulligan_hand_to_deck() {
+    // A mulligan returns the seven-card hand to the deck before the deck is shuffled again:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    state_.deck.insert(state_.deck.end(), state_.hand.begin(), state_.hand.end());
+    state_.hand.clear();
+  }
+
   void draw_opening_hand_with_mulligans() {
     while (true) {
       state_.hand.clear();
       move_top_cards_from_deck(state_.hand, kOpeningHandSize);
-      if (std::any_of(state_.hand.begin(), state_.hand.end(), is_basic)) return;
-      state_.deck.insert(state_.deck.end(), state_.hand.begin(), state_.hand.end());
-      state_.hand.clear();
+      if (opening_hand_has_basic()) return;
+      return_mulligan_hand_to_deck();
       shuffle(state_.deck);
       ++outcome_.mulligans;
     }

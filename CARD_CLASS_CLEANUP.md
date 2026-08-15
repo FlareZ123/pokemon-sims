@@ -86,9 +86,11 @@ Next composition step: inventory `opening_legacy_stage.inc` for another complete
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner.
 
-- `PayloadZonePolicy::first_iterator_matching()` owns the shared physical-zone first-match traversal primitive. Payload and exact-card membership build on this seam so they cannot drift into separate scan implementations.
+- `PayloadZonePolicy::first_iterator_matching()` owns the shared physical-zone first-match traversal primitive.
+- `PayloadZonePolicy::contains_matching()` owns the shared predicate-membership check and keeps payload and exact-card membership on the same physical traversal seam.
+- `PayloadZonePolicy::count_matching()` owns predicate-based cardinality so later count cleanup does not recreate route-local `std::count_if` loops.
 - `PayloadZonePolicy::first()` preserves physical zone order for callers whose historical behavior depends on the first matching payload.
-- `PayloadZonePolicy::contains()` and `PayloadZonePolicy::count()` own generic payload membership/count semantics.
+- `PayloadZonePolicy::contains()` and `PayloadZonePolicy::count()` own generic payload membership/count semantics by delegating to the shared predicate primitives.
 - `PayloadZonePolicy::contains_card()` owns concrete-card membership in a physical zone so preference code does not duplicate `std::find` scans.
 - `PayloadPreferencePolicy::first_preferred()` preserves the explicit five-card strategic priority.
 - `PayloadPreferencePolicy::first_preferred_in_zone()` composes preference order with physical-zone membership.
@@ -96,7 +98,7 @@ Next composition step: inventory `opening_legacy_stage.inc` for another complete
 
 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 
-Next payload step: replace remaining ad hoc Dragon-payload membership scans only where semantics exactly match `PayloadZonePolicy::contains()` or `contains_card()`. Preserve physical-order selection when order is observable and preserve the explicit strategic order where preference is required. Keep DCI/JIT predicates and discard timing at strategy owners.
+Next payload step: replace remaining ad hoc Dragon-payload membership and cardinality scans only where semantics exactly match `PayloadZonePolicy::contains()`, `contains_card()`, or `count()`. Preserve physical-order selection when order is observable and preserve the explicit strategic order where preference is required. Keep DCI/JIT predicates and discard timing at strategy owners.
 
 ## Forretress cleanup
 

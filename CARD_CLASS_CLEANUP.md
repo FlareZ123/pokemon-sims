@@ -44,6 +44,10 @@ Quick Ball is the reference for explicit registration, exact-print metadata, int
 
 Engine strategy owns route admission, strategic target preference, DCI/UDP/AMR, strict-JIT and matchup-flex timing, Supporter contention, connector domination, K0/K1 state, setup-axis value, lock schedules, readiness, and payload policy.
 
+`src/trace_engine_v2/core/card_catalog.inc` owns the compatibility name bridge for cards that have not yet migrated into `CardDefinition`. Completed in `cleanup-1786780798661`: registered cards were removed from the unreachable legacy fallback, and the remaining compatibility labels were grouped under `LegacyCardCatalog` instead of a mixed switch containing both registered and legacy cards. Registry lookup remains the first and canonical name path, so this is behavior-preserving structure work. Registry owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+
+Next catalog step: migrate the remaining `LegacyCardCatalog` entries one card at a time through the normal ownership workflow. Delete each compatibility row only when that card has an explicit `CardDefinition`, registration, exact-print source, and focused metadata test. Keep gameplay resolution and strategic policy at their current owners during metadata-only migrations.
+
 ## Active card migrations
 
 Do not create a parallel migration while one of these owners is active:
@@ -141,4 +145,4 @@ Before adding a new loop or route-local helper, check these owners and reuse a n
 
 A cleanup PR is mergeable only when strict Release compilation succeeds, focused tests and the full regression suite show no new failure, sanitizer/structural checks show no new failure, representative `--simulate-this` traces preserve legal action ordering/readiness, the paired T2/T3 matrix has no unexplained drift, and the PR contains no gameplay behavior change.
 
-Known baseline failures must be tied to their existing issue and shown unchanged. Any newly discovered gameplay defect uses the separate bug-confirmation workflow.
+Known baseline failures must be tied to their existing issue and shown unchanged. Any newly discovered gameplay defect uses the separate bug-confirmation workflow instead of combining the fix with cleanup.

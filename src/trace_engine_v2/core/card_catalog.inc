@@ -49,65 +49,43 @@ constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
 
 using DeckRecipe = std::vector<std::pair<Card, int>>;
 
-constexpr std::string_view legacy_name(const Card card) {
-  switch (card) {
-    case Card::RegidragoVstar: return "Regidrago VSTAR";
-    case Card::Dragapult: return "Dragapult ex";
-    case Card::MegaDragonite: return "Mega Dragonite ex";
-    case Card::DialgaGX: return "Dialga-GX";
-    case Card::GoodraVstar: return "Hisuian Goodra VSTAR";
-    case Card::TapuLeleGX: return "Tapu Lele-GX";
-    case Card::CrobatV: return "Crobat V";
-    case Card::LatiasEx: return "Latias ex";
-    case Card::MawileGX: return "Mawile-GX";
-    case Card::Oricorio: return "Oricorio GRI 55";
-    case Card::Dipplin: return "Dipplin TWM 127";
-    case Card::Pineco: return "Pineco";
-    case Card::ForretressEx: return "Forretress ex";
-    case Card::UltraBall: return "Ultra Ball";
-    case Card::EarthenVessel: return "Earthen Vessel";
-    case Card::Grant: return "Grant";
-    case Card::Serena: return "Serena";
-    case Card::TateLiza: return "Tate & Liza";
-    case Card::StevensResolve: return "Steven's Resolve";
-    case Card::PathToPeak: return "Path to the Peak";
-    case Card::Grass: return "Grass Energy";
-    case Card::Fire: return "Fire Energy";
-    case Card::Appletun: // Exact registered label and print: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
-    case Card::RegidragoV: // Exact registered label and print: https://api.pokemontcg.io/v2/cards/swsh12-135 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3683
-    case Card::Arven:
-    case Card::BattleVipPass:
-    case Card::BrilliantBlender:
-    case Card::ChaoticSwell:
-    case Card::Channeler:
-    case Card::Crispin:
-    case Card::Dawn:
-    case Card::DoubleDragonEnergy: // Exact registered Special Energy label: https://api.pokemontcg.io/v2/cards/xy6-97
-    case Card::ErikasInvitation: // Exact registered Supporter name: https://api.pokemontcg.io/v2/cards/sv3pt5-160 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3598
-    case Card::EvolutionIncense:
-    case Card::FieldBlower:
-    case Card::ForestOfVitality: // Exact registered name: https://api.pokemontcg.io/v2/cards/me1-117 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3639
-    case Card::ForestSealStone: // Exact registered name: https://api.pokemontcg.io/v2/cards/swsh12-156
-    case Card::Gladion: // Exact registered Supporter name: https://api.pokemontcg.io/v2/cards/sm4-95 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3604
-    case Card::Guzma: // Exact registered Supporter name: https://api.pokemontcg.io/v2/cards/sm3-115 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3618
-    case Card::GuzmaHala:
-    case Card::HisuianHeavyBall:
-    case Card::Klara:
-    case Card::Lusamine:
-    case Card::MysteriousTreasure:
-    case Card::PokemonCommunication:
-    case Card::Powerglass:
-    case Card::ProfessorBurnet:
-    case Card::ProfessorTuro: // Exact registered name: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
-    case Card::ProfessorsLetter:
-    case Card::QuickBall:
-    case Card::RoseannesBackup: // Exact registered Supporter: https://api.pokemontcg.io/v2/cards/swsh9-148 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3629
-    case Card::SecretBox:
-    case Card::TeamYellsCheer: // Exact registered Supporter name: https://api.pokemontcg.io/v2/cards/swsh9-149 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3620
-    case Card::WishfulBaton: // Exact registered name: https://api.pokemontcg.io/v2/cards/sm3-128
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+struct LegacyCardCatalog {
+  inline static constexpr std::array<std::pair<Card, std::string_view>, 20> kNames{{
+      {Card::RegidragoVstar, "Regidrago VSTAR"},
+      {Card::Dragapult, "Dragapult ex"},
+      {Card::MegaDragonite, "Mega Dragonite ex"},
+      {Card::DialgaGX, "Dialga-GX"},
+      {Card::GoodraVstar, "Hisuian Goodra VSTAR"},
+      {Card::TapuLeleGX, "Tapu Lele-GX"},
+      {Card::CrobatV, "Crobat V"},
+      {Card::LatiasEx, "Latias ex"},
+      {Card::Dipplin, "Dipplin TWM 127"},
+      {Card::Pineco, "Pineco"},
+      {Card::ForretressEx, "Forretress ex"},
+      {Card::UltraBall, "Ultra Ball"},
+      {Card::EarthenVessel, "Earthen Vessel"},
+      {Card::Grant, "Grant"},
+      {Card::Serena, "Serena"},
+      {Card::TateLiza, "Tate & Liza"},
+      {Card::StevensResolve, "Steven's Resolve"},
+      {Card::PathToPeak, "Path to the Peak"},
+      {Card::Grass, "Grass Energy"},
+      {Card::Fire, "Fire Energy"},
+  }};
+
+  [[nodiscard]] static constexpr std::string_view name(const Card card) {
+    for (const auto& [id, label] : kNames) {
+      if (id == card) return label;
+    }
+    return "Unknown";
   }
-  return "Unknown";
+};
+
+constexpr std::string_view legacy_name(const Card card) {
+  // Registered CardDefinition names are resolved by name() before this fallback.
+  // Keep legacy metadata in one data table until each remaining card migrates:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+  return LegacyCardCatalog::name(card);
 }
 
 constexpr std::string_view name(const Card card) {

@@ -23,18 +23,13 @@
 
   void issue_3545_advance_public_state_one_turn(Engine& projected) const {
     // Future-bank decisions deliberately omit the unknown start-of-turn draw. They
-    // may rely only on cards already visible now, while reproducing the public flag
-    // resets from begin_turn(). This prevents a future-card oracle.
+    // may rely only on cards already visible now while applying the exact current
+    // public turn reset. This prevents a future-card oracle and keeps projections
+    // synchronized with Dark Asset and transient-lock lifecycle state.
     // Turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Future-card policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
-    // begin_turn owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
-    projected.state_.turn += 1;
-    projected.state_.supporter_used = false;
-    projected.state_.manual_energy_used = false;
-    projected.state_.stadium_used = false;
-    projected.state_.retreat_used = false;
-    projected.state_.turn_ended = false;
-    projected.state_.discarded_this_turn.clear();
+    // Lifecycle owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/turn_lifecycle.inc
+    projected.reset_per_turn_state(projected.state_.turn + 1);
   }
 
   std::optional<Card> issue_3545_first_payload_in_deck() const {

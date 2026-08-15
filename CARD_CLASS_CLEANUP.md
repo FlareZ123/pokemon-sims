@@ -171,6 +171,8 @@ Future retirement of either shim requires migrating every raw-source reader and 
 
 Completed in `cleanup-1786758957236`: centralized Exploding Energy's board-index container type and added the reusable pointer-to-index seam. Completed in `cleanup-1786759283249`: `exploding_energy_regidrago_target_index()` now delegates to `board_index_for_pointer(target_regi())`, Exploding Energy source discovery uses `board_index_matching()`, destination validation and mutation use `board_pokemon_at_index()`, Active detection uses `board_index_is_active()`, Benched self-Knock-Out conversion uses `bench_position_from_board_index()`, and the card-local `pokemon_at_board_index()` member is retired. These are structural changes only; attachment distribution, self-Knock-Out, promotion, DCI/UDP/AMR, K0/K1, connector, readiness, Ability, evolution, and route policy remain at their prior owners.
 
+Completed in `cleanup-1786764420546`: pointer-to-index lookup now delegates to the canonical Active-first predicate traversal, and the internal traversal helper is named consistently with the public `board_index_matching()` seam. This removes another duplicated board walk without changing board order, pointer identity semantics, Forretress selection, attachment distribution, self-Knock-Out, promotion, retreat payment, or route policy.
+
 Next mechanical Forretress step: consolidate the remaining Active-specific source questions in `use_exploding_energy_for_setup()` behind the shared board-index vocabulary, then assess whether the post-Ability retreat-target ranking can reuse a named board query without changing its deterministic ranking. Preserve selection, attachment distribution, self-Knock-Out, promotion, retreat payment, and route policy at the Forretress owner.
 
 Board query owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
@@ -261,7 +263,7 @@ Exact migrated-card metadata and source URLs: https://github.com/FlareZ123/pokem
 
 `cleanup-1786760569376` centralizes presence-only board queries through `board_index_matching()` and separates registry-owned card names from the shrinking legacy fallback in `core/card_catalog.inc`. These changes preserve gameplay policy while narrowing future board and card-class migrations. Board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc Registry owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp Catalog owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 
-The next Forretress cleanup remains the Active-specific source questions in `use_exploding_energy_for_setup()` and the post-Ability retreat-target ranking described above. Keep attachment selection, self-Knock-Out, promotion, retreat payment, DCI/UDP/AMR, K0/K1, and route policy at their existing owners.
+`cleanup-1786764420546` removes the remaining duplicate pointer-to-index board walk and aligns the internal Active-first traversal name with the public board-index query seam. The next Forretress cleanup remains the Active-specific source questions in `use_exploding_energy_for_setup()` and the post-Ability retreat-target ranking described above. Keep attachment selection, self-Knock-Out, promotion, retreat payment, DCI/UDP/AMR, K0/K1, and route policy at their existing owners.
 
 ## Validation gate
 

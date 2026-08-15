@@ -116,6 +116,11 @@
     // Professor Burnet searches and discards up to two deck cards:
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     static constexpr std::size_t kBurnetSelectionLimit = 2U;
+    const auto discard_from_deck = [this, &discarded](const Card card) {
+      if (!move_deck_to_discard(card)) return false;
+      discarded.push_back(card);
+      return true;
+    };
     // Apex Dragon copies attacks from Dragon Pokémon in discard. Fill Burnet's two
     // selections with modeled A/S payloads before considering Dipplin or dead cards:
     // https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -133,10 +138,10 @@
         Card::DialgaGX, Card::Appletun};
     for (const Card card : kBurnetPayloadPriority) {
       if (discarded.size() >= kBurnetSelectionLimit) break;
-      if (move_deck_to_discard(card)) discarded.push_back(card);
+      discard_from_deck(card);
     }
-    if (discarded.size() < kBurnetSelectionLimit && move_deck_to_discard(Card::Dipplin)) {
-      discarded.push_back(Card::Dipplin);
+    if (discarded.size() < kBurnetSelectionLimit) {
+      discard_from_deck(Card::Dipplin);
     }
 
     // Celestial Roar processes the top 3 cards and attaches every Basic Energy found.
@@ -168,10 +173,7 @@
           Card::PathToPeak, Card::ErikasInvitation, Card::Guzma,
           Card::Channeler, Card::FieldBlower, Card::ChaoticSwell};
       for (const Card card : kBurnetDeadThinningPriority) {
-        if (move_deck_to_discard(card)) {
-          discarded.push_back(card);
-          break;
-        }
+        if (discard_from_deck(card)) break;
       }
     }
 

@@ -50,6 +50,9 @@ constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
 using DeckRecipe = std::vector<std::pair<Card, int>>;
 
 constexpr std::string_view legacy_name(const Card card) {
+  // Registered CardDefinition names are resolved by name() before this fallback.
+  // Keep this switch limited to cards that have not yet migrated to the registry:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
   switch (card) {
     case Card::RegidragoVstar: return "Regidrago VSTAR";
     case Card::Dragapult: return "Dragapult ex";
@@ -59,8 +62,6 @@ constexpr std::string_view legacy_name(const Card card) {
     case Card::TapuLeleGX: return "Tapu Lele-GX";
     case Card::CrobatV: return "Crobat V";
     case Card::LatiasEx: return "Latias ex";
-    case Card::MawileGX: return "Mawile-GX";
-    case Card::Oricorio: return "Oricorio GRI 55";
     case Card::Dipplin: return "Dipplin TWM 127";
     case Card::Pineco: return "Pineco";
     case Card::ForretressEx: return "Forretress ex";
@@ -73,41 +74,8 @@ constexpr std::string_view legacy_name(const Card card) {
     case Card::PathToPeak: return "Path to the Peak";
     case Card::Grass: return "Grass Energy";
     case Card::Fire: return "Fire Energy";
-    case Card::Appletun: // Exact registered label and print: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
-    case Card::RegidragoV: // Exact registered label and print: https://api.pokemontcg.io/v2/cards/swsh12-135 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3683
-    case Card::Arven:
-    case Card::BattleVipPass:
-    case Card::BrilliantBlender:
-    case Card::ChaoticSwell:
-    case Card::Channeler:
-    case Card::Crispin:
-    case Card::Dawn:
-    case Card::DoubleDragonEnergy: // Exact registered Special Energy label: https://api.pokemontcg.io/v2/cards/xy6-97
-    case Card::ErikasInvitation: // Exact registered Supporter name: https://api.pokemontcg.io/v2/cards/sv3pt5-160 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3598
-    case Card::EvolutionIncense:
-    case Card::FieldBlower:
-    case Card::ForestOfVitality: // Exact registered name: https://api.pokemontcg.io/v2/cards/me1-117 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3639
-    case Card::ForestSealStone: // Exact registered name: https://api.pokemontcg.io/v2/cards/swsh12-156
-    case Card::Gladion: // Exact registered Supporter name: https://api.pokemontcg.io/v2/cards/sm4-95 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3604
-    case Card::Guzma: // Exact registered Supporter name: https://api.pokemontcg.io/v2/cards/sm3-115 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3618
-    case Card::GuzmaHala:
-    case Card::HisuianHeavyBall:
-    case Card::Klara:
-    case Card::Lusamine:
-    case Card::MysteriousTreasure:
-    case Card::PokemonCommunication:
-    case Card::Powerglass:
-    case Card::ProfessorBurnet:
-    case Card::ProfessorTuro: // Exact registered name: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
-    case Card::ProfessorsLetter:
-    case Card::QuickBall:
-    case Card::RoseannesBackup: // Exact registered Supporter: https://api.pokemontcg.io/v2/cards/swsh9-148 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3629
-    case Card::SecretBox:
-    case Card::TeamYellsCheer: // Exact registered Supporter name: https://api.pokemontcg.io/v2/cards/swsh9-149 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3620
-    case Card::WishfulBaton: // Exact registered name: https://api.pokemontcg.io/v2/cards/sm3-128
-      break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+    default: return "Unknown";
   }
-  return "Unknown";
 }
 
 constexpr std::string_view name(const Card card) {

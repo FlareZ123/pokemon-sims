@@ -50,9 +50,12 @@
       const ActiveZone& active, const BenchZone& bench, Predicate predicate) {
     // Keep index discovery on the same Active-first mapping used by lookup.
     // C++ container indexing semantics: https://eel.is/c++draft/vector.capacity
-    if (active && predicate(*active)) return 0U;
-    for (BoardIndex index = 0; index < bench.size(); ++index) {
-      if (predicate(bench[index])) return index + 1U;
+    if (active && predicate(*active)) return kActiveBoardIndex;
+    for (BoardIndex bench_position = 0; bench_position < bench.size();
+         ++bench_position) {
+      if (predicate(bench[bench_position])) {
+        return board_index_for_bench_position(bench_position);
+      }
     }
     return std::nullopt;
   }

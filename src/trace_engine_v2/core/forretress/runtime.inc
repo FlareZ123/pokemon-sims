@@ -50,7 +50,7 @@ bool Engine::evolve_forretress_ex() {
   // https://www.pokemon.com/us/pokemon-tcg/rules
   Pokemon* pineco = find_board_pokemon_matching(
       [current_turn, forest_active](const Pokemon& pokemon) {
-        return pokemon.card == Card::Pineco &&
+        return is_pineco_board_pokemon(pokemon) &&
             (pokemon_entered_before_turn(pokemon, current_turn) ||
              forest_active);
       });
@@ -241,12 +241,12 @@ bool Engine::advance_forretress_combo() {
   // https://www.pokemon.com/us/pokemon-tcg/rules
   const bool pineco_can_evolve_normally = board_has_pokemon_matching(
       [current_turn](const Pokemon& pokemon) {
-        return pokemon.card == Card::Pineco &&
+        return is_pineco_board_pokemon(pokemon) &&
             pokemon_entered_before_turn(pokemon, current_turn);
       });
   const bool current_turn_pineco = board_has_pokemon_matching(
       [current_turn](const Pokemon& pokemon) {
-        return pokemon.card == Card::Pineco &&
+        return is_pineco_board_pokemon(pokemon) &&
             pokemon.entered_turn == current_turn;
       });
   const bool pineco_can_enter_this_turn = in_play_count(Card::Pineco) == 0 &&

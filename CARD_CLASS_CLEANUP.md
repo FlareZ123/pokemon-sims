@@ -74,11 +74,11 @@ If migration exposes gameplay behavior that is wrong, use the normal bug-confirm
 
 `composition/late_engine_stage.inc` owns the complete historical `part_014c.inc` -> `part_015.inc` -> `part_016.inc` chain because `play_field_blower` and `run_turn` intentionally span those fragments. Keeping setup, continuation, and teardown in one stage makes the real macro lifetime the ownership boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_engine_stage.inc
 
-`composition/opening_legacy_stage.inc` remains separate while it owns live alias setup and delegates to `opening_state_completion_stage.inc`. The banked-Tapu and lock-removal stages remain separate because each owns a complete local alias setup/include/teardown boundary.
+`composition/opening_legacy_stage.inc` now owns the complete historical opening continuation from `part_003.inc` through `part_004.inc`, `part_005.inc`, and `core/garbodor_lock_policy.inc`. The former `opening_state_completion_stage.inc` forwarding boundary is removed. `tests/opening_composition_source_contract_tests.cpp` pins the `begin_turn`, `might_be_unseen`, and `ability_available_for_pokemon` aliases together with the direct include chain so later cleanup cannot silently change their textual lifetime. The banked-Tapu and lock-removal stages remain separate because each owns a complete local alias setup/include/teardown boundary.
 
 Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. Route admission/projection/decision policy stays under `src/trace_engine_v2/core/routes/`. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
-Next composition step: inventory `opening_legacy_stage.inc` and `opening_state_completion_stage.inc` only after exact source-contract coverage exists for their cross-fragment aliases. Do not recreate forwarding-only sequencers.
+Next composition step: inventory the temporary opening aliases inside `opening_legacy_stage.inc` for a true named ownership boundary. Move one alias family only when the existing source contract can pin its entry state, include order, and teardown exactly. Do not recreate forwarding-only sequencers.
 
 ## Payload policy cleanup
 

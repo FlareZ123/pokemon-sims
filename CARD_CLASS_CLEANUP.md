@@ -172,11 +172,11 @@ Next turn-lifecycle step: route only exact duplicate action-flag/reset bundles t
 
 ## Projection cleanup
 
-`src/trace_engine_v2/part_turo_oricorio_override.inc` now gives the Tate public-projection recursion guard a named Engine member type instead of rebuilding an anonymous RAII type at each call site. The projection still isolates only Legacy Star and restores the same thread-local depth on scope exit: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_turo_oricorio_override.inc
+Issue #3199 public-projection plumbing now keeps the thread-local recursion depth and its scoped RAII guard under `src/trace_engine_v2/core/routes/`, beside the canonical Tate/Legacy Star projection policy. The two historical root wrappers retain their existing macro aliases and route-facing adapters at the identical textual boundaries, while state and guard ownership are centralized in `issue_3199_public_projection_state.inc` and `issue_3199_public_projection_depth_guard.inc`. Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136 Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148 Future-card-oracle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle Confirmed projection contract: https://github.com/FlareZ123/pokemon-sims/issues/3199
 
 `src/trace_engine_v2/part_roseanne_multimode_override.inc` now evaluates the Evolution Incense -> Earthen Vessel admission path on a copied `Engine`, matching the neighboring Pokémon Communication projection and avoiding temporary mutation/restoration of live hand state. Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148 Evolution Incense: https://api.pokemontcg.io/v2/cards/swsh1-163 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 
-Next projection step: migrate only admission checks whose semantics are already pure projections onto copied Engine state. Keep physical resolution, trace emission, K0/K1 transitions, and strategic route choice at their current owners.
+Next projection step: retire the remaining #3199 root composition wrappers only when their complete alias lifetimes can move into `composition/post_014a_overrides.inc` without changing declaration order or member boundaries. For other projections, migrate only admission checks whose semantics are already pure projections onto copied Engine state. Keep physical resolution, trace emission, K0/K1 transitions, and strategic route choice at their current owners.
 
 ## Validation gate
 

@@ -637,3 +637,12 @@ bool issue_1605_arven_crobat_route_available() const {
   }
 
   void resolve_entry_ability(const Card card) {
+    // Every hand-to-Bench entry Ability is resolved through the same canonical
+    // Garbotoxin / Rule Box availability policy. This keeps non-Rule-Box entry
+    // Abilities such as Oricorio's Vital Dance subject to Garbotoxin while leaving
+    // Path-style Rule Box suppression inapplicable to Oricorio.
+    // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Canonical policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/garbodor_lock_policy.inc
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3867
+    if (!ability_available_for_pokemon(card)) return;

@@ -6,7 +6,7 @@
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
 // Card catalog: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 // Card classification: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
-// Simulator state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
+// Runtime state + metrics + trace: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulation_runtime.inc
 // Banked-Tapu replacement policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/banked_tapu_retreat_policy.inc
 // Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forest_field_blower_policy.inc
 // Battle Compressor / VS Seeker policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/battle_compressor_vs_seeker_policy.inc
@@ -26,7 +26,24 @@
 #include "../core/card_classification.inc"
 #endif
 
-#include "../core/simulator_state.inc"
+// Keep state ownership at the canonical composition boundary instead of a
+// forwarding-only .inc layer. This preserves the same textual continuation into
+// the opening stage while making the runtime dependency explicit here.
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
+// Runtime state + metrics + trace: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulation_runtime.inc
+#include "../core/simulation_runtime.inc"
+
+std::string join_cards(const std::vector<Card>& cards) {
+  if (cards.empty()) return "(none)";
+  std::ostringstream out;
+  for (std::size_t i = 0; i < cards.size(); ++i) {
+    if (i != 0) out << ", ";
+    out << name(cards[i]);
+  }
+  return out.str();
+}
+
+std::string pokemon_summary(const Pokemon& p) {
 
 #endif  // SIM_TRACE_SIMULATOR_STATE_INCLUDED
 

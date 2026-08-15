@@ -88,7 +88,9 @@ The same composition owner now also contains the issue-1724 Crobat V Stadium-com
 
 `post_014a_overrides.inc` now composes `core/routes/issue_1016_legacy_star_quick_ball_policy.inc` directly under the same `use_legacy_star` alias lifetime that previously wrapped `part_issue_1016_legacy_star_quick_ball_override.inc`. The forwarding-only root shim has been retired without moving the alias boundary or changing route policy. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136 Canonical route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc Composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
 
-Next composition step: inspect `post_014a_overrides.inc` and the remaining root `part_*` composition fragments for another forwarding-only seam only where its complete macro lifetime can move intact into an existing semantic owner at the identical textual boundary. Prefer retiring one-purpose route fragments whose bodies can live beside their sole caller. Do not recreate retired forwarding-only sequencers.
+The issue-3199 Tate held-route projection and Legacy Star isolation implementations now live under `src/trace_engine_v2/core/routes/` as `issue_3199_tate_public_projection.inc` and `issue_3199_legacy_star_public_projection.inc`. Their historical root fragments remain compatibility-only forwarders so old review links stay stable while route admission and public-projection policy have one semantic directory owner. The macro aliases, thread-local depth guard, declaration order, and direct Legacy Star, Forest Seal Stone, and Tate & Liza sources are unchanged. Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148 Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136 Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156 Confirmed projection contract: https://github.com/FlareZ123/pokemon-sims/issues/3199
+
+Next composition step: retire the two issue-3199 compatibility forwarders only when their callers can include the new `core/routes/` owners directly at the identical textual boundaries. Continue inspecting the remaining root `part_*` composition fragments for complete forwarding-only seams without recreating retired sequencers.
 
 ## Payload policy cleanup
 
@@ -172,11 +174,11 @@ Next turn-lifecycle step: route only exact duplicate action-flag/reset bundles t
 
 ## Projection cleanup
 
-`src/trace_engine_v2/part_turo_oricorio_override.inc` now gives the Tate public-projection recursion guard a named Engine member type instead of rebuilding an anonymous RAII type at each call site. The projection still isolates only Legacy Star and restores the same thread-local depth on scope exit: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_turo_oricorio_override.inc
+The Tate public-projection recursion guard and the Legacy Star public-projection isolation policy for issue #3199 now have canonical owners under `src/trace_engine_v2/core/routes/`: `issue_3199_tate_public_projection.inc` and `issue_3199_legacy_star_public_projection.inc`. `part_turo_oricorio_override.inc` and `part_issue_1069_legacy_star_combined_energy_payload_override.inc` are compatibility-only forwarders. The projection still isolates only Legacy Star, preserves every other deterministic route, and restores the same thread-local depth on scope exit. Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136 Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156 Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148 Projection contract: https://github.com/FlareZ123/pokemon-sims/issues/3199
 
 `src/trace_engine_v2/part_roseanne_multimode_override.inc` now evaluates the Evolution Incense -> Earthen Vessel admission path on a copied `Engine`, matching the neighboring Pokémon Communication projection and avoiding temporary mutation/restoration of live hand state. Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148 Evolution Incense: https://api.pokemontcg.io/v2/cards/swsh1-163 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 
-Next projection step: migrate only admission checks whose semantics are already pure projections onto copied Engine state. Keep physical resolution, trace emission, K0/K1 transitions, and strategic route choice at their current owners.
+Next projection step: retire compatibility-only root projection forwarders when their callers can include the canonical `core/routes/` owners directly without changing textual member order or macro lifetimes. Migrate only admission checks whose semantics are already pure projections onto copied Engine state. Keep physical resolution, trace emission, K0/K1 transitions, and strategic route choice at their current owners.
 
 ## Validation gate
 

@@ -12,6 +12,11 @@
     return index == kActiveBoardIndex;
   }
 
+  [[nodiscard]] static constexpr bool board_index_is_benched(
+      const BoardIndex index) {
+    return !board_index_is_active(index);
+  }
+
   [[nodiscard]] static constexpr BoardIndex board_index_for_bench_position(
       const BoardIndex bench_position) {
     return bench_position + 1U;

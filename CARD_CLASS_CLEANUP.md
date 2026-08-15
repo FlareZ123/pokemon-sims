@@ -219,7 +219,7 @@ Two compatibility forwarders remain for previously anonymous trace-engine fragme
 
 `part_013.inc` is still a live composition boundary: `composition/opening_engine_overrides.inc` includes it directly before the opening override continuation. A cleanup CI probe that removed the shim failed both Release and sanitizer compilation at that include, so future retirement must first retarget the parent include to `core/supporter_legacy_runtime.inc` at the identical member boundary. Build evidence: https://github.com/FlareZ123/pokemon-sims/actions/runs/31849652554
 
-`part_014a.inc` is retired. `composition/engine_body.inc` now includes `turn_action_policy_runtime.inc` directly at the exact former `part_014a.inc` member and macro boundary, leaving one executable include path for that runtime owner. The runtime remains at the trace-engine root because its established nested `core/routes/...` includes are relative to that directory.
+`part_014a.inc` is retired. `composition/engine_body.inc` now includes `turn_action_policy_runtime.inc` directly at the exact former `part_014a.inc` member and macro boundary, leaving one executable include path for this runtime owner. The runtime remains at the trace-engine root because its established nested `core/routes/...` includes are relative to that directory.
 
 Future retirement of the remaining forwarders must first migrate raw-source readers and same-repository anchors, then retarget their composition owners at identical member and macro boundaries. Preserve DCI/UDP/AMR behavior, Supporter contention, connector domination, K0/K1 semantics, declaration order, macro order, and direct rule/card URLs throughout that work.
 
@@ -232,11 +232,19 @@ Decision priorities and knowledge policy: https://github.com/FlareZ123/pokemon-s
 
 ## Setup lifecycle consolidation
 
-`src/trace_engine_v2/core/setup_lifecycle.inc` now owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `core/simulation_labels.inc` remains only as a compatibility forwarder so historical textual include sites keep compiling while the executable setup support has one owner.
+`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `prepare_setup_deck()` now gives recipe materialization plus the initial setup shuffle one named owner, while `core/simulation_labels.inc` remains a compatibility forwarder for historical textual include sites.
 
-Opening-hand Basic validation and mulligan hand return now use named helpers inside that owner. The helpers preserve the existing seven-card draw, all-card return, reshuffle, and retry sequence. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+Opening-hand Basic validation and mulligan hand return use named helpers inside that owner. The helpers preserve the seven-card draw, all-card return, reshuffle, and retry sequence. Setup deck preparation preserves the advanced-manual order of deck preparation, shuffle, opening hand, Active/Bench selection, and Prize placement. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
 Next mechanical setup step: retarget the live parent include from `core/simulation_labels.inc` directly to `core/setup_lifecycle.inc` at the same Engine member boundary, then remove the compatibility forwarder after raw-source readers and same-repository anchors are migrated. Keep setup choice policy, K0/K1 state, mulligan counting, opening Active/Bench selection, and Prize placement semantics unchanged.
+
+## Turn lifecycle consolidation
+
+`src/trace_engine_v2/core/turn_lifecycle.inc` owns turn-number assignment, ordinary per-turn action reset, scenario-local lock reset, the mandatory start-of-turn draw, and the going-first restriction trace. `reset_turn_action_state()` owns Supporter, attachment, retreat, Stadium, Dark Asset, turn-ended, and per-turn discard flags. `reset_turn_lock_state()` separately owns the Garbodor pressure scenario's current-turn Field Blower removal flag so lock-schedule policy does not remain embedded in the generic action reset sequence.
+
+Preserve the current opponent-pressure contract when centralizing further turn state: the maximum-pressure Garbodor scenario re-establishes its Tool before each later Regidrago turn, so the Field Blower unlock is turn-local. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125 Scenario contract: https://github.com/FlareZ123/pokemon-sims/issues/2808
+
+Next mechanical turn step: inventory composition-only forwarders around `core/turn_lifecycle.inc` and retire a forwarder only when its parent can include the canonical owner at the identical Engine member boundary. Preserve start-of-turn draw ordering and the first-player Supporter/attack restriction. Advanced turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 ## Rules and policy anchors
 

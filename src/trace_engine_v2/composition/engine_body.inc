@@ -30,10 +30,46 @@
 
 #endif  // SIM_TRACE_SIMULATOR_STATE_INCLUDED
 
-// Opening stage. The named composition unit owns the historical member fragments
-// and their temporary aliases while preserving the exact textual include order.
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_legacy_stage.inc
-#include "opening_legacy_stage.inc"
+// Opening stage: own the historical member fragments and temporary aliases at the
+// canonical Engine composition boundary. Keeping the setup, continuations, and
+// teardown here removes a forwarding-only .inc layer while preserving include order.
+// Own the historical opening fragments and their temporary aliases as one textual
+// composition stage. This preserves the legacy member-continuation boundary while
+// keeping macro lifetime out of the canonical engine-body overview.
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
+// Historical opening fragment: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+// Historical continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc
+// State-line closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc
+// Garbotoxin policy owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/garbodor_lock_policy.inc
+
+#if defined(begin_turn) || defined(might_be_unseen)
+#error "Opening composition requires begin_turn and might_be_unseen aliases to be undefined on entry"
+#endif
+#define begin_turn begin_turn_original
+#define might_be_unseen might_be_unseen_empty_deck_original
+#include "../part_003.inc"
+
+#if defined(ability_available_for_pokemon)
+#error "Garbodor composition requires ability_available_for_pokemon to be undefined on entry"
+#endif
+#define ability_available_for_pokemon ability_available_for_pokemon_garbodor
+
+// part_003.inc opens begin_turn(); part_004.inc completes it and later opens
+// state_line(); part_005.inc closes state_line() before the first override member.
+// Keep these continuations adjacent so the real textual boundary and alias lifetime
+// are visible in one composition owner rather than hidden behind a forwarding stage.
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L151-L154
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc#L1-L22
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc#L210-L218
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc#L1-L5
+#include "../part_004.inc"
+#include "../part_005.inc"
+#include "../core/garbodor_lock_policy.inc"
+
+#undef might_be_unseen
+#if defined(might_be_unseen)
+#error "Opening composition leaked the temporary might_be_unseen alias"
+#endif
 
 // Middle stage: own the banked-Tapu alias lifetime directly at the canonical
 // Engine boundary. This removes a forwarding-only .inc layer while preserving the

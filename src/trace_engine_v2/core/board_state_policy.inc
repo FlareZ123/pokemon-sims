@@ -4,6 +4,22 @@
   // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
   using BoardIndex = std::size_t;
   using OptionalBoardIndex = std::optional<BoardIndex>;
+  inline static constexpr BoardIndex kActiveBoardIndex = 0U;
+
+  [[nodiscard]] static constexpr bool board_index_is_active(
+      const BoardIndex index) {
+    return index == kActiveBoardIndex;
+  }
+
+  [[nodiscard]] static constexpr BoardIndex board_index_for_bench_position(
+      const BoardIndex bench_position) {
+    return bench_position + 1U;
+  }
+
+  [[nodiscard]] static constexpr BoardIndex bench_position_from_board_index(
+      const BoardIndex index) {
+    return index - 1U;
+  }
 
   template <typename ActiveZone, typename BenchZone, typename Predicate>
   [[nodiscard]] static auto find_board_pokemon_matching_in_zones(
@@ -24,9 +40,9 @@
     // Centralize the historical Exploding Energy destination mapping before
     // callers migrate away from raw Active/Bench index arithmetic.
     // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
-    if (index == 0U) return active ? &*active : nullptr;
-    const BoardIndex bench_index = index - 1U;
-    return bench_index < bench.size() ? &bench[bench_index] : nullptr;
+    if (board_index_is_active(index)) return active ? &*active : nullptr;
+    const BoardIndex bench_position = bench_position_from_board_index(index);
+    return bench_position < bench.size() ? &bench[bench_position] : nullptr;
   }
 
   template <typename ActiveZone, typename BenchZone, typename Predicate>

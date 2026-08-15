@@ -152,6 +152,12 @@ Before adding a new loop or route-local helper, check these owners and reuse a n
 
 Next shared-policy step: route duplicate Garbodor present/removed boolean composition through `GarbodorAbilityLockPolicy::garbotoxin_locked()` only when the inputs are semantically identical, and route independent Garbotoxin-plus-Rule-Box Ability gates through `ability_available()` only when both facts are already resolved. Preserve separate scenario identity, activation-turn, lock-removal, and Rule Box queries where callers need one fact without the others.
 
+## Turn lifecycle cleanup
+
+`src/trace_engine_v2/core/turn_lifecycle.inc` owns the common per-turn action reset through `TurnActionStatePolicy::reset()`, while `reset_transient_turn_locks()` keeps scenario-dependent one-turn Garbodor unlock state separate from generic action-state reset. The established lifecycle order remains: set turn, clear action state, restore transient lock pressure, then perform the mandatory start-of-turn draw. Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104 Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125 Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+Next turn-lifecycle step: route only exact duplicate action-flag/reset bundles through `TurnActionStatePolicy::reset()`. Keep scenario-specific transient state in lifecycle helpers and preserve the current ordering relative to the required turn draw.
+
 ## Validation gate
 
 A cleanup PR is mergeable only when strict Release compilation succeeds, focused tests and the full regression suite show no new failure, sanitizer/structural checks show no new failure, representative `--simulate-this` traces preserve legal action ordering/readiness, the paired T2/T3 matrix has no unexplained drift, and the PR contains no gameplay behavior change.

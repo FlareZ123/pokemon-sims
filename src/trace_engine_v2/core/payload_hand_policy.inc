@@ -9,6 +9,12 @@
       return std::find_if(zone.begin(), zone.end(), predicate);
     }
 
+    template <typename Predicate>
+    [[nodiscard]] static bool contains_matching(
+        const std::vector<Card>& zone, Predicate predicate) {
+      return first_iterator_matching(zone, predicate) != zone.end();
+    }
+
     [[nodiscard]] static auto first_iterator(const std::vector<Card>& zone) {
       // Keep the physical-zone membership seam on the same first-match traversal
       // used by first(); callers that need strategic ordering use PayloadPreferencePolicy.
@@ -18,7 +24,7 @@
     }
 
     [[nodiscard]] static bool contains(const std::vector<Card>& zone) {
-      return first_iterator(zone) != zone.end();
+      return contains_matching(zone, is_payload);
     }
 
     [[nodiscard]] static bool contains_card(
@@ -27,9 +33,8 @@
       // payload membership so strategic preference callers do not grow ad hoc scans.
       // https://eel.is/c++draft/alg.find
       // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
-      return first_iterator_matching(
-                 zone, [card](const Card candidate) { return candidate == card; }) !=
-             zone.end();
+      return contains_matching(
+          zone, [card](const Card candidate) { return candidate == card; });
     }
 
     [[nodiscard]] static int count(const std::vector<Card>& zone) {

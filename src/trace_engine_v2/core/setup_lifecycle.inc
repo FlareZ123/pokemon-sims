@@ -29,6 +29,7 @@
   struct SetupLifecycleConfig {
     inline static constexpr int kOpeningHandSize = 7;
     inline static constexpr int kStartingPrizeCount = 6;
+    inline static constexpr const char* kUnknownLabel = "unknown";
 
     [[nodiscard]] static const char* dci_label(const DciProfile profile) {
       // DCI/JIT policy vocabulary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
@@ -37,7 +38,7 @@
         case DciProfile::MatchupFlexJit: return "matchup-flex-JIT";
         case DciProfile::NoDiscardControl: return "no-discard-control";
       }
-      return "unknown";
+      return kUnknownLabel;
     }
 
     [[nodiscard]] static const char* lock_label(const LockMode mode) {
@@ -50,7 +51,7 @@
         case LockMode::FullCombined: return "full Item + Rule Box Ability lock";
         case LockMode::FullSupporter: return "full Supporter lock";
       }
-      return "unknown";
+      return kUnknownLabel;
     }
   };
 

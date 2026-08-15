@@ -171,6 +171,7 @@ Next catalog/knowledge step: migrate remaining legacy name and intrinsic metadat
 ## Shared policy owners
 
 - Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.
+- Card-facing semantic callback access: `src/rules/card_context.hpp`. `CardContext` owns the common const opaque-state projection and optional semantic predicate dispatch used by Stadium, Pokémon Tool, and Special Energy queries so card modules do not duplicate callback plumbing. Compatibility adapters supply the callbacks; card-specific route admission and strategy remain outside this rules-facing interface. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/rules/card_context.hpp
 - Garbodor scenario and Ability-lock composition: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. `GarbodorScenarioPolicy::activation_turn_reached()` owns the shared turn threshold, and `GarbodorScenarioPolicy::active()` composes timing with scenario identity. `GarbodorAbilityLockPolicy::garbotoxin_locked()` owns present-versus-removed lock state, `rule_box_ability_available()` owns the separate Path-style Rule Box gate, `ability_available()` composes already-resolved lock facts, and `ability_available_from_lock_state()` centralizes the repeated four-input composition for Engine callers that already own those state facts. Engine wrappers remain compatibility/query seams for callers that need individual state-derived facts. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
 - Setup lifecycle labels, mulligans, Prize deal, and setup trace mechanics: `src/trace_engine_v2/core/setup_lifecycle.inc`.
 - Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
@@ -178,7 +179,7 @@ Next catalog/knowledge step: migrate remaining legacy name and intrinsic metadat
 
 Before adding a new loop or route-local helper, check these owners and reuse a named seam when ordering and semantics match exactly.
 
-Next shared-policy step: route duplicate Garbodor present/removed plus Rule Box composition through `ability_available_from_lock_state()` only when all four state facts have the same semantics. Keep `garbotoxin_locked()`, `rule_box_ability_available()`, and `ability_available()` available for callers that already hold narrower or resolved facts. Preserve separate scenario identity, activation-turn, lock-removal, and Rule Box queries where callers need one fact without the others.
+Next shared-policy step: route duplicate `CardContext` optional semantic predicates through its shared predicate dispatcher, and route duplicate Garbodor present/removed plus Rule Box composition through `ability_available_from_lock_state()` only when the inputs have the same semantics. Keep card-specific strategy, scenario identity, activation-turn, lock-removal, and Rule Box queries at their established owners when callers need those facts independently.
 
 ## Turn lifecycle cleanup
 

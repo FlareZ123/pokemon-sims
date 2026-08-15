@@ -4,11 +4,14 @@
       best = &*state_.active;
       best_score = score_regi(*best, true);
     }
-    for (Pokemon& p : state_.bench) {
-      if (p.card != Card::RegidragoV || p.entered_turn >= state_.turn) continue;
-      const int score = score_regi(p, false);
+    for (Pokemon& pokemon : state_.bench) {
+      if (pokemon.card != Card::RegidragoV ||
+          pokemon.entered_turn >= state_.turn) {
+        continue;
+      }
+      const int score = score_regi(pokemon, false);
       if (score > best_score) {
-        best = &p;
+        best = &pokemon;
         best_score = score;
       }
     }

@@ -40,6 +40,17 @@
       return std::nullopt;
     }
 
+    [[nodiscard]] static std::optional<Card> first_preferred_in_zone(
+        const std::vector<Card>& zone) {
+      // Preserve strategic payload priority while keeping direct zone membership
+      // traversal inside the payload policy rather than at Engine callers.
+      // https://eel.is/c++draft/alg.find
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+      return first_preferred([&zone](const Card card) {
+        return std::find(zone.begin(), zone.end(), card) != zone.end();
+      });
+    }
+
     template <typename CountFunction>
     [[nodiscard]] static std::optional<Card> first_preferred_with_positive_count(
         const CountFunction& count) {
@@ -82,8 +93,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // https://api.pokemontcg.io/v2/cards/swsh12-136
-    return PayloadPreferencePolicy::first_preferred_with_positive_count(
-        [this](const Card card) { return hand_count(card); });
+    return PayloadPreferencePolicy::first_preferred_in_zone(state_.hand);
   }
 
   [[nodiscard]] std::optional<Card> first_searchable_payload_in_known_deck() const {

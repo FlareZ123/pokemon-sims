@@ -89,6 +89,16 @@
         state_.active, state_.bench, predicate);
   }
 
+  [[nodiscard]] OptionalBoardIndex board_index_of(
+      const Pokemon* target) const {
+    if (target == nullptr) return std::nullopt;
+    // Exact pointer lookup is a board-representation concern. Reuse the canonical
+    // Active-first mapping rather than duplicating Active/Bench scans in routes.
+    // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+    return board_index_matching(
+        [target](const Pokemon& pokemon) { return &pokemon == target; });
+  }
+
   template <typename Predicate>
   [[nodiscard]] bool board_has_pokemon_matching(Predicate predicate) const {
     return find_board_pokemon_matching(predicate) != nullptr;

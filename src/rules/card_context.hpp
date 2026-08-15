@@ -46,7 +46,7 @@ class CardContext final {
         is_special_energy_(is_special_energy_fn) {}
 
   int hand_count(const Card card) const {
-    return hand_count_(static_cast<const void*>(opaque_), card);
+    return hand_count_(const_opaque(), card);
   }
 
   bool move_hand_to_discard(const Card card) {
@@ -65,7 +65,7 @@ class CardContext final {
   void shuffle_deck() { shuffle_deck_(opaque_); }
 
   bool is_basic_pokemon(const Card card) const {
-    return is_basic_pokemon_(static_cast<const void*>(opaque_), card);
+    return is_basic_pokemon_(const_opaque(), card);
   }
 
   void begin_deck_search(const std::string_view reason) {
@@ -73,21 +73,20 @@ class CardContext final {
   }
 
   bool is_stadium(const Card card) const {
-    return is_stadium_ != nullptr &&
-           is_stadium_(static_cast<const void*>(opaque_), card);
+    return is_stadium_ != nullptr && is_stadium_(const_opaque(), card);
   }
 
   bool is_pokemon_tool(const Card card) const {
-    return is_pokemon_tool_ != nullptr &&
-           is_pokemon_tool_(static_cast<const void*>(opaque_), card);
+    return is_pokemon_tool_ != nullptr && is_pokemon_tool_(const_opaque(), card);
   }
 
   bool is_special_energy(const Card card) const {
-    return is_special_energy_ != nullptr &&
-           is_special_energy_(static_cast<const void*>(opaque_), card);
+    return is_special_energy_ != nullptr && is_special_energy_(const_opaque(), card);
   }
 
  private:
+  const void* const_opaque() const { return static_cast<const void*>(opaque_); }
+
   void* opaque_;
   HandCountFn hand_count_;
   MoveHandToDiscardFn move_hand_to_discard_;

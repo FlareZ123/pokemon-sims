@@ -123,13 +123,11 @@ Next setup step: move only state-transition helpers from opening Active/Bench se
 
 ## Catalog and knowledge cleanup
 
-`src/trace_engine_v2/core/card_catalog.inc` keeps legacy name metadata behind `LegacyCardCatalog`. `LegacyCardCatalog::find()` is the single fallback-table traversal, and `name()` now falls directly through to `LegacyCardCatalog::name()` after the registered `CardDefinition` lookup. Registered metadata remains canonical: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+`src/trace_engine_v2/core/card_catalog.inc` now keeps only the Engine-facing compatibility bridge and delegates legacy fallback metadata to `src/trace_engine_v2/core/catalog/legacy_card_catalog.hpp`. `LegacyCardCatalog::find()` remains the single fallback-table traversal, and global `name(Card)` falls from registered `CardDefinition` lookup to `LegacyCardCatalog::name()`. Registered metadata remains canonical: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
-The global `name(Card)` compatibility seam now falls directly from registered `CardDefinition` lookup to `LegacyCardCatalog::name()` without a forwarding-only legacy helper. Keep future metadata cleanup on those two owners rather than adding another name-routing layer.
+`src/trace_engine_v2/core/deck_knowledge.inc` now keeps K0/K1 visibility decisions at Engine scope and delegates count-only arithmetic to `src/trace_engine_v2/core/knowledge/knowledge_copy_policy.hpp`. `KnowledgeCopyPolicy::combined()` owns repeated two-source aggregation and `unresolved()` owns bounded remaining-copy arithmetic. K0/K1 visibility policy remains at the callers: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 
-`src/trace_engine_v2/core/deck_knowledge.inc` keeps copy arithmetic behind `KnowledgeCopyPolicy`. `KnowledgeCopyPolicy::combined()` owns repeated two-source count aggregation for public hand/discard/attached zones and K1 hand/deck counts. K0/K1 visibility rules remain unchanged at their Engine callers: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-
-Next catalog/knowledge step: move only duplicate metadata lookup or copy-count arithmetic into these helpers. Do not add forwarding-only wrappers around the legacy catalog fallback. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns.
+Next catalog/knowledge step: migrate another self-contained lookup or arithmetic owner out of a textual `.inc` only when its inputs contain no hidden Engine state. Keep hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission at their existing strategy owners. Avoid forwarding-only compatibility layers around either extracted class.
 
 ## Shared policy owners
 

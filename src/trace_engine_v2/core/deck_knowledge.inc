@@ -1,19 +1,3 @@
-  struct KnowledgeCopyPolicy {
-    [[nodiscard]] static constexpr bool has_any(const int count) {
-      return count > 0;
-    }
-
-    [[nodiscard]] static constexpr int combined(const int first_count,
-                                                const int second_count) {
-      return first_count + second_count;
-    }
-
-    [[nodiscard]] static int unresolved(const int total_copies,
-                                        const int known_copies) {
-      return std::max(0, total_copies - known_copies);
-    }
-  };
-
   [[nodiscard]] bool deck_has_cards() const {
     return !state_.deck.empty();
   }

@@ -91,11 +91,13 @@ Next composition step: inventory `composition/middle_policy_stage.inc` for a sma
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner.
 
-`PayloadPreferencePolicy::first_in_zone()` preserves physical zone order for callers whose historical behavior depended on the first matching card in that zone. `PayloadPreferencePolicy::first_preferred()` preserves the explicit strategic preference order used for hand and known-deck selection. Zone-wide predicates use `contains_in_zone()` and `count_in_zone()` so membership/count semantics are distinguishable from preference-order selection at the call site.
+`PayloadZonePolicy::first()` preserves physical zone order for callers whose historical behavior depends on the first matching card in that zone. `PayloadZonePolicy::contains()` and `PayloadZonePolicy::count()` own zone membership and count semantics. `PayloadPreferencePolicy::first_preferred()` preserves the explicit strategic preference order used for payload selection, while `PayloadPreferencePolicy::first_preferred_with_positive_count()` adapts count-backed zones without duplicating preference traversal.
 
 Completed in `cleanup-1786767958859`: renamed the preference-order helper to `first_preferred()` and clarified zone predicates as `contains_in_zone()` and `count_in_zone()`. These are behavior-preserving ownership changes. DCI/JIT admission and payload route policy remain at their existing Engine callers. Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 Decision policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
 
-Next payload step: inventory remaining ad hoc Dragon-payload scans and replace only callers whose established ordering exactly matches `first_in_zone()` or `first_preferred()`. Preserve physical-order callers when order is observable. Do not replace DCI/JIT predicates with generic payload membership.
+Completed in `cleanup-1786781829278`: split physical-zone queries from strategic payload preference under `PayloadZonePolicy` and `PayloadPreferencePolicy`, then centralized count-backed hand and K1-deck preference selection behind `first_preferred_with_positive_count()`. These are behavior-preserving ownership changes. DCI/JIT admission, K0/K1 timing, payload discard timing, and route policy remain at their existing Engine callers. Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+
+Next payload step: inventory remaining ad hoc Dragon-payload scans and migrate only callers whose ordering semantics exactly match `PayloadZonePolicy::first()` or the explicit `PayloadPreferencePolicy` order. Preserve physical-order callers when order is observable. Keep DCI/JIT predicates and discard timing at their strategy owners.
 
 ## Forretress cleanup
 

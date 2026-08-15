@@ -1,6 +1,7 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
 
+#include <algorithm>
 #include <iostream>
 #include <random>
 #include <stdexcept>
@@ -35,16 +36,24 @@ sim::State route_state(const int turn) {
   return state;
 }
 
+bool available_state(sim::State state, const sim::DciProfile dci,
+                     const sim::LockMode locks, const bool going_first,
+                     const int max_turn = 5, const bool deck_seen = true,
+                     const bool prizes_revealed = false) {
+  std::mt19937_64 rng(3222);
+  sim::Engine engine(sim::Scenario{"issue-4017", dci, locks, going_first, max_turn},
+                     sim::baseline_recipe(), rng);
+  sim::EngineTestAccess::set_state(engine, std::move(state), deck_seen,
+                                   prizes_revealed);
+  return sim::EngineTestAccess::selector_available(engine);
+}
+
 bool available(const sim::DciProfile dci, const sim::LockMode locks,
                const bool going_first, const int turn,
                const int max_turn = 5, const bool deck_seen = true,
                const bool prizes_revealed = false) {
-  std::mt19937_64 rng(3222);
-  sim::Engine engine(sim::Scenario{"issue-4017", dci, locks, going_first, max_turn},
-                     sim::baseline_recipe(), rng);
-  sim::EngineTestAccess::set_state(engine, route_state(turn), deck_seen,
-                                   prizes_revealed);
-  return sim::EngineTestAccess::selector_available(engine);
+  return available_state(route_state(turn), dci, locks, going_first, max_turn,
+                         deck_seen, prizes_revealed);
 }
 
 void test_equivalent_turns_seats_and_jit_profiles() {
@@ -96,13 +105,44 @@ void test_action_specific_lock_semantics() {
          "Persistent T2 Item lock admitted projected T3 Blender through the selector.");
   expect(!available(sim::DciProfile::StrictJit, sim::LockMode::TurnTwoItem, true, 3),
          "Persistent T2 Item lock admitted projected T4 Blender through the selector.");
-
   expect(!available(sim::DciProfile::StrictJit, sim::LockMode::FullItem, true, 3),
          "Full Item lock admitted projected Blender through the selector.");
   expect(!available(sim::DciProfile::StrictJit, sim::LockMode::FullCombined, true, 3),
          "Combined lock admitted projected Blender through the selector.");
   expect(!available(sim::DciProfile::StrictJit, sim::LockMode::FullSupporter, true, 3),
          "Supporter lock admitted Steven through the selector.");
+}
+
+void test_physical_route_negatives() {
+  // A Basic played this turn cannot evolve until a later turn, while Steven's route
+  // also needs the known VSTAR, Blender, and a Dragon payload still available in deck.
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Advanced evolution/search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Selector regression: https://github.com/FlareZ123/pokemon-sims/issues/4017
+  sim::State fresh_basic = route_state(3);
+  fresh_basic.active->entered_turn = 3;
+  expect(!available_state(std::move(fresh_basic), sim::DciProfile::StrictJit,
+                          sim::LockMode::None, false),
+         "A same-turn Regidrago V entered the next-turn evolution route.");
+
+  sim::State missing_vstar = route_state(3);
+  std::erase(missing_vstar.deck, sim::Card::RegidragoVstar);
+  expect(!available_state(std::move(missing_vstar), sim::DciProfile::StrictJit,
+                          sim::LockMode::None, false),
+         "Selector admitted the route with no known Regidrago VSTAR target.");
+
+  sim::State missing_blender = route_state(3);
+  std::erase(missing_blender.deck, sim::Card::BrilliantBlender);
+  expect(!available_state(std::move(missing_blender), sim::DciProfile::StrictJit,
+                          sim::LockMode::None, false),
+         "Selector admitted the route with no known Brilliant Blender target.");
+
+  sim::State missing_payload = route_state(3);
+  std::erase(missing_payload.deck, sim::Card::Dragapult);
+  expect(!available_state(std::move(missing_payload), sim::DciProfile::StrictJit,
+                          sim::LockMode::None, false),
+         "Selector admitted the route with no Dragon payload remaining in deck.");
 }
 
 void test_profile_and_horizon_boundaries() {
@@ -123,6 +163,7 @@ int main() {
     test_equivalent_turns_seats_and_jit_profiles();
     test_k1_provenance_and_k0_boundary();
     test_action_specific_lock_semantics();
+    test_physical_route_negatives();
     test_profile_and_horizon_boundaries();
     std::cout << "Issue 4017 Steven selector semantic tests passed\n";
     return 0;

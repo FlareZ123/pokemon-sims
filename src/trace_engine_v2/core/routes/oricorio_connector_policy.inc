@@ -24,6 +24,15 @@
   }
 
   [[nodiscard]] bool needs_oricorio_connector() const {
+    // A connector whose entry Ability is suppressed cannot advance the Energy axis,
+    // so do not spend Bench space admitting it. Garbotoxin suppresses other Pokemon
+    // Abilities while its Tool condition is met; Vital Dance only supplies value when
+    // Oricorio is played from hand to the Bench and that Ability can resolve:
+    // https://api.pokemontcg.io/v2/cards/xy9-57
+    // https://api.pokemontcg.io/v2/cards/sm2-55
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    if (!ability_available_for_pokemon_garbodor(Card::Oricorio)) return false;
+
     // The original #180 predicate covers hands with no payload. #616 extends the
     // same final-slot policy to an in-hand payload that has no legal Item discard
     // outlet, while preserving Tapu Lele-GX when such an outlet is live:

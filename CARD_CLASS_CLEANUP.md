@@ -113,6 +113,14 @@ Named Steven route owners live under `src/trace_engine_v2/core/routes/`. Retire 
 
 Next setup step: move only state-transition helpers from opening Active/Bench setup into `core/setup_lifecycle.inc` once exact source-contract coverage exists for hand removal, `started_regi`, Bench insertion, and declaration ordering. Keep strategic route predicates in Engine. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
+## Catalog and knowledge cleanup
+
+`src/trace_engine_v2/core/card_catalog.inc` keeps legacy name metadata behind `LegacyCardCatalog`. `LegacyCardCatalog::find()` is the single fallback-table traversal, while registered `CardDefinition` metadata remains canonical: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+
+`src/trace_engine_v2/core/deck_knowledge.inc` keeps copy arithmetic behind `KnowledgeCopyPolicy`. `KnowledgeCopyPolicy::combined()` owns repeated two-source count aggregation for public hand/discard/attached zones and K1 hand/deck counts. K0/K1 visibility rules remain unchanged at their Engine callers: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+
+Next catalog/knowledge step: move only duplicate metadata lookup or copy-count arithmetic into these helpers. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns.
+
 ## Shared policy owners
 
 - Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.

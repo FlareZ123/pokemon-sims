@@ -189,7 +189,7 @@
 #endif
 
 #define choose_supporter choose_supporter_original
-#include "../part_014b.inc"
+#include "../core/recovery_supporter_policy.inc" // Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/recovery_supporter_policy.inc
 #undef choose_supporter
 
 #define choose_supporter choose_supporter_turo_original

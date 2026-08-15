@@ -18,3 +18,12 @@
 // historical continuation and macro lifetime at this exact textual boundary.
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc#L151-L154
 #include "opening_state_completion_stage.inc"
+
+// These two wrappers intentionally cross the opening-stage boundary. Their owners
+// release them later at the exact historical continuation points, so make that
+// composition contract explicit here instead of relying on an undocumented leak.
+// begin_turn continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc
+// Ability wrapper continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_execution_stage.inc
+#if !defined(begin_turn) || !defined(ability_available_for_pokemon)
+#error "Opening composition must export begin_turn and ability_available_for_pokemon"
+#endif

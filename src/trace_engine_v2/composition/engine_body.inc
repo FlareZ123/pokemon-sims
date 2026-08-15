@@ -7,8 +7,6 @@
 // Card catalog: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 // Card classification: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
 // Simulator state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
-// Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forest_field_blower_policy.inc
-// Lock-removal specification: https://github.com/FlareZ123/pokemon-sims/issues/3057
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
 
 #ifndef SIM_TRACE_SIMULATOR_STATE_INCLUDED
@@ -38,25 +36,10 @@
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/banked_tapu_stage.inc
 #include "banked_tapu_stage.inc"
 
-// Load the shared forest / Field Blower policy before exporting the two aliases
-// required by post-search composition.
-// Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
-// Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
-// Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
-#include "../core/forest_field_blower_policy.inc"
-
-#if defined(play_chaotic_swell) || defined(play_field_blower)
-#error "Issue-3057 Pineco composition requires lock-removal aliases to be undefined"
-#endif
-#define play_chaotic_swell play_chaotic_swell_issue_3057
-#define play_field_blower play_field_blower_issue_3057
-#include "post_014a_overrides.inc"
-#undef play_field_blower
-#undef play_chaotic_swell
-
-#if defined(play_chaotic_swell) || defined(play_field_blower)
-#error "Issue-3057 Pineco composition leaked a temporary lock-removal alias"
-#endif
+// Lock-removal stage. The named composition unit owns the forest/Field Blower
+// policy include and the temporary aliases required by post-search composition.
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/lock_removal_stage.inc
+#include "lock_removal_stage.inc"
 
 // Late stage. The named composition unit owns the turn-execution, scenario-registry,
 // reporting fragments, and aliases that intentionally span their historical files.

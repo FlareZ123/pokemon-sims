@@ -86,20 +86,12 @@
     }
   }
 
-  void add_recipe_cards_to_deck() {
+  void prepare_opening_deck() {
+    deck_seen_ = false;
+    prizes_revealed_ = false;
     for (const auto& [card, copies] : recipe_) {
       for (int copy = 0; copy < copies; ++copy) state_.deck.push_back(card);
     }
-  }
-
-  void reset_setup_knowledge() {
-    deck_seen_ = false;
-    prizes_revealed_ = false;
-  }
-
-  void prepare_opening_deck() {
-    reset_setup_knowledge();
-    add_recipe_cards_to_deck();
     shuffle(state_.deck);
   }
 
@@ -116,14 +108,10 @@
     state_.hand.clear();
   }
 
-  void draw_opening_hand_once() {
-    state_.hand.clear();
-    move_top_cards_from_deck(state_.hand, SetupLifecycleConfig::kOpeningHandSize);
-  }
-
   void draw_opening_hand_with_mulligans() {
     while (true) {
-      draw_opening_hand_once();
+      state_.hand.clear();
+      move_top_cards_from_deck(state_.hand, SetupLifecycleConfig::kOpeningHandSize);
       if (opening_hand_has_basic()) return;
       return_mulligan_hand_to_deck();
       shuffle(state_.deck);

@@ -10,7 +10,7 @@
 #include "core/routes/issue_3199_legacy_star_combined_energy_payload_base.inc"
 #undef use_legacy_star
 
-  inline static thread_local int issue_3199_public_projection_depth_{0};
+#include "core/routes/issue_3199_public_projection_state.inc" // Canonical state owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_3199_public_projection_state.inc
 
   bool use_legacy_star() {
     if (issue_3199_public_projection_depth_ > 0) return false;

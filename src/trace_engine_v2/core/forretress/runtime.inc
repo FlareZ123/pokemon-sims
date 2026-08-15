@@ -220,8 +220,9 @@ bool Engine::resolve_exploding_energy(
 }
 
 bool Engine::use_exploding_energy_for_setup() {
-  const bool promotion_only_finish = prizes_known() && state_.active &&
-      state_.active->card == Card::ForretressEx && need_active_vstar() &&
+  const Pokemon* active = active_board_pokemon();
+  const bool promotion_only_finish = prizes_known() && active &&
+      active->card == Card::ForretressEx && need_active_vstar() &&
       benched_vstar_promotion_ready() && !need_payload() && !need_energy();
   if (!forretress_combo_enabled() ||
       (!need_energy() && !promotion_only_finish) ||
@@ -248,10 +249,9 @@ bool Engine::use_exploding_energy_for_setup() {
 
   AttachmentDestinations destinations;
   const bool source_is_active =
-      state_.active && state_.active->card == Card::ForretressEx;
-  const bool active_blocks_regi = !source_is_active && state_.active &&
-      state_.active->card != Card::RegidragoV &&
-      state_.active->card != Card::RegidragoVstar;
+      active && active->card == Card::ForretressEx;
+  const bool active_blocks_regi = !source_is_active && active &&
+      active->card != Card::RegidragoV && active->card != Card::RegidragoVstar;
   const bool retreat_available = active_blocks_regi && !state_.retreat_used;
   // Skyliner gives every Basic Pokémon in play no Retreat Cost while Latias ex's
   // Rule Box Ability is available. Apply that effective cost before distributing
@@ -262,7 +262,7 @@ bool Engine::use_exploding_energy_for_setup() {
   const bool skyliner_free_retreat = retreat_available &&
       can_free_retreat_with_latias();
   const int active_retreat_cost = retreat_available && !skyliner_free_retreat
-      ? retreat_cost(state_.active->card) : 0;
+      ? retreat_cost(active->card) : 0;
   const int target_grass_needed = std::max(0, grass_needed());
   const bool paid_retreat_route = retreat_available && active_retreat_cost > 0;
   if (target_grass_needed <= 0 && !paid_retreat_route) return false;
@@ -309,16 +309,17 @@ bool Engine::use_exploding_energy_for_setup() {
                       static_cast<std::size_t>(target_grass), *target_index);
 
   if (!resolve_exploding_energy(destinations)) return false;
-  if (!can_complete_retreat || !state_.active) return true;
+  Pokemon* active_after_resolution = active_board_pokemon();
+  if (!can_complete_retreat || active_after_resolution == nullptr) return true;
 
   int remaining_cost = active_retreat_cost;
-  while (remaining_cost > 0 && state_.active->grass > 0) {
-    --state_.active->grass;
+  while (remaining_cost > 0 && active_after_resolution->grass > 0) {
+    --active_after_resolution->grass;
     state_.discard.push_back(Card::Grass);
     --remaining_cost;
   }
-  while (remaining_cost > 0 && state_.active->fire > 0) {
-    --state_.active->fire;
+  while (remaining_cost > 0 && active_after_resolution->fire > 0) {
+    --active_after_resolution->fire;
     state_.discard.push_back(Card::Fire);
     --remaining_cost;
   }
@@ -342,7 +343,7 @@ bool Engine::use_exploding_energy_for_setup() {
        target->card != Card::RegidragoVstar)) {
     throw std::logic_error("Exploding Energy retreat target disappeared");
   }
-  std::swap(*state_.active, *target);
+  std::swap(*active_after_resolution, *target);
   state_.retreat_used = true;
   trace("RETREAT", "R-GAME-RETREAT; R-FORRETRESS-01",
         skyliner_free_retreat

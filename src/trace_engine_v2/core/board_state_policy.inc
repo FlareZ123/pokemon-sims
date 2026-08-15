@@ -100,6 +100,17 @@
     return board_pokemon_at_index_in_zones(state_.active, state_.bench, index);
   }
 
+  [[nodiscard]] Pokemon* active_board_pokemon() {
+    // Route Active access through the same BoardIndex mapping used by card-local
+    // source and destination queries instead of reopening the raw State seam.
+    // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+    return board_pokemon_at_index(kActiveBoardIndex);
+  }
+
+  [[nodiscard]] const Pokemon* active_board_pokemon() const {
+    return board_pokemon_at_index(kActiveBoardIndex);
+  }
+
   template <typename Predicate>
   [[nodiscard]] OptionalBoardIndex board_index_matching(
       Predicate predicate) const {

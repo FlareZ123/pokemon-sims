@@ -84,6 +84,7 @@ Next composition step: inventory `opening_legacy_stage.inc` and `opening_state_c
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner.
 
+- `PayloadZonePolicy::first_iterator_matching()` owns the shared physical-zone first-match traversal primitive. Payload and exact-card membership build on this seam so they cannot drift into separate scan implementations.
 - `PayloadZonePolicy::first()` preserves physical zone order for callers whose historical behavior depends on the first matching payload.
 - `PayloadZonePolicy::contains()` and `PayloadZonePolicy::count()` own generic payload membership/count semantics.
 - `PayloadZonePolicy::contains_card()` owns concrete-card membership in a physical zone so preference code does not duplicate `std::find` scans.
@@ -115,11 +116,11 @@ Next setup step: move only state-transition helpers from opening Active/Bench se
 
 ## Catalog and knowledge cleanup
 
-`src/trace_engine_v2/core/card_catalog.inc` keeps legacy name metadata behind `LegacyCardCatalog`. `LegacyCardCatalog::find()` is the single fallback-table traversal, while registered `CardDefinition` metadata remains canonical: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+`src/trace_engine_v2/core/card_catalog.inc` keeps legacy name metadata behind `LegacyCardCatalog`. `LegacyCardCatalog::find()` is the single fallback-table traversal, and `name()` now falls directly through to `LegacyCardCatalog::name()` after the registered `CardDefinition` lookup. Registered metadata remains canonical: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
 `src/trace_engine_v2/core/deck_knowledge.inc` keeps copy arithmetic behind `KnowledgeCopyPolicy`. `KnowledgeCopyPolicy::combined()` owns repeated two-source count aggregation for public hand/discard/attached zones and K1 hand/deck counts. K0/K1 visibility rules remain unchanged at their Engine callers: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 
-Next catalog/knowledge step: move only duplicate metadata lookup or copy-count arithmetic into these helpers. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns.
+Next catalog/knowledge step: move only duplicate metadata lookup or copy-count arithmetic into these helpers. Do not add forwarding-only wrappers around the legacy catalog fallback. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns.
 
 ## Shared policy owners
 

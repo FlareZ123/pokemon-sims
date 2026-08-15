@@ -56,12 +56,6 @@ Current registry source: https://github.com/FlareZ123/pokemon-sims/blob/main/src
 
 Knowledge transitions, zone mutations, shuffle behavior, and trace ordering must stay compatible with the simulator unless a separately confirmed bug authorizes a behavior change.
 
-### Card-context adapter progress
-
-`src/trace_engine_v2/core/card_context_adapter.hpp` now gives the Engine-to-rules callback set one named `CardContextCallbacks` owner. The positional compatibility overload delegates through that bundle, so `rules::CardContext` construction has one structural path while migrated resolvers remain source-compatible. Adapter: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_context_adapter.hpp Context contract: https://github.com/FlareZ123/pokemon-sims/blob/main/src/rules/card_context.hpp
-
-Next mechanical adapter step: convert migrated resolver call sites to construct `CardContextCallbacks` directly in small, independently validated changes. Retire the positional compatibility overload only after all live call sites and raw-source readers are migrated. Preserve printed card resolution, K0/K1 transitions, route admission, DCI/UDP/AMR, Supporter contention, and connector domination throughout this change.
-
 ## Card module contract
 
 A migrated card gets one primary module under `src/cards/pokemon/`, `src/cards/trainers/`, or `src/cards/energy/`.
@@ -235,6 +229,14 @@ Composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace
 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 Advanced rules and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 Decision priorities and knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+
+## Setup lifecycle consolidation
+
+`src/trace_engine_v2/core/setup_lifecycle.inc` now owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `core/simulation_labels.inc` remains only as a compatibility forwarder so historical textual include sites keep compiling while the executable setup support has one owner.
+
+Opening-hand Basic validation and mulligan hand return now use named helpers inside that owner. The helpers preserve the existing seven-card draw, all-card return, reshuffle, and retry sequence. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+Next mechanical setup step: retarget the live parent include from `core/simulation_labels.inc` directly to `core/setup_lifecycle.inc` at the same Engine member boundary, then remove the compatibility forwarder after raw-source readers and same-repository anchors are migrated. Keep setup choice policy, K0/K1 state, mulligan counting, opening Active/Bench selection, and Prize placement semantics unchanged.
 
 ## Rules and policy anchors
 

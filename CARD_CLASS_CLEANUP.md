@@ -45,7 +45,7 @@ Next catalog step: migrate remaining `LegacyCardCatalog` entries one card at a t
 
 Regidrago VSTAR now owns exact Silver Tempest 136/195 metadata beside Regidrago V in `src/cards/pokemon/regidrago_v.hpp`, is explicitly registered, and has focused V/VSTAR metadata/parity coverage. The live Pokémon, Pokémon V, Rule Box, Dragon/Mysterious Treasure target, and Retreat Cost classifiers consume registered metadata for the Regidrago line. Exact print: https://api.pokemontcg.io/v2/cards/swsh12-136 Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Pokémon V ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
 
-Next Regidrago metadata step: remove the now-shadowed Regidrago VSTAR compatibility name row from `LegacyCardCatalog` in a later isolated catalog cleanup after its name-path source contract is checked. Keep V -> VSTAR evolution/devolution relations, Legacy Star, Apex Dragon, payload policy, DCI/JIT, and route choice at their existing behavioral owners.
+The shadowed Regidrago VSTAR compatibility name row has now been retired from `LegacyCardCatalog`; `CardDefinition` and the registry are the sole name owner for that print. Registered Pokémon Retreat Cost lookup also consumes `CardDefinition::retreat_cost` generically, leaving the legacy switch only for Pokémon that have not migrated. Keep V -> VSTAR evolution/devolution relations, Legacy Star, Apex Dragon, payload policy, DCI/JIT, and route choice at their existing behavioral owners. Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136 Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
 ## Active card migrations
 
@@ -134,11 +134,13 @@ Next setup step: route future setup recipe classification through `SetupRecipePo
 
 `src/trace_engine_v2/core/card_catalog.inc` keeps legacy name metadata behind `LegacyCardCatalog`. `LegacyCardCatalog::find()` is the single fallback-table traversal, and `name()` now falls directly through to `LegacyCardCatalog::name()` after the registered `CardDefinition` lookup. Registered metadata remains canonical: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
-The global `name(Card)` compatibility seam now falls directly from registered `CardDefinition` lookup to `LegacyCardCatalog::name()` without a forwarding-only legacy helper. Keep future metadata cleanup on those two owners rather than adding another name-routing layer.
+The global `name(Card)` compatibility seam now falls directly from registered `CardDefinition` lookup to `LegacyCardCatalog::name()` without a forwarding-only legacy helper. Regidrago VSTAR has left the fallback table because its exact `CardDefinition` is registered. Keep future name cleanup on those two owners rather than adding another name-routing layer. Exact print: https://api.pokemontcg.io/v2/cards/swsh12-136
+
+`src/trace_engine_v2/core/card_classification.inc` now sources Retreat Cost from `CardDefinition::retreat_cost` for every registered Pokémon and keeps the hard-coded switch only for unmigrated Pokémon. This keeps intrinsic print metadata in the card layer while route selection remains in Engine. Regidrago V/VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136 Appletun: https://api.pokemontcg.io/v2/cards/sv8-140 Mawile-GX: https://api.pokemontcg.io/v2/cards/sm11-141 Oricorio GRI 55: https://api.pokemontcg.io/v2/cards/sm2-55
 
 `src/trace_engine_v2/core/deck_knowledge.inc` keeps copy arithmetic behind `KnowledgeCopyPolicy`. `KnowledgeCopyPolicy::combined()` owns repeated two-source count aggregation for public hand/discard/attached zones and K1 hand/deck counts. K0/K1 visibility rules remain unchanged at their Engine callers: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 
-Next catalog/knowledge step: move only duplicate metadata lookup or copy-count arithmetic into these helpers. Do not add forwarding-only wrappers around the legacy catalog fallback. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns.
+Next catalog/knowledge step: migrate remaining legacy name and intrinsic metadata rows only after their explicit `CardDefinition` is registered and covered. Do not duplicate registered Retreat Cost or name metadata in compatibility switches. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns.
 
 ## Shared policy owners
 

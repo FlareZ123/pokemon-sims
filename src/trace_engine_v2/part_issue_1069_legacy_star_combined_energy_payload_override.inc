@@ -12,6 +12,12 @@
 
   inline static thread_local int issue_3199_public_projection_depth_{0};
 
+  struct Issue3199PublicProjectionGuard {
+    int& depth;
+    explicit Issue3199PublicProjectionGuard(int& value) : depth(value) { ++depth; }
+    ~Issue3199PublicProjectionGuard() { --depth; }
+  };
+
   bool use_legacy_star() {
     if (issue_3199_public_projection_depth_ > 0) return false;
     return use_legacy_star_issue3199_public_projection_original();

@@ -1,0 +1,36 @@
+name: Trace audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        required: true
+        type: string
+      seed:
+        required: true
+        type: string
+      ready_by:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Run simulate-this audit
+        shell: bash
+        run: ./build/regidrago_sim --simulate-this --scenario "${{ inputs.scenario }}" --seed "${{ inputs.seed }}" --require-ready-by "${{ inputs.ready_by }}" | tee trace.txt
+      - name: Upload trace
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-audit
+          path: trace.txt

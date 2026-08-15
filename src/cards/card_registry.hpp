@@ -16,6 +16,7 @@
 #include "trainers/channeler.hpp"
 #include "trainers/crispin.hpp"
 #include "trainers/dawn.hpp"
+#include "trainers/earthen_vessel.hpp"
 #include "trainers/erikas_invitation.hpp"
 #include "trainers/evolution_incense.hpp"
 #include "trainers/field_blower.hpp"
@@ -46,7 +47,7 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 41> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 42> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
     &MawileGX::definition, // Exact Unified Minds Basic Metal Pokémon-GX: https://api.pokemontcg.io/v2/cards/sm11-141 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3704
     &Oricorio::definition, // Exact Guardians Rising Basic Psychic Pokémon: https://api.pokemontcg.io/v2/cards/sm2-55 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3712
@@ -61,6 +62,7 @@ inline constexpr std::array<const CardDefinition*, 41> kRegisteredCardDefinition
     &Channeler::definition, // Exact Unified Minds Supporter: https://api.pokemontcg.io/v2/cards/sm11-190 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3624
     &Crispin::definition, // Exact Stellar Crown Supporter: https://api.pokemontcg.io/v2/cards/sv7-133 ; enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3580
     &Dawn::definition, // Exact Mega Evolution Supporter: https://api.pokemontcg.io/v2/cards/me2-87
+    &EarthenVessel::definition, // Exact Paradox Rift Item: https://api.pokemontcg.io/v2/cards/sv4-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3475
     &ErikasInvitation::definition, // Exact Pokémon 151 Supporter: https://api.pokemontcg.io/v2/cards/sv3pt5-160 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3598
     &EvolutionIncense::definition, // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-163
     &FieldBlower::definition, // Exact SM 125 metadata: https://api.pokemontcg.io/v2/cards/sm2-125
@@ -160,6 +162,8 @@ static_assert(definition_matches_registration(Crispin::definition, Card::Crispin
                                               "sv7-133", "Crispin")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv7-133 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3580
 static_assert(definition_matches_registration(Dawn::definition, Card::Dawn,
                                               "me2-87", "Dawn")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/me2-87
+static_assert(definition_matches_registration(EarthenVessel::definition, Card::EarthenVessel,
+                                              "sv4-163", "Earthen Vessel")); // Exact Item: https://api.pokemontcg.io/v2/cards/sv4-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3475
 static_assert(definition_matches_registration(ErikasInvitation::definition,
                                               Card::ErikasInvitation, "sv3pt5-160",
                                               "Erika's Invitation")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sv3pt5-160 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3598

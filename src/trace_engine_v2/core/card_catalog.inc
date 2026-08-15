@@ -50,7 +50,7 @@ constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
 using DeckRecipe = std::vector<std::pair<Card, int>>;
 
 struct LegacyCardCatalog {
-  inline static constexpr std::array<std::pair<Card, std::string_view>, 15> kNames{{
+  inline static constexpr std::array<std::pair<Card, std::string_view>, 14> kNames{{
       {Card::Dragapult, "Dragapult ex"},
       {Card::MegaDragonite, "Mega Dragonite ex"},
       {Card::DialgaGX, "Dialga-GX"},
@@ -62,7 +62,6 @@ struct LegacyCardCatalog {
       {Card::Pineco, "Pineco"},
       {Card::ForretressEx, "Forretress ex"},
       {Card::UltraBall, "Ultra Ball"},
-      {Card::EarthenVessel, "Earthen Vessel"},
       {Card::PathToPeak, "Path to the Peak"},
       {Card::Grass, "Grass Energy"},
       {Card::Fire, "Fire Energy"},
@@ -84,10 +83,10 @@ struct LegacyCardCatalog {
 };
 
 constexpr std::string_view name(const Card card) {
-  // Registered metadata remains the canonical name owner; Regidrago VSTAR now resolves here:
-  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Registered metadata remains the canonical name owner; Earthen Vessel now resolves here:
+  // https://api.pokemontcg.io/v2/cards/sv4-163
   // Registry owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-  // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#catalog-and-knowledge-cleanup
+  // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/issues/3475
   if (const cards::CardDefinition* definition = cards::find_definition(card)) {
     return definition->name;
   }

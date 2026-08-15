@@ -44,6 +44,28 @@ CrobatModelingDeck make_crobat_modeling_deck(
   return deck;
 }
 
+CrobatModelingDeck make_issue_3545_bc_vs_trace_deck() {
+  DeckRecipe recipe = baseline_recipe();
+  // This explicit trace fixture swaps six singleton support/utility slots for four
+  // Battle Compressor plus two VS Seeker so CI can exercise the new routing without
+  // changing the canonical shell or the ordinary Crobat modeling matrix.
+  // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+  // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+  // Enhancement scope: https://github.com/FlareZ123/pokemon-sims/issues/3545
+  for (const Card cut : {Card::BrilliantBlender, Card::TeamYellsCheer, Card::Klara,
+                         Card::Lusamine, Card::Channeler, Card::ErikasInvitation}) {
+    adjust_modeling_recipe(recipe, cut, -1);
+  }
+  adjust_modeling_recipe(recipe, Card::BattleCompressor, 4);
+  adjust_modeling_recipe(recipe, Card::VsSeeker, 2);
+
+  CrobatModelingDeck deck{"issue3545-bc-vs", "Issue #3545 BC + VS trace deck",
+                          std::move(recipe)};
+  std::string error;
+  if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
+  return deck;
+}
+
 class CrobatModelingRegistry {
  public:
   static const std::vector<CrobatModelingDeck>& all() {
@@ -72,6 +94,10 @@ class CrobatModelingRegistry {
   }
 
   static const CrobatModelingDeck* find(const std::string_view id) {
+    if (id == "issue3545-bc-vs") {
+      static const CrobatModelingDeck trace_deck = make_issue_3545_bc_vs_trace_deck();
+      return &trace_deck;
+    }
     const auto& decks = all();
     const auto found = std::find_if(decks.begin(), decks.end(), [id](const auto& deck) {
       return deck.id == id;

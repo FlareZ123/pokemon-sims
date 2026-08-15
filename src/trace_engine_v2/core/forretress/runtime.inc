@@ -114,8 +114,7 @@ bool Engine::resolve_exploding_energy(
     return false;
   }
 
-  const OptionalBoardIndex source_index = board_index_matching(
-      [](const Pokemon& pokemon) { return pokemon.card == Card::ForretressEx; });
+  const OptionalBoardIndex source_index = board_index_for_card(Card::ForretressEx);
   if (!source_index) return false;
   const bool source_is_active = board_index_is_active(*source_index);
 
@@ -220,9 +219,12 @@ bool Engine::resolve_exploding_energy(
 }
 
 bool Engine::use_exploding_energy_for_setup() {
-  const bool promotion_only_finish = prizes_known() && state_.active &&
-      state_.active->card == Card::ForretressEx && need_active_vstar() &&
-      benched_vstar_promotion_ready() && !need_payload() && !need_energy();
+  const OptionalBoardIndex source_index = board_index_for_card(Card::ForretressEx);
+  const bool source_is_active =
+      source_index && board_index_is_active(*source_index);
+  const bool promotion_only_finish = prizes_known() && source_is_active &&
+      need_active_vstar() && benched_vstar_promotion_ready() &&
+      !need_payload() && !need_energy();
   if (!forretress_combo_enabled() ||
       (!need_energy() && !promotion_only_finish) ||
       in_play_count(Card::ForretressEx) == 0 ||
@@ -247,8 +249,6 @@ bool Engine::use_exploding_energy_for_setup() {
   }
 
   AttachmentDestinations destinations;
-  const bool source_is_active =
-      state_.active && state_.active->card == Card::ForretressEx;
   const bool active_blocks_regi = !source_is_active && state_.active &&
       state_.active->card != Card::RegidragoV &&
       state_.active->card != Card::RegidragoVstar;

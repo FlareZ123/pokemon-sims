@@ -237,11 +237,13 @@ Decision priorities and knowledge policy: https://github.com/FlareZ123/pokemon-s
 
 ## Setup lifecycle consolidation
 
-`src/trace_engine_v2/core/setup_lifecycle.inc` now owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `core/simulation_labels.inc` remains only as a compatibility forwarder so historical textual include sites keep compiling while the executable setup support has one owner.
+`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `src/trace_engine_v2/opening_setup_selection.inc` now owns the exact former `part_005.inc` Engine-member body at the same textual boundary, while `part_005.inc` remains a compatibility forwarder for historical source contracts. `core/simulation_labels.inc` is now a source-contract shim only; executable setup support is included directly from `core/setup_lifecycle.inc` by the named opening/setup owner.
 
-Opening-hand Basic validation and mulligan hand return now use named helpers inside that owner. The helpers preserve the existing seven-card draw, all-card return, reshuffle, and retry sequence. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+Opening-hand Basic validation and mulligan hand return use named helpers inside `core/setup_lifecycle.inc`. The helpers preserve the existing seven-card draw, all-card return, reshuffle, and retry sequence. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
-Next mechanical setup step: retarget the live parent include from `core/simulation_labels.inc` directly to `core/setup_lifecycle.inc` at the same Engine member boundary, then remove the compatibility forwarder after raw-source readers and same-repository anchors are migrated. Keep setup choice policy, K0/K1 state, mulligan counting, opening Active/Bench selection, and Prize placement semantics unchanged.
+Completed in `cleanup-1786762289044`: moved the full historical `part_005.inc` body byte-for-byte to `opening_setup_selection.inc`, preserved `part_005.inc` as a same-boundary forwarder, and removed the redundant nested `setup_lifecycle.inc` include from `core/simulation_labels.inc`. These changes are structural only; setup choice policy, K0/K1 state, mulligan counting, opening Active/Bench selection, Prize placement, DCI/UDP/AMR, and route policy remain at their prior owners. Named owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/opening_setup_selection.inc Canonical setup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/setup_lifecycle.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+
+Next mechanical setup step: migrate raw-source readers and same-repository anchors away from `part_005.inc` and `core/simulation_labels.inc`, then retarget `composition/engine_body.inc` directly to `opening_setup_selection.inc` at the identical member boundary and remove the two compatibility shims. Keep setup choice policy, K0/K1 state, mulligan counting, opening Active/Bench selection, Prize placement semantics, and direct source URLs unchanged.
 
 ## Rules and policy anchors
 

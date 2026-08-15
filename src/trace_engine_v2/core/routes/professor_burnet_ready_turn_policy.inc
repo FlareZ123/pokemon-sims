@@ -113,6 +113,14 @@
     state_.discard.push_back(Card::ProfessorBurnet);
     state_.supporter_used = true;
     std::vector<Card> discarded;
+    // Professor Burnet searches and discards up to two deck cards:
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    static constexpr std::size_t kBurnetSelectionLimit = 2U;
+    const auto discard_from_deck = [this, &discarded](const Card card) {
+      if (!move_deck_to_discard(card)) return false;
+      discarded.push_back(card);
+      return true;
+    };
     // Apex Dragon copies attacks from Dragon Pokémon in discard. Fill Burnet's two
     // selections with modeled A/S payloads before considering Dipplin or dead cards:
     // https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -129,11 +137,11 @@
         Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
         Card::DialgaGX, Card::Appletun};
     for (const Card card : kBurnetPayloadPriority) {
-      if (discarded.size() >= 2U) break;
-      if (move_deck_to_discard(card)) discarded.push_back(card);
+      if (discarded.size() >= kBurnetSelectionLimit) break;
+      discard_from_deck(card);
     }
-    if (discarded.size() < 2U && move_deck_to_discard(Card::Dipplin)) {
-      discarded.push_back(Card::Dipplin);
+    if (discarded.size() < kBurnetSelectionLimit) {
+      discard_from_deck(Card::Dipplin);
     }
 
     // Celestial Roar processes the top 3 cards and attaches every Basic Energy found.
@@ -152,7 +160,7 @@
         state_.active &&
         ((state_.active->grass < 2 && might_be_unseen(Card::Grass)) ||
          (state_.active->fire < 1 && might_be_unseen(Card::Fire)));
-    if (discarded.size() < 2U && active_can_use_celestial_roar &&
+    if (discarded.size() < kBurnetSelectionLimit && active_can_use_celestial_roar &&
         needed_energy_remains && state_.deck.size() > 3U) {
       // Burnet may discard up to two cards. After the Dragon payload, remove the
       // modeled inert Erika singleton to improve Celestial Roar's top-three Energy
@@ -165,10 +173,7 @@
           Card::PathToPeak, Card::ErikasInvitation, Card::Guzma,
           Card::Channeler, Card::FieldBlower, Card::ChaoticSwell};
       for (const Card card : kBurnetDeadThinningPriority) {
-        if (move_deck_to_discard(card)) {
-          discarded.push_back(card);
-          break;
-        }
+        if (discard_from_deck(card)) break;
       }
     }
 

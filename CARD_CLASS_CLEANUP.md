@@ -197,7 +197,11 @@ Keep payload role, DCI/UDP, strict-JIT admission, connector priority, and K0/K1 
 
 `src/trace_engine_v2/core/garbodor_lock_policy.inc` owns Garbodor scenario-prefix matching and seat-relative activation timing. Preserve Garbotoxin semantics and Rule Box lock interaction at their current policy owners. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
 
-Future policy cleanup should reuse these named seams before adding another payload preference loop or Garbodor scenario-label/timing branch.
+`src/trace_engine_v2/core/simulation_labels.inc` groups deck-identity detection under `SimulationDeckIdentity` and DCI/lock display formatting under `ScenarioLabelPolicy`. Keep these helpers descriptive only: gameplay route admission, DCI/UDP/AMR evaluation, lock activation, and K0/K1 decisions remain at their existing policy owners. Deck identity continues to derive from the actual modeled recipe rather than a separate mutable label table. DCI and scenario vocabulary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
+
+Next simulation-label cleanup step: route new deck/scenario display labels through these two policy owners instead of adding another top-level switch or repeated recipe-recognition branch. Preserve the production Pokémon TCG Live card-pool boundary at `tcg_live_deck_by_id()` and keep paper-only modeling identities explicit. Live boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_015.inc Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+
+Future policy cleanup should reuse these named seams before adding another payload preference loop, Garbodor scenario-label/timing branch, or simulation display classifier.
 
 ## Route predicate consolidation
 

@@ -36,13 +36,14 @@
 #include "trainers/quick_ball.hpp"
 #include "trainers/roseannes_backup.hpp"
 #include "trainers/secret_box.hpp"
+#include "trainers/serena.hpp"
 #include "trainers/stevens_resolve.hpp"
 #include "trainers/team_yells_cheer.hpp"
 #include "trainers/wishful_baton.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 37> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 38> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
     &MawileGX::definition, // Exact Unified Minds Basic Metal Pokémon-GX: https://api.pokemontcg.io/v2/cards/sm11-141 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3704
     &Oricorio::definition, // Exact Guardians Rising Basic Psychic Pokémon: https://api.pokemontcg.io/v2/cards/sm2-55 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3712
@@ -75,6 +76,7 @@ inline constexpr std::array<const CardDefinition*, 37> kRegisteredCardDefinition
     &ProfessorTuroScenario::definition, // Exact Paradox Rift Supporter: https://api.pokemontcg.io/v2/cards/sv4-171 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3632
     &RoseannesBackup::definition, // Exact Brilliant Stars Supporter: https://api.pokemontcg.io/v2/cards/swsh9-148 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3629
     &SecretBox::definition, // Exact Twilight Masquerade ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv6-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3541
+    &Serena::definition, // Exact Silver Tempest Supporter: https://api.pokemontcg.io/v2/cards/swsh12-164 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3585
     &StevensResolve::definition, // Exact Celestial Storm Supporter: https://api.pokemontcg.io/v2/cards/sm7-145 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3595
     &Lusamine::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
     &Klara::definition, // Exact Chilling Reign Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
@@ -190,5 +192,7 @@ static_assert(definition_matches_registration(StevensResolve::definition,
                                               "Steven's Resolve")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm7-145 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3595
 static_assert(definition_matches_registration(Guzma::definition, Card::Guzma,
                                               "sm3-115", "Guzma")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm3-115 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3618
+static_assert(definition_matches_registration(Serena::definition, Card::Serena,
+                                              "swsh12-164", "Serena")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh12-164 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3585
 
 }  // namespace sim::cards

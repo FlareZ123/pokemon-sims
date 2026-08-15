@@ -113,6 +113,9 @@
     state_.discard.push_back(Card::ProfessorBurnet);
     state_.supporter_used = true;
     std::vector<Card> discarded;
+    // Professor Burnet searches and discards up to two deck cards:
+    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    static constexpr std::size_t kBurnetSelectionLimit = 2U;
     // Apex Dragon copies attacks from Dragon Pokémon in discard. Fill Burnet's two
     // selections with modeled A/S payloads before considering Dipplin or dead cards:
     // https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -129,10 +132,10 @@
         Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
         Card::DialgaGX, Card::Appletun};
     for (const Card card : kBurnetPayloadPriority) {
-      if (discarded.size() >= 2U) break;
+      if (discarded.size() >= kBurnetSelectionLimit) break;
       if (move_deck_to_discard(card)) discarded.push_back(card);
     }
-    if (discarded.size() < 2U && move_deck_to_discard(Card::Dipplin)) {
+    if (discarded.size() < kBurnetSelectionLimit && move_deck_to_discard(Card::Dipplin)) {
       discarded.push_back(Card::Dipplin);
     }
 
@@ -152,7 +155,7 @@
         state_.active &&
         ((state_.active->grass < 2 && might_be_unseen(Card::Grass)) ||
          (state_.active->fire < 1 && might_be_unseen(Card::Fire)));
-    if (discarded.size() < 2U && active_can_use_celestial_roar &&
+    if (discarded.size() < kBurnetSelectionLimit && active_can_use_celestial_roar &&
         needed_energy_remains && state_.deck.size() > 3U) {
       // Burnet may discard up to two cards. After the Dragon payload, remove the
       // modeled inert Erika singleton to improve Celestial Roar's top-three Energy

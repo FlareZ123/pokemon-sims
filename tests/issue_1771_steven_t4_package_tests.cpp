@@ -103,6 +103,30 @@ void test_exact_package_is_selected() {
          "The corrected route trace was not emitted.");
 }
 
+void test_trace_uses_relative_completion_turn() {
+  sim::Scenario selected = scenario();
+  std::mt19937_64 rng{3798};
+  sim::TraceLog trace{true, {}};
+  sim::Engine engine = make_engine(selected, rng, &trace);
+  sim::State state = exact_t3_state();
+  state.turn = 4;
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // Steven's Resolve ends the current turn after searching, so a valid T4 use
+  // must describe the same package on the immediately following T5 witness:
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Advanced Supporter/search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed relative-trace bug: https://github.com/FlareZ123/pokemon-sims/issues/3798
+  expect(sim::EngineTestAccess::route_available(engine),
+         "The valid T4 Steven package was rejected.");
+  expect(sim::EngineTestAccess::play_steven(engine),
+         "Steven did not resolve the valid T4 package.");
+  expect(trace_contains(trace, "deterministic T5 VSTAR-Latias-Burnet package"),
+         "The trace did not report the setup-relative T5 completion turn.");
+  expect(!trace_contains(trace, "deterministic T4 VSTAR-Latias-Burnet package"),
+         "The trace retained the stale absolute T4 completion label.");
+}
+
 void test_prize_inspection_k1_selects_exact_package() {
   sim::Scenario selected = scenario();
   std::mt19937_64 rng{2065};
@@ -202,6 +226,7 @@ void test_registered_seed_reaches_t4() {
 
 int main() {
   test_exact_package_is_selected();
+  test_trace_uses_relative_completion_turn();
   test_prize_inspection_k1_selects_exact_package();
   test_route_gates();
   test_registered_seed_reaches_t4();

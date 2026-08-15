@@ -1,9 +1,16 @@
+  struct KnowledgeCopyPolicy {
+    [[nodiscard]] static constexpr bool has_any(const int count) {
+      return count > 0;
+    }
+
+    [[nodiscard]] static int unresolved(const int total_copies,
+                                        const int known_copies) {
+      return std::max(0, total_copies - known_copies);
+    }
+  };
+
   [[nodiscard]] bool deck_has_cards() const {
     return !state_.deck.empty();
-  }
-
-  [[nodiscard]] static constexpr bool has_known_copies(const int count) {
-    return count > 0;
   }
 
   [[nodiscard]] int unattached_public_copy_count(const Card card) const {
@@ -21,7 +28,7 @@
 
   [[nodiscard]] int unresolved_copy_count(
       const Card card, const int known_copies) const {
-    return std::max(0, total_copies(card) - known_copies);
+    return KnowledgeCopyPolicy::unresolved(total_copies(card), known_copies);
   }
 
   [[nodiscard]] int unresolved_fixed_list_copy_count(const Card card) const {
@@ -35,7 +42,7 @@
   }
 
   [[nodiscard]] bool known_deck_contains(const Card card) const {
-    return has_known_copies(known_deck_copy_count(card));
+    return KnowledgeCopyPolicy::has_any(known_deck_copy_count(card));
   }
 
   [[nodiscard]] int known_hand_or_deck_copy_count(const Card card) const {
@@ -43,7 +50,7 @@
   }
 
   [[nodiscard]] bool has_known_hand_or_deck_copy(const Card card) const {
-    return has_known_copies(known_hand_or_deck_copy_count(card));
+    return KnowledgeCopyPolicy::has_any(known_hand_or_deck_copy_count(card));
   }
 
   [[nodiscard]] bool might_be_unseen(const Card card) const {

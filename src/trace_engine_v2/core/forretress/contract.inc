@@ -24,7 +24,8 @@
   using AttachmentDestinations = BoardAttachmentDestinations;
 
   // Keep repeated Forretress/Regidrago board-role questions in one card-facing
-  // contract so runtime branches can share the same exact-print classification.
+  // contract while delegating intrinsic Regidrago-line identity to the canonical
+  // card classifier.
   [[nodiscard]] static constexpr bool is_forretress_ex_board_pokemon(
       const Pokemon& pokemon) {
     return pokemon.card == Card::ForretressEx; // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
@@ -32,8 +33,7 @@
 
   [[nodiscard]] static constexpr bool is_regidrago_board_pokemon(
       const Pokemon& pokemon) {
-    return pokemon.card == Card::RegidragoV ||
-           pokemon.card == Card::RegidragoVstar; // Regidrago V/VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    return is_regidrago_v_line(pokemon.card); // Canonical classifier: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc ; Regidrago V/VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
   }
 
   // Combo availability and board setup. Keep this order aligned with runtime.inc

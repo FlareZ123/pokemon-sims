@@ -62,17 +62,7 @@
       return play_gladion_issue1204_original();
     }
 
-    remove_one(state_.hand, Card::Gladion);
-    state_.supporter_used = true;
-    prizes_revealed_ = true;
-    const auto prize = std::find(state_.prizes.begin(), state_.prizes.end(),
-                                 Card::MysteriousTreasure);
-    if (prize == state_.prizes.end()) {
-      throw std::logic_error("Issue-1204 revealed Mysterious Treasure disappeared");
-    }
-    *prize = Card::Gladion;
-    state_.hand.push_back(Card::MysteriousTreasure);
-    shuffle(state_.prizes);
+    resolve_gladion_prize_exchange(Card::MysteriousTreasure);
 
     // The revealed Treasure is an immediate, payable Regidrago V connector. It
     // precedes the inert Dipplin fallback while direct prized Regidrago recovery and

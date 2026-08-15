@@ -1,3 +1,25 @@
+  void resolve_gladion_prize_exchange(const Card target) {
+    // Gladion is played from hand, lets the player inspect every face-down Prize,
+    // puts one chosen Prize into hand, then shuffles Gladion into the remaining
+    // Prize cards. Keep that state transition in one resolver so route policies
+    // only decide which legally revealed target to take.
+    // Gladion card data: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Official Supporter and Prize procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Advanced procedure transcription: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    if (!remove_one(state_.hand, Card::Gladion)) {
+      throw std::logic_error("Gladion disappeared before Prize exchange");
+    }
+    state_.supporter_used = true;
+    prizes_revealed_ = true;
+    const auto prize = std::find(state_.prizes.begin(), state_.prizes.end(), target);
+    if (prize == state_.prizes.end()) {
+      throw std::logic_error("Gladion target disappeared after Prize reveal");
+    }
+    *prize = Card::Gladion;
+    state_.hand.push_back(target);
+    shuffle(state_.prizes);
+  }
+
   bool known_t2_steven_crispin_latias_route_available() const {
     if (!prizes_known() || state_.turn != 1 || scenario_.going_first ||
         scenario_.dci != DciProfile::NoDiscardControl ||

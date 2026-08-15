@@ -21,6 +21,7 @@
 
 #include "../../cards/card_registry.hpp"
 #include "card_context_adapter.hpp"
+#include "knowledge/knowledge_copy_policy.hpp"
 
 #if defined(_WIN32)
 #include <windows.h>

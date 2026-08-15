@@ -50,8 +50,7 @@ constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
 using DeckRecipe = std::vector<std::pair<Card, int>>;
 
 struct LegacyCardCatalog {
-  inline static constexpr std::array<std::pair<Card, std::string_view>, 16> kNames{{
-      {Card::RegidragoVstar, "Regidrago VSTAR"},
+  inline static constexpr std::array<std::pair<Card, std::string_view>, 15> kNames{{
       {Card::Dragapult, "Dragapult ex"},
       {Card::MegaDragonite, "Mega Dragonite ex"},
       {Card::DialgaGX, "Dialga-GX"},
@@ -85,8 +84,8 @@ struct LegacyCardCatalog {
 };
 
 constexpr std::string_view name(const Card card) {
-  // Registered metadata remains the canonical name owner; this function keeps
-  // the shrinking legacy fallback isolated for cards not yet migrated.
+  // Registered metadata remains the canonical name owner; Regidrago VSTAR now resolves here:
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
   // Registry owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
   // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#catalog-and-knowledge-cleanup
   if (const cards::CardDefinition* definition = cards::find_definition(card)) {

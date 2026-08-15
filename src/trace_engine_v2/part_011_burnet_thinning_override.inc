@@ -21,16 +21,14 @@
     const auto bench_has = [this](const auto predicate) {
       return std::any_of(state_.bench.begin(), state_.bench.end(), predicate);
     };
-    const bool active_regi_can_evolve = state_.active &&
-        state_.active->card == Card::RegidragoV &&
-        state_.active->entered_turn < state_.turn && vstar_search_route;
+    const bool active_regi_can_evolve = vstar_search_route && state_.active &&
+        pokemon_can_evolve_into_regidrago_vstar(*state_.active, state_.turn);
     const bool benched_vstar_exists = bench_has([](const Pokemon& pokemon) {
       return pokemon.card == Card::RegidragoVstar;
     });
     const bool benched_regi_can_evolve = vstar_search_route && bench_has(
         [this](const Pokemon& pokemon) {
-          return pokemon.card == Card::RegidragoV &&
-              pokemon.entered_turn < state_.turn;
+          return pokemon_can_evolve_into_regidrago_vstar(pokemon, state_.turn);
         });
     const bool vstar_exists_or_evolvable =
         has_vstar() || active_regi_can_evolve || benched_regi_can_evolve;

@@ -8,13 +8,20 @@
         hand_count(Card::RegidragoV) == 0 || bench_space() == 0 ||
         hand_count(Card::TapuLeleGX) > 0 || in_play(Card::TapuLeleGX) ||
         !ability_available_for_pokemon(Card::TapuLeleGX) ||
-        hand_count(Card::Arven) > 0 || hand_count(Card::EarthenVessel) > 0 ||
-        deck_count_after_search_started(Card::TapuLeleGX) == 0 ||
-        deck_count_after_search_started(Card::Arven) == 0 ||
-        deck_count_after_search_started(Card::EarthenVessel) == 0 ||
-        deck_count_after_search_started(Card::Grass) == 0) {
+        hand_count(Card::Arven) > 0 || hand_count(Card::EarthenVessel) > 0) {
       return false;
     }
+
+    const auto known_deck_has = [this](const Card card) {
+      return deck_count_after_search_started(card) > 0;
+    };
+    const bool downstream_search_chain_available =
+        known_deck_has(Card::TapuLeleGX) &&
+        known_deck_has(Card::Arven) &&
+        known_deck_has(Card::EarthenVessel) &&
+        known_deck_has(Card::Grass);
+    if (!downstream_search_chain_available) return false;
+
     // Preserve the route-specific Regidrago V exclusion while reusing the shared
     // physical-zone traversal primitive instead of maintaining another ad hoc scan.
     // Payload cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup

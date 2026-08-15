@@ -72,17 +72,15 @@
           hand_count(Card::EarthenVessel) == 0) {
         return false;
       }
-      const std::vector<Card> original_hand = state_.hand;
-      const auto restore_hand = [this, &original_hand]() { state_.hand = original_hand; };
+      Engine simulated = *this;
       // Roseanne's Backup and Evolution Incense both leave the hand before Earthen
-      // Vessel pays its required discard cost. Test the exact remaining hand so one
-      // card cannot be counted as the cost of both searches:
+      // Vessel pays its required discard cost. Evaluate that projected hand on a
+      // copied Engine so this admission check cannot mutate live turn state:
       // https://api.pokemontcg.io/v2/cards/swsh9-148
       // https://api.pokemontcg.io/v2/cards/swsh1-163
       // https://api.pokemontcg.io/v2/cards/sv4-163
-      if (!remove_one(state_.hand, Card::RoseannesBackup) ||
-          !remove_one(state_.hand, Card::EvolutionIncense)) {
-        restore_hand();
+      if (!remove_one(simulated.state_.hand, Card::RoseannesBackup) ||
+          !remove_one(simulated.state_.hand, Card::EvolutionIncense)) {
         return false;
       }
       // A held Dragon payload may pay Earthen Vessel's other-card cost when that
@@ -90,10 +88,9 @@
       // https://api.pokemontcg.io/v2/cards/sv4-163
       // https://api.pokemontcg.io/v2/cards/swsh12-136
       // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-      const bool payable = choose_discard(can_play_payload_this_turn(), true, true,
-                                           Card::EarthenVessel).has_value();
-      restore_hand();
-      return payable;
+      return simulated.choose_discard(
+          simulated.can_play_payload_this_turn(), true, true,
+          Card::EarthenVessel).has_value();
     };
 
     // Roseanne's Backup says "Choose 1 or more," so its Pokémon and Energy

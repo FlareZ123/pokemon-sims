@@ -12,11 +12,17 @@
 #include "core/routes/issue_3199_turo_oricorio_base.inc"
 #undef tate_draw_has_held_non_supporter_completion
 
+  struct PublicProjectionDepthGuard {
+    int& depth;
+
+    explicit PublicProjectionDepthGuard(int& value) : depth(value) { ++depth; }
+    ~PublicProjectionDepthGuard() { --depth; }
+
+    PublicProjectionDepthGuard(const PublicProjectionDepthGuard&) = delete;
+    PublicProjectionDepthGuard& operator=(const PublicProjectionDepthGuard&) = delete;
+  };
+
   bool tate_draw_has_held_non_supporter_completion() const {
-    struct ProjectionGuard {
-      int& depth;
-      explicit ProjectionGuard(int& value) : depth(value) { ++depth; }
-      ~ProjectionGuard() { --depth; }
-    } guard(issue_3199_public_projection_depth_);
+    PublicProjectionDepthGuard guard(issue_3199_public_projection_depth_);
     return tate_draw_has_held_non_supporter_completion_issue3199_original();
   }

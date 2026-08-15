@@ -160,6 +160,14 @@ Next shared-policy step: route duplicate Garbodor present/removed plus Rule Box 
 
 Next turn-lifecycle step: route only exact duplicate action-flag/reset bundles through `TurnActionStatePolicy::reset()` and exact scenario-scoped transient lock resets through `TransientTurnLockPolicy::reset()`. Preserve the current ordering relative to the required turn draw, and keep persistent matchup state outside these per-turn policy owners.
 
+## Projection cleanup
+
+`src/trace_engine_v2/part_turo_oricorio_override.inc` now gives the Tate public-projection recursion guard a named Engine member type instead of rebuilding an anonymous RAII type at each call site. The projection still isolates only Legacy Star and restores the same thread-local depth on scope exit: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_turo_oricorio_override.inc
+
+`src/trace_engine_v2/part_roseanne_multimode_override.inc` now evaluates the Evolution Incense -> Earthen Vessel admission path on a copied `Engine`, matching the neighboring Pokémon Communication projection and avoiding temporary mutation/restoration of live hand state. Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148 Evolution Incense: https://api.pokemontcg.io/v2/cards/swsh1-163 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+
+Next projection step: migrate only admission checks whose semantics are already pure projections onto copied Engine state. Keep physical resolution, trace emission, K0/K1 transitions, and strategic route choice at their current owners.
+
 ## Validation gate
 
 A cleanup PR is mergeable only when strict Release compilation succeeds, focused tests and the full regression suite show no new failure, sanitizer/structural checks show no new failure, representative `--simulate-this` traces preserve legal action ordering/readiness, the paired T2/T3 matrix has no unexplained drift, and the PR contains no gameplay behavior change.

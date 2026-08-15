@@ -88,6 +88,7 @@ Next composition step: inventory `opening_legacy_stage.inc` for another complete
 
 - `PayloadZonePolicy::first_iterator_matching()` owns the shared physical-zone first-match traversal primitive. Payload and exact-card membership build on this seam so they cannot drift into separate scan implementations.
 - `PayloadZonePolicy::contains_matching()` owns generic predicate-based zone membership and keeps boolean membership checks on the same traversal primitive.
+- `PayloadZonePolicy::count_matching()` owns generic predicate-based zone cardinality so payload counts do not grow independent `std::count_if` scans.
 - `PayloadZonePolicy::first()` preserves physical zone order for callers whose historical behavior depends on the first matching payload.
 - `PayloadZonePolicy::contains()` and `PayloadZonePolicy::count()` own generic payload membership/count semantics.
 - `PayloadZonePolicy::contains_card()` owns concrete-card membership in a physical zone so preference code does not duplicate `std::find` scans.
@@ -97,7 +98,7 @@ Next composition step: inventory `opening_legacy_stage.inc` for another complete
 
 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 
-Next payload step: replace remaining ad hoc Dragon-payload membership scans only where semantics exactly match `PayloadZonePolicy::contains()`, `contains_card()`, or `contains_matching()`. Preserve physical-order selection when order is observable and preserve the explicit strategic order where preference is required. Keep DCI/JIT predicates and discard timing at strategy owners.
+Next payload step: replace remaining ad hoc Dragon-payload membership and cardinality scans only where semantics exactly match `PayloadZonePolicy::contains()`, `contains_card()`, `contains_matching()`, `count()`, or `count_matching()`. Preserve physical-order selection when order is observable and preserve the explicit strategic order where preference is required. Keep DCI/JIT predicates and discard timing at strategy owners.
 
 ## Forretress cleanup
 
@@ -115,9 +116,9 @@ Named Steven route owners live under `src/trace_engine_v2/core/routes/`. Retire 
 
 `src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels together with opening-deck initialization, opening-hand and mulligan mechanics, Prize dealing, and setup-trace output. `src/trace_engine_v2/part_005.inc` composes that canonical owner at the established Engine member boundary.
 
-`prepare_opening_deck()` now owns knowledge reset, recipe population, and the opening shuffle. `draw_opening_hand_once()` owns the repeated seven-card transfer used by the mulligan loop. Scenario summaries call `SetupLifecycleConfig` directly instead of retaining forwarding-only label wrappers. `SetupLifecycleConfig::kUnknownLabel` now centralizes the fallback label shared by DCI and lock rendering, keeping setup display vocabulary in one owner. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+`SetupRecipePolicy` owns setup recipe-presence and exact-count predicates used by deck/scenario classification. `prepare_opening_deck()` owns knowledge reset, recipe population, and the opening shuffle. `draw_opening_hand_once()` owns the repeated seven-card transfer used by the mulligan loop. Scenario summaries call `SetupLifecycleConfig` directly instead of retaining forwarding-only label wrappers. `SetupLifecycleConfig::kUnknownLabel` now centralizes the fallback label shared by DCI and lock rendering, keeping setup display vocabulary in one owner. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
 
-Next setup step: move only state-transition helpers from opening Active/Bench setup into `core/setup_lifecycle.inc` once exact source-contract coverage exists for hand removal, `started_regi`, Bench insertion, and declaration ordering. Keep strategic route predicates in Engine.
+Next setup step: route future setup recipe classification through `SetupRecipePolicy` and move only state-transition helpers from opening Active/Bench setup into `core/setup_lifecycle.inc` once exact source-contract coverage exists for hand removal, `started_regi`, Bench insertion, and declaration ordering. Keep strategic route predicates in Engine.
 
 ## Catalog and knowledge cleanup
 

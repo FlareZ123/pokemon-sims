@@ -17,10 +17,11 @@
   // Core evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
 #include "../board_state_policy.inc"
 
-  // Exploding Energy destinations use the canonical board index type owned by
-  // board_state_policy.inc: 0 is Active and each Bench slot is index + 1.
+  // Exploding Energy keeps its card-facing name while reusing the canonical
+  // board destination container owned by board_state_policy.inc. Board index 0
+  // is Active and each Bench slot is index + 1.
   // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
-  using AttachmentDestinations = std::vector<BoardIndex>;
+  using AttachmentDestinations = BoardAttachmentDestinations;
 
   // Combo availability and board setup. Keep this order aligned with runtime.inc
   // so declaration ownership is easy to audit across the textual class boundary.
@@ -30,9 +31,10 @@
   bool bench_pineco_if_useful();
   bool evolve_forretress_ex();
 
-  // Exploding Energy board lookup and printed-effect resolution. BoardIndex and
-  // OptionalBoardIndex are supplied by board_state_policy.inc rather than a
-  // card-local index vocabulary.
+  // Exploding Energy board lookup and printed-effect resolution. BoardIndex,
+  // OptionalBoardIndex, pointer-to-index mapping, and attachment-destination
+  // storage are supplied by board_state_policy.inc rather than card-local
+  // traversal vocabulary.
   // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
   // Board policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
   [[nodiscard]] Pokemon* pokemon_at_board_index(BoardIndex index);

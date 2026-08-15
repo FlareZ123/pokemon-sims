@@ -47,20 +47,51 @@
     return true;
   }
 
+  bool tate_celestial_roar_preservation_route_ready() const {
+    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 || first_turn_going_first() ||
+        !state_.active || state_.active->card == Card::RegidragoV ||
+        state_.active->card == Card::RegidragoVstar ||
+        can_free_retreat_with_latias()) {
+      return false;
+    }
+
+    // Tate & Liza may switch the Active with any Benched Pokemon. A Basic played
+    // this turn cannot evolve until the next turn, while Celestial Roar costs [C].
+    // Restrict this selector to that exact temporal state so it cannot preempt an
+    // immediately legal prior-turn Regidrago V -> VSTAR evolution route.
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Regidrago V / Celestial Roar [C]: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Evolution, Supporter, switching, attack, and turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Connector-domination and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3961
+    return std::any_of(state_.bench.begin(), state_.bench.end(),
+                       [this](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoV &&
+             pokemon.entered_turn == state_.turn &&
+             total_energy_units(pokemon) >= 1 &&
+             !pays_apex_energy_cost(pokemon);
+    });
+  }
+
   void choose_supporter_with_turo_staging_fallback() {
     if (supporter_allowed() && issue_3040_play_turo_regidrago_staging_route()) return;
     // G&H uses the normal selector path; its policy retains Supporter/DCI/JIT gates.
     // https://api.pokemontcg.io/v2/cards/sm12-229
     if (supporter_allowed() && play_guzma_hala()) return;
+    if (tate_celestial_roar_preservation_route_ready() && play_tate_switch()) return;
     choose_supporter_issue1070_original();
   }
 
 // Keep the issue-1070 selector as the single downstream owner and route only its
-// final fallback through the confirmed Turo staging policy. The semantic wrapper
-// name avoids carrying an issue number into later composition layers.
+// final fallback through the confirmed Turo staging and Tate mode-selection policy.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
-// Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3040
+// Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+// Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+// Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+// Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/3040 https://github.com/FlareZ123/pokemon-sims/issues/3961
 #define choose_supporter_issue1070_original choose_supporter_with_turo_staging_fallback
 #include "../../part_issue_1070_tate_after_vstar_search_original.inc"
 #undef choose_supporter_issue1070_original

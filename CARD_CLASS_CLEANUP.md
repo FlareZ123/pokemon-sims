@@ -136,7 +136,7 @@ If migration reveals gameplay behavior that is wrong, route that correction thro
 
 ## Composition ownership
 
-`src/trace_engine_v2/composition/engine_body.inc` is the canonical Engine composition owner. `composition/opening_engine_overrides.inc` owns the early Supporter/VSTAR continuation. `composition/post_014a_overrides.inc` owns late-search composition.
+`src/trace_engine_v2/composition/engine_body.inc` is the canonical Engine composition owner. `composition/state_bootstrap.inc` owns the guarded card catalog, card classification, and simulator-state bootstrap. `composition/opening_stage.inc` owns the historical part_003/004/005 opening chain. `composition/opening_engine_overrides.inc` owns the early Supporter/VSTAR continuation. `composition/post_014a_overrides.inc` owns late-search composition. `composition/late_stage.inc` owns the part_014c/015/016 execution, scenario, and reporting tail. C++ textual include semantics: https://eel.is/c++draft/cpp.include
 
 For mechanical `.inc` cleanup:
 
@@ -153,10 +153,11 @@ C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 ## Root source-contract shims
 
-`src/trace_engine_v2/composition/engine_body.inc` remains the executable owner of `core/card_catalog.inc` and `core/card_classification.inc`. Root `part_000.inc` and `part_001.inc` remain source-contract shims because unified-test generation, raw-source payload contracts, and same-repository documentation anchors still depend on those historical paths.
+`src/trace_engine_v2/composition/state_bootstrap.inc` is the executable owner of `core/card_catalog.inc` and `core/card_classification.inc`, reached through `composition/engine_body.inc`. Root `part_000.inc` and `part_001.inc` remain source-contract shims because unified-test generation, raw-source payload contracts, and same-repository documentation anchors still depend on those historical paths.
 
 Canonical catalog: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 Canonical classification: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
+Composition bootstrap: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/state_bootstrap.inc
 Unified test generator: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/generate_unified_tests.py
 
 Future retirement of either shim requires migrating every raw-source reader and same-repository line anchor first.

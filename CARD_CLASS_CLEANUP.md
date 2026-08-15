@@ -86,14 +86,16 @@ Next composition step: inventory `opening_legacy_stage.inc` for another complete
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner.
 
-- `PayloadZonePolicy::first_iterator_matching()` owns the shared physical-zone first-match traversal primitive. Payload and exact-card membership build on this seam so they cannot drift into separate scan implementations.
+- `PayloadZonePolicy::first_iterator_matching()` owns the shared physical-zone first-match traversal primitive. Payload selection and predicate membership build directly on this seam so they cannot drift into separate scan implementations.
 - `PayloadZonePolicy::contains_matching()` owns generic predicate-based zone membership and keeps boolean membership checks on the same traversal primitive.
-- `PayloadZonePolicy::first()` preserves physical zone order for callers whose historical behavior depends on the first matching payload.
+- `PayloadZonePolicy::first()` preserves physical zone order for callers whose historical behavior depends on the first matching payload and now calls the canonical first-match primitive directly.
 - `PayloadZonePolicy::contains()` and `PayloadZonePolicy::count()` own generic payload membership/count semantics.
 - `PayloadZonePolicy::contains_card()` owns concrete-card membership in a physical zone so preference code does not duplicate `std::find` scans.
 - `PayloadPreferencePolicy::first_preferred()` preserves the explicit five-card strategic priority.
 - `PayloadPreferencePolicy::first_preferred_in_zone()` composes preference order with physical-zone membership.
 - `PayloadPreferencePolicy::first_preferred_with_positive_count()` adapts count-backed zones without duplicating preference traversal.
+
+The forwarding-only payload iterator and generic count adapters have been retired. `PayloadZonePolicy::first()` now uses `first_iterator_matching()` directly, and `payload_cards_in_hand_count()` calls `PayloadZonePolicy::count()` directly. This keeps physical-zone mechanics at the canonical owner without adding another Engine-level forwarding seam.
 
 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 

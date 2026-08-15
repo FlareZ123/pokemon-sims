@@ -76,22 +76,12 @@ bool Engine::evolve_forretress_ex() {
   return true;
 }
 
-Pokemon* Engine::pokemon_at_board_index(const BoardIndex index) {
-  if (index == 0U) {
-    return state_.active ? &*state_.active : nullptr;
-  }
-  const BoardIndex bench_index = index - 1U;
-  return bench_index < state_.bench.size() ? &state_.bench[bench_index] : nullptr;
-}
-
 Engine::OptionalBoardIndex Engine::exploding_energy_regidrago_target_index() const {
-  const Pokemon* target = target_regi();
-  if (target == nullptr) return std::nullopt;
-  if (state_.active && target == &*state_.active) return 0U;
-  for (BoardIndex index = 0; index < state_.bench.size(); ++index) {
-    if (target == &state_.bench[index]) return index + 1U;
-  }
-  return std::nullopt;
+  // Preserve the strategy-selected Regidrago target while translating its board
+  // pointer through the shared Active-first board-index contract:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  return board_index_for_pointer(target_regi());
 }
 
 void Engine::discard_forretress_ex_stack(const Pokemon& knocked_out) {
@@ -124,21 +114,13 @@ bool Engine::resolve_exploding_energy(
     return false;
   }
 
-  const bool source_is_active =
-      state_.active && state_.active->card == Card::ForretressEx;
-  OptionalBoardIndex source_bench_index;
-  if (!source_is_active) {
-    for (BoardIndex index = 0; index < state_.bench.size(); ++index) {
-      if (state_.bench[index].card == Card::ForretressEx) {
-        source_bench_index = index;
-        break;
-      }
-    }
-  }
-  if (!source_is_active && !source_bench_index) return false;
+  const OptionalBoardIndex source_index = board_index_matching(
+      [](const Pokemon& pokemon) { return pokemon.card == Card::ForretressEx; });
+  if (!source_index) return false;
+  const bool source_is_active = board_index_is_active(*source_index);
 
   for (const BoardIndex destination : attachment_destinations) {
-    if (pokemon_at_board_index(destination) == nullptr) return false;
+    if (board_pokemon_at_index(destination) == nullptr) return false;
   }
   if (deck_count_after_search_started(Card::Grass) <
       static_cast<int>(attachment_destinations.size())) {
@@ -159,7 +141,7 @@ bool Engine::resolve_exploding_energy(
       throw std::logic_error(
           "Exploding Energy preflight diverged from deck state");
     }
-    Pokemon* target = pokemon_at_board_index(destination);
+    Pokemon* target = board_pokemon_at_index(destination);
     if (target == nullptr) {
       throw std::logic_error(
           "Exploding Energy destination disappeared during resolution");
@@ -173,9 +155,11 @@ bool Engine::resolve_exploding_energy(
     knocked_out = *state_.active;
     state_.active.reset();
   } else {
-    knocked_out = state_.bench[*source_bench_index];
+    const BoardIndex bench_position =
+        bench_position_from_board_index(*source_index);
+    knocked_out = state_.bench[bench_position];
     state_.bench.erase(state_.bench.begin() +
-                       static_cast<std::ptrdiff_t>(*source_bench_index));
+                       static_cast<std::ptrdiff_t>(bench_position));
   }
   discard_forretress_ex_stack(knocked_out);
 
@@ -318,7 +302,8 @@ bool Engine::use_exploding_energy_for_setup() {
   if (retreat_grass + target_grass <= 0) return false;
   if (retreat_grass > 0) {
     destinations.insert(destinations.end(),
-                        static_cast<std::size_t>(retreat_grass), 0U);
+                        static_cast<std::size_t>(retreat_grass),
+                        kActiveBoardIndex);
   }
   destinations.insert(destinations.end(),
                       static_cast<std::size_t>(target_grass), *target_index);

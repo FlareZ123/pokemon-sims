@@ -49,10 +49,7 @@ constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
 
 using DeckRecipe = std::vector<std::pair<Card, int>>;
 
-constexpr std::string_view name(const Card card) {
-  if (const cards::CardDefinition* definition = cards::find_definition(card)) {
-    return definition->name;
-  }
+constexpr std::string_view legacy_name(const Card card) {
   switch (card) {
     case Card::RegidragoVstar: return "Regidrago VSTAR";
     case Card::Dragapult: return "Dragapult ex";
@@ -111,4 +108,14 @@ constexpr std::string_view name(const Card card) {
       break;  // Registered CardDefinition owns these names: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
   }
   return "Unknown";
+}
+
+constexpr std::string_view name(const Card card) {
+  // Registered metadata remains the canonical name owner; this function keeps
+  // the shrinking legacy fallback isolated for cards not yet migrated.
+  // Registry owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+  if (const cards::CardDefinition* definition = cards::find_definition(card)) {
+    return definition->name;
+  }
+  return legacy_name(card);
 }

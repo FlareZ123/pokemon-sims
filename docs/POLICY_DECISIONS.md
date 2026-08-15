@@ -10,6 +10,12 @@ This simulator is a single-player, imperfect-information setup model. Its object
 
 It does not model opponent turns, damage, prizes taken, or a global two-player game-tree solution. "Optimal" in this document means the best legal action among the engine's modeled connector routes and visible state.
 
+### Ready-state observation boundary
+
+The repository metric is **attack-available readiness**. A state counts as ready on player turn `Tn` only when every readiness axis above exists while that turn's attack timing point is still available. End-of-turn effects that resolve only after an attack has completed, or after the player has announced the end of the turn without attacking, cannot retroactively create readiness for that same `Tn`: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md https://api.pokemontcg.io/v2/cards/sv6pt5-63 https://api.pokemontcg.io/v2/cards/swsh12-136
+
+Powerglass therefore cannot supply the final Apex Dragon Energy for the turn in which its end-of-turn effect resolves. If Powerglass creates the otherwise complete `GGF` board only after the attack window has passed, the earliest possible readiness is a later legal attack turn. `Engine::record_ready()`, `first_ready_turn`, `--require-ready-by`, the T2/T3 probability columns, and strict-JIT's "same player turn that creates readiness" all use this attack-available boundary. The production ordering records readiness before resolving Powerglass for exactly this reason: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc https://github.com/FlareZ123/pokemon-sims/issues/201
+
 ### A/S payload classification
 
 `is_payload` is the single readiness and payload-routing predicate. It contains Dragapult ex, Mega Dragonite ex, Dialga-GX, Hisuian Goodra VSTAR, and Appletun: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/swsh12-136. Dipplin TWM 127 remains a legal Dragon target for Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/sv6-127.

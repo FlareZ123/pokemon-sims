@@ -27,6 +27,12 @@ The fixed seed makes each report reproducible. The Monte Carlo standard error sh
 - Item-lock restrictions.
 - Strict same-turn payload tracking.
 
+### Readiness timing boundary
+
+The simulator measures attack-available readiness. A player turn is recorded as ready only if Active Regidrago VSTAR, its required `GGF`, and the selected profile's legal Dragon payload state all exist before that turn's attack timing point has passed. E-21 end-of-turn effects occur after an attack has completed or after the player announces the end of the turn without attacking, so a state created solely in that window cannot be counted as readiness for the same turn: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md https://api.pokemontcg.io/v2/cards/sv6pt5-63 https://api.pokemontcg.io/v2/cards/swsh12-136
+
+This boundary is shared by `first_ready_turn`, `--require-ready-by`, all T2/T3 setup probability columns, and Strict JIT's requirement that the payload enter discard on the same player turn that creates readiness. Powerglass may improve the board for a later turn, but its end-of-turn Basic Energy attachment cannot make Apex Dragon attack-ready on the turn whose attack window has already ended. The implementation therefore records readiness before resolving Powerglass: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc https://github.com/FlareZ123/pokemon-sims/issues/201
+
 ## Deliberate simplifications
 
 ### Opponent actions

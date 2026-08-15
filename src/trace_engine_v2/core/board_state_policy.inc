@@ -12,6 +12,11 @@
     return index == kActiveBoardIndex;
   }
 
+  [[nodiscard]] static constexpr bool board_index_is_benched(
+      const BoardIndex index) {
+    return !board_index_is_active(index);
+  }
+
   [[nodiscard]] static constexpr BoardIndex board_index_for_bench_position(
       const BoardIndex bench_position) {
     return bench_position + 1U;
@@ -62,6 +67,33 @@
           return false;
         });
     return match;
+  }
+
+  template <typename ActiveZone, typename BenchZone, typename Predicate,
+            typename Rank>
+  [[nodiscard]] static OptionalBoardIndex board_index_best_matching_in_zones(
+      const ActiveZone& active, const BenchZone& bench, Predicate predicate,
+      Rank rank) {
+    // Keep ranked selection on the canonical Active-first traversal. Replacing
+    // the best index only for a strictly greater rank preserves first-match ties,
+    // matching std::max_element's deterministic ordering for equivalent entries.
+    // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+    // max_element tie semantics: https://eel.is/c++draft/alg.sorting#alg.max.min
+    OptionalBoardIndex best;
+    (void)visit_board_pokemon_in_zones(
+        active, bench,
+        [&](const BoardIndex index, const Pokemon& pokemon) {
+          if (!predicate(index, pokemon)) return true;
+          if (!best) {
+            best = index;
+            return true;
+          }
+          const Pokemon* current =
+              board_pokemon_at_index_in_zones(active, bench, *best);
+          if (rank(*current) < rank(pokemon)) best = index;
+          return true;
+        });
+    return best;
   }
 
   template <typename ActiveZone, typename BenchZone>
@@ -115,6 +147,25 @@
       Predicate predicate) const {
     return board_index_matching_in_zones(
         state_.active, state_.bench, predicate);
+  }
+
+  template <typename Predicate, typename Rank>
+  [[nodiscard]] OptionalBoardIndex board_index_best_matching(
+      Predicate predicate, Rank rank) const {
+    return board_index_best_matching_in_zones(
+        state_.active, state_.bench, predicate, rank);
+  }
+
+  template <typename Rank>
+  [[nodiscard]] OptionalBoardIndex best_benched_pokemon_index(Rank rank) const {
+    // Bench ranking is a board-policy operation. Keep the Active exclusion and
+    // first-equal tie behavior in one reusable query before Forretress consumes it.
+    // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+    return board_index_best_matching(
+        [](const BoardIndex index, const Pokemon&) {
+          return board_index_is_benched(index);
+        },
+        rank);
   }
 
   [[nodiscard]] OptionalBoardIndex board_index_for_pointer(

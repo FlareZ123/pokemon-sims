@@ -115,17 +115,19 @@ Named Steven route owners live under `src/trace_engine_v2/core/routes/`. Retire 
 
 `src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels together with opening-deck initialization, opening-hand and mulligan mechanics, Prize dealing, and setup-trace output. `src/trace_engine_v2/part_005.inc` composes that canonical owner at the established Engine member boundary.
 
-`prepare_opening_deck()` now owns knowledge reset, recipe population, and the opening shuffle. `draw_opening_hand_once()` owns the repeated seven-card transfer used by the mulligan loop. Scenario summaries call `SetupLifecycleConfig` directly instead of retaining forwarding-only label wrappers. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+`prepare_opening_deck()` now owns knowledge reset, recipe population, and the opening shuffle. `draw_opening_hand_once()` owns the repeated seven-card transfer used by the mulligan loop. Scenario summaries call `SetupLifecycleConfig` directly instead of retaining forwarding-only label wrappers. `SetupLifecycleConfig::kUnknownLabel` now centralizes the fallback label shared by DCI and lock rendering, keeping setup display vocabulary in one owner. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
 
 Next setup step: move only state-transition helpers from opening Active/Bench setup into `core/setup_lifecycle.inc` once exact source-contract coverage exists for hand removal, `started_regi`, Bench insertion, and declaration ordering. Keep strategic route predicates in Engine.
 
 ## Catalog and knowledge cleanup
 
-`src/trace_engine_v2/core/card_catalog.inc` now keeps only the Engine-facing compatibility bridge and delegates legacy fallback metadata to `src/trace_engine_v2/core/catalog/legacy_card_catalog.hpp`. `LegacyCardCatalog::find()` remains the single fallback-table traversal, and global `name(Card)` falls from registered `CardDefinition` lookup to `LegacyCardCatalog::name()`. Registered metadata remains canonical: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+`src/trace_engine_v2/core/card_catalog.inc` keeps legacy name metadata behind `LegacyCardCatalog`. `LegacyCardCatalog::find()` is the single fallback-table traversal, and `name()` now falls directly through to `LegacyCardCatalog::name()` after the registered `CardDefinition` lookup. Registered metadata remains canonical: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
-`src/trace_engine_v2/core/deck_knowledge.inc` now keeps K0/K1 visibility decisions at Engine scope and delegates count-only arithmetic to `src/trace_engine_v2/core/knowledge/knowledge_copy_policy.hpp`. `KnowledgeCopyPolicy::combined()` owns repeated two-source aggregation and `unresolved()` owns bounded remaining-copy arithmetic. K0/K1 visibility policy remains at the callers: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+The global `name(Card)` compatibility seam now falls directly from registered `CardDefinition` lookup to `LegacyCardCatalog::name()` without a forwarding-only legacy helper. Keep future metadata cleanup on those two owners rather than adding another name-routing layer.
 
-Next catalog/knowledge step: migrate another self-contained lookup or arithmetic owner out of a textual `.inc` only when its inputs contain no hidden Engine state. Keep hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission at their existing strategy owners. Avoid forwarding-only compatibility layers around either extracted class.
+`src/trace_engine_v2/core/deck_knowledge.inc` keeps copy arithmetic behind `KnowledgeCopyPolicy`. `KnowledgeCopyPolicy::combined()` owns repeated two-source count aggregation for public hand/discard/attached zones and K1 hand/deck counts. K0/K1 visibility rules remain unchanged at their Engine callers: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+
+Next catalog/knowledge step: move only duplicate metadata lookup or copy-count arithmetic into these helpers. Do not add forwarding-only wrappers around the legacy catalog fallback. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns.
 
 ## Shared policy owners
 

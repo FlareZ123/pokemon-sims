@@ -107,11 +107,13 @@ Next Steven step: inventory remaining Steven-named root `part_*.inc` files and r
 
 ## Setup lifecycle cleanup
 
-`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. The live parent already includes that canonical owner directly. `core/simulation_labels.inc` is now a non-executable compatibility shell retained only for historical raw-source readers and anchors.
+`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `src/trace_engine_v2/part_005.inc` now composes that canonical owner directly at the established Engine member boundary.
 
-Completed in `cleanup-1786771204658`: grouped DCI/lock display vocabulary under `SetupLabelPolicy` and replaced the local recipe-classification lambda with the named `setup_recipe_contains()` seam. These are behavior-preserving ownership changes inside the canonical setup lifecycle owner. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+Completed in `cleanup-1786770665212`: removed the redundant `core/simulation_labels.inc` composition edge from `part_005.inc` and retired the empty compatibility shell after confirming the canonical setup lifecycle was already included at the same textual boundary. This is a structure-only cleanup; setup choice policy, K0/K1 state, mulligan counting, Active/Bench selection, Prize placement, declaration order, DCI/UDP/AMR behavior, Supporter contention, and connector domination are unchanged. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/setup_lifecycle.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
-Next setup step: migrate remaining raw-source readers and same-repository anchors away from `core/simulation_labels.inc`, then remove its redundant parent include and delete the empty compatibility shell in the same mechanical change. Preserve setup choice policy, K0/K1 state, mulligan counting, Active/Bench selection, Prize placement, declaration order, DCI/UDP/AMR behavior, Supporter contention, and connector domination.
+Completed in `cleanup-1786771204658`: grouped DCI/lock display vocabulary under `SetupLabelPolicy` and replaced the local recipe-classification lambda with the named `setup_recipe_contains()` seam. These are behavior-preserving ownership changes inside the canonical setup lifecycle owner. DCI/JIT vocabulary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment Scenario lock vocabulary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+
+Next setup step: inventory setup-only helpers still living in `part_005.inc` and move only self-contained setup mechanics into `core/setup_lifecycle.inc` after focused source-contract coverage proves declaration-order and trace equivalence. Keep opening Active/Bench strategy in Engine unless a seam cleanly separates policy choice from setup state transition. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
 ## Shared policy owners
 

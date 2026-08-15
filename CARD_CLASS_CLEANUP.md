@@ -1,6 +1,6 @@
 # Card Class Cleanup
 
-This file is the current-state architecture and migration plan. Historical cleanup-wave notes remain available in Git history. Keep entries focused on live ownership, remaining work, and validation requirements.
+This file is the live architecture and migration plan. Historical cleanup-wave notes remain in Git history. Keep this document limited to current ownership, remaining work, and validation requirements.
 
 ## Operating rule
 
@@ -30,256 +30,99 @@ src/trace_engine_v2/core/quick_ball_card_class_tail.inc
 tests/quick_ball_card_class_tests.cpp
 ```
 
-Quick Ball is the reference for explicit registration, exact-print metadata, intrinsic cost validation, K0 -> K1 search timing, strategy-owned target choice, printed target filtering, source-card movement, failed-search behavior, shuffle, and trace compatibility. Exact print: https://api.pokemontcg.io/v2/cards/swsh1-179
+Quick Ball is the reference for explicit registration, exact-print metadata, intrinsic cost validation, K0 to K1 search timing, strategy-owned target choice, printed target filtering, source-card movement, failed-search behavior, shuffle, and trace compatibility. Exact print: https://api.pokemontcg.io/v2/cards/swsh1-179
 
-## Architecture contracts
+## Architecture ownership
 
-### `card_id.hpp`
+`src/cards/card_id.hpp` owns stable `sim::Card` identifiers. Exact external print identity belongs in `CardDefinition::canonical_id`.
 
-`src/cards/card_id.hpp` owns stable `sim::Card` identifiers. Do not add a second ID system or renumber existing enumerators during cleanup. Exact external print identity belongs in `CardDefinition::canonical_id`.
+`src/cards/card_definition.hpp` owns intrinsic exact-print facts such as name, print ID, Trainer subtype, stage/type, Retreat Cost, Rule Box/Pokémon V/ACE SPEC/Basic Energy flags, and direct source URL.
 
-### `card_definition.hpp`
+`src/cards/card_registry.hpp` owns explicit deterministic registration. `kRegisteredCardDefinitions` is the canonical inventory and `find_definition()` is the canonical lookup. Registry source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
-`CardDefinition` owns intrinsic exact-print facts: display name, canonical print ID, Trainer subtype, stage/type, Retreat Cost, Rule Box/Pokémon V/ACE SPEC/Basic Energy flags, and a direct source URL.
+`src/rules/card_context.hpp` owns reusable printed-rules operations. Card-specific route policy stays outside that interface.
 
-Payload role, DCI/UDP, AMR, strict-JIT value, route priority, matchup policy, Supporter contention, connector domination, K0/K1 state, and setup-axis value belong in simulator strategy.
+Engine strategy owns route admission, strategic target preference, DCI/UDP/AMR, strict-JIT and matchup-flex timing, Supporter contention, connector domination, K0/K1 state, setup-axis value, lock schedules, readiness, and payload policy.
 
-### `card_registry.hpp`
+## Active card migrations
 
-Registration is explicit and deterministic. `kRegisteredCardDefinitions` is the canonical inventory, and `find_definition()` is the canonical lookup. Helper predicates derive from that definition instead of maintaining parallel registration switches.
+Do not create a parallel migration while one of these owners is active:
 
-Current registry source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+- Erika's Invitation: https://github.com/FlareZ123/pokemon-sims/issues/3598 Exact print: https://api.pokemontcg.io/v2/cards/sv3pt5-160
+- Guzma: https://github.com/FlareZ123/pokemon-sims/issues/3618 Exact print: https://api.pokemontcg.io/v2/cards/sm3-115
+- Gladion: https://github.com/FlareZ123/pokemon-sims/issues/3604 Exact print: https://api.pokemontcg.io/v2/cards/sm4-95
+- Team Yell's Cheer: https://github.com/FlareZ123/pokemon-sims/issues/3620 Exact print: https://api.pokemontcg.io/v2/cards/swsh9-149
 
-### `card_context.hpp`
-
-`CardContext` is the reusable printed-rules seam. Add only general game operations needed by card effects. Card-specific route-policy queries stay outside this interface.
-
-Knowledge transitions, zone mutations, shuffle behavior, and trace ordering must stay compatible with the simulator unless a separately confirmed bug authorizes a behavior change.
-
-## Card module contract
-
-A migrated card gets one primary module under `src/cards/pokemon/`, `src/cards/trainers/`, or `src/cards/energy/`.
-
-Card modules own exact-print metadata, printed action/choice shape, intrinsic cost legality, printed target categories/cardinality, printed resolution through `CardContext`, and direct source identity.
-
-Engine/strategy owns route admission, strategic target preference, DCI/UDP/AMR, strict-JIT and matchup-flex timing, Supporter contention, connector domination, setup-axis priorities, lock schedules, readiness, and payload policy.
-
-When a legacy function mixes these responsibilities, keep route admission and strategic choice in Engine. Move printed validation/resolution only after locating the live resolver and the reusable context operations it needs.
-
-## Registered-card inventory
-
-The active registry contains 34 definitions after the Team Yell's Cheer, Gladion, Guzma, and Erika's Invitation metadata migrations. The source of truth is `src/cards/card_registry.hpp`; this list is a planning index rather than a second registry.
-
-- Pokémon: Appletun (`sv8-140`), Mawile-GX (`sm11-141`), Oricorio (`sm2-55`), Regidrago V (`swsh12-135`). Sources: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/sm11-141 https://api.pokemontcg.io/v2/cards/sm2-55 https://api.pokemontcg.io/v2/cards/swsh12-135
-- Energy: Double Dragon Energy (`xy6-97`). Source: https://api.pokemontcg.io/v2/cards/xy6-97
-- Trainers: Arven, Battle VIP Pass, Brilliant Blender, Chaotic Swell, Channeler, Crispin, Dawn, Erika's Invitation, Evolution Incense, Field Blower, Forest of Vitality, Forest Seal Stone, Gladion, Guzma, Guzma & Hala, Hisuian Heavy Ball, Klara, Lusamine, Mysterious Treasure, Pokémon Communication, Powerglass, Professor Burnet, Professor Turo's Scenario, Professor's Letter, Quick Ball, Roseanne's Backup, Secret Box, Team Yell's Cheer, Wishful Baton. Registry with exact-print URLs: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-
-Do not create a parallel migration for a card whose enhancement or bug branch is already owned. Migration ownership must be checked before selecting the next card.
-
-### Erika's Invitation migration
-
-- Enhancement owner: https://github.com/FlareZ123/pokemon-sims/issues/3598
-- Exact Pokémon 151 print: https://api.pokemontcg.io/v2/cards/sv3pt5-160
-- `src/cards/trainers/erikas_invitation.hpp` and the explicit registry own identity, canonical print ID, display name, Trainer kind, and Supporter subtype.
-- `name()` and `is_supporter()` delegate those intrinsic facts through the registry instead of duplicating Erika's Invitation in legacy switches.
-- Focused registration coverage: `tests/erikas_invitation_card_class_tests.cpp`.
-- Preserve opponent-hand inspection, Basic-Pokémon selection, Bench placement, switching, setup-only route policy, DCI/UDP/AMR, Supporter contention, connector domination, K0/K1 state, and lock handling at their current Engine owners.
-- Any future printed-resolution migration must preserve the printed reveal, optional Basic placement, and conditional switch sequence through general rules operations while leaving target choice and route admission outside card code. Exact printed effect: https://api.pokemontcg.io/v2/cards/sv3pt5-160
-- Supporter procedure and one-Supporter-per-turn rule: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-
-### Guzma migration
-
-- Enhancement owner: https://github.com/FlareZ123/pokemon-sims/issues/3618
-- Exact Burning Shadows print: https://api.pokemontcg.io/v2/cards/sm3-115
-- `src/cards/trainers/guzma.hpp` and the explicit registry own identity, canonical print ID, display name, Trainer kind, and Supporter subtype.
-- `name()` and `is_supporter()` delegate those intrinsic facts through the registry rather than duplicating Guzma in legacy switches.
-- Focused registration coverage: `tests/guzma_card_class_tests.cpp`.
-- Preserve switching sequence, Active/Bench selection, DCI/UDP/AMR, Supporter contention, connector domination, K0/K1 state, locks, and route strategy at their current Engine owners.
-- Any future printed-resolution migration must preserve Guzma's opponent-switch-then-self-switch procedure through general rules operations while leaving strategic target selection and route admission outside card code. Exact printed effect: https://api.pokemontcg.io/v2/cards/sm3-115
-- Supporter procedure and one-Supporter-per-turn rule: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-
-### Gladion migration
-
-- Enhancement owner: https://github.com/FlareZ123/pokemon-sims/issues/3604
-- Exact Crimson Invasion print: https://api.pokemontcg.io/v2/cards/sm4-95
-- `src/cards/trainers/gladion.hpp` and the explicit registry own identity, canonical print ID, display name, Trainer kind, and Supporter subtype.
-- `name()` and `is_supporter()` delegate those intrinsic facts through the registry rather than duplicating Gladion in legacy switches.
-- Focused registration coverage: `tests/gladion_card_class_tests.cpp`.
-- Preserve Prize inspection/exchange, K0/K1 knowledge transitions, DCI/UDP/AMR, Supporter contention, target selection, connector routes, and strict-JIT policy at their current Engine owners.
-- Any future printed-resolution migration must preserve Gladion's face-down Prize inspection and exchange procedure through a general rules seam while leaving strategic Prize choice and route admission outside card code. Exact printed effect: https://api.pokemontcg.io/v2/cards/sm4-95
-- Supporter procedure and one-Supporter-per-turn rule: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-
-### Team Yell's Cheer migration
-
-- Enhancement owner: https://github.com/FlareZ123/pokemon-sims/issues/3620
-- Exact Brilliant Stars print: https://api.pokemontcg.io/v2/cards/swsh9-149
-- `src/cards/trainers/team_yells_cheer.hpp` and the explicit registry own identity, canonical print ID, display name, Trainer kind, and Supporter subtype.
-- `name()` and `is_supporter()` now delegate those intrinsic facts through the registry rather than duplicating Team Yell's Cheer in legacy switches.
-- Focused registration coverage: `tests/team_yells_cheer_card_class_tests.cpp`.
-- Preserve the existing discard-recovery resolver, recovery target choice, Supporter contention, DCI/UDP/AMR, connector domination, K0/K1 state, lock handling, and route strategy at their current Engine owners.
-- Any future printed-resolution migration must preserve the printed “up to 3” recovery and shuffle ordering through `CardContext` while leaving strategic recovery selection outside card code. Exact printed effect: https://api.pokemontcg.io/v2/cards/swsh9-149
-- Supporter procedure and one-Supporter-per-turn rule: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+For each migration, metadata/classification can move first. Printed resolution moves only after the live resolver and general `CardContext` operations are identified. Strategic selection, DCI/UDP/AMR, Supporter contention, connector domination, K0/K1 handling, and lock policy remain in Engine. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
 ## One-card workflow
 
 1. Search open issues for an existing migration owner.
-2. File and claim `Enhancement: migrate <Card Name> to card class architecture` only when unowned.
-3. Map every `Card::<Name>` occurrence into metadata, printed effect, rules transition, strategy, test, or documentation.
-4. Add exactly one card module and register it explicitly.
+2. File and claim a migration only when unowned.
+3. Classify every `Card::<Name>` occurrence as metadata, printed effect, rules transition, strategy, test, or documentation.
+4. Add one primary card module and register it explicitly.
 5. Move intrinsic metadata/classification ownership first.
 6. Locate the single live printed-resolution owner before moving state transitions.
 7. Preserve K0/K1 timing and keep strategic target choice in Engine.
 8. Add focused tests for metadata and printed legality/effect boundaries.
 9. Run strict CI, representative `--simulate-this` traces, and the paired T2/T3 matrix before merge.
 
-If migration reveals gameplay behavior that is wrong, route that correction through the normal bug-confirmation workflow instead of silently combining it with architecture cleanup.
+If migration exposes gameplay behavior that is wrong, use the normal bug-confirmation workflow instead of combining the fix with cleanup.
 
 ## Composition ownership
 
 `src/trace_engine_v2/composition/engine_body.inc` is the canonical Engine composition owner. `composition/opening_engine_overrides.inc` owns the early Supporter/VSTAR continuation. `composition/post_014a_overrides.inc` owns late-search composition.
 
-For mechanical `.inc` cleanup:
+Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. Route admission/projection/decision policy stays under `src/trace_engine_v2/core/routes/`. Retire a compatibility forwarder only after its parent is retargeted at the identical textual boundary and raw-source readers or anchors are migrated. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
-- merge a composition-only forwarder into its single owner only after proving the receiving member boundary;
-- preserve `#define` / `#include` / `#undef` order exactly;
-- keep entry and exit macro guards adjacent to moved blocks;
-- never move an include across a declaration-order dependency merely to reduce file count;
-- keep route admission/projection/decision policy under `src/trace_engine_v2/core/routes/`;
-- retain historical `part_*.inc` forwarders only while a live parent include still depends on them;
-- keep the Quick Ball base/tail bridge while it marks a real member-declaration boundary;
-- validate strict compilation, the regression suite, source-bound traces, and the T2/T3 matrix after composition changes.
+The numbered policy fragments `part_013.inc`, `part_014a.inc`, and `part_014b.inc` are retired. `composition/opening_engine_overrides.inc` composes `core/supporter_legacy_runtime.inc` directly; `composition/engine_body.inc` composes `turn_action_policy_runtime.inc` directly; `composition/post_014a_overrides.inc` composes `core/recovery_supporter_policy.inc` directly at the historical `choose_supporter_original` macro boundary. Recovery owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/recovery_supporter_policy.inc
 
-C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+Root `part_000.inc` and `part_001.inc` remain source-contract shims while unified-test generation, raw-source payload contracts, and same-repository anchors depend on their historical paths. Canonical owners: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc and https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
 
-## Root source-contract shims
+## Payload policy cleanup
 
-`src/trace_engine_v2/composition/engine_body.inc` remains the executable owner of `core/card_catalog.inc` and `core/card_classification.inc`. Root `part_000.inc` and `part_001.inc` remain source-contract shims because unified-test generation, raw-source payload contracts, and same-repository documentation anchors still depend on those historical paths.
+`src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner.
 
-Canonical catalog: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
-Canonical classification: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
-Unified test generator: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/generate_unified_tests.py
+`PayloadPreferencePolicy::first_in_zone()` preserves physical zone order for callers whose historical behavior depended on the first matching card in that zone. `PayloadPreferencePolicy::first_preferred()` preserves the explicit strategic preference order used for hand and known-deck selection. Zone-wide predicates use `contains_in_zone()` and `count_in_zone()` so membership/count semantics are distinguishable from preference-order selection at the call site.
 
-Future retirement of either shim requires migrating every raw-source reader and same-repository line anchor first.
+Completed in `cleanup-1786767958859`: renamed the preference-order helper to `first_preferred()` and clarified zone predicates as `contains_in_zone()` and `count_in_zone()`. These are behavior-preserving ownership changes. DCI/JIT admission and payload route policy remain at their existing Engine callers. Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 Decision policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
 
-## Forretress cleanup plan
+Next payload step: inventory remaining ad hoc Dragon-payload scans and replace only callers whose established ordering exactly matches `first_in_zone()` or `first_preferred()`. Preserve physical-order callers when order is observable. Do not replace DCI/JIT predicates with generic payload membership.
 
-`src/trace_engine_v2/core/forretress/contract.inc` is the canonical Engine-member declaration owner. Runtime definitions live in `src/trace_engine_v2/core/forretress/runtime.inc`. The declaration/runtime split remains required while Engine is a textual class body and runtime definitions are emitted after Engine closes. The declarations are grouped in runtime order by combo setup, Exploding Energy resolution, and search connectors so future moves can preserve each ownership boundary without reconstructing the monolithic sequence.
+## Forretress cleanup
 
-`src/trace_engine_v2/part_forretress_ex_combo.inc` owns the Garbodor scenario extension directly beside the `core/forretress/runtime.inc` include. Preserve the local `ScenarioExtension` value ownership and the same `std::optional<Scenario>` lookup shape as the public registry.
+`src/trace_engine_v2/core/forretress/contract.inc` owns Engine member declarations. `src/trace_engine_v2/core/forretress/runtime.inc` owns runtime definitions. The split remains necessary while Engine is a textual class body and runtime definitions are emitted after Engine closes.
 
-`src/trace_engine_v2/core/board_state_policy.inc` owns the shared Active-first board traversal, prior-turn evolution timing predicate, canonical `BoardIndex` / `OptionalBoardIndex` vocabulary, shared `BoardAttachmentDestinations` storage, pointer-to-index conversion, and exact-card index lookup. The board-index mapping is named by `kActiveBoardIndex`, `board_index_for_bench_position()`, and `bench_position_from_board_index()`. `visit_board_pokemon_in_zones()` is the single Active-before-Bench iteration primitive for index discovery. Mutable/const pointer lookup reuses the same index-discovery plus index-lookup path, while `board_index_for_pointer()` converts an already-selected board Pokémon and `board_index_for_card()` centralizes exact-card source discovery. `src/trace_engine_v2/core/forretress/contract.inc` consumes the shared attachment-destination storage through its card-facing `AttachmentDestinations` alias.
+`src/trace_engine_v2/core/board_state_policy.inc` owns Active-first traversal, `BoardIndex` vocabulary, attachment-destination storage, pointer-to-index conversion, index lookup, exact-card source discovery through `board_index_for_card()`, and the prior-turn evolution timing predicate. Canonical board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
 
-Completed in `cleanup-1786758957236`: centralized Exploding Energy's board-index container type and added the reusable pointer-to-index seam. Completed in `cleanup-1786759283249`: `exploding_energy_regidrago_target_index()` now delegates to `board_index_for_pointer(target_regi())`, Exploding Energy source discovery uses `board_index_matching()`, destination validation and mutation use `board_pokemon_at_index()`, Active detection uses `board_index_is_active()`, Benched self-Knock-Out conversion uses `bench_position_from_board_index()`, and the card-local `pokemon_at_board_index()` member is retired. These are structural changes only; attachment distribution, self-Knock-Out, promotion, DCI/UDP/AMR, K0/K1, connector, readiness, Ability, evolution, and route policy remain at their prior owners.
+Completed through `cleanup-1786767670470`: Forretress ex source discovery, Active-role checks, board index conversion, destination lookup, and shared traversal use the canonical board-state vocabulary. Attachment selection, self-Knock-Out, promotion, retreat payment, DCI/UDP/AMR, K0/K1, readiness, and route policy remain at their prior owners.
 
-Completed in `cleanup-1786764420546`: pointer-to-index lookup now delegates to the canonical Active-first predicate traversal, and the internal traversal helper is named consistently with the public `board_index_matching()` seam. This removes another duplicated board walk without changing board order, pointer identity semantics, Forretress selection, attachment distribution, self-Knock-Out, promotion, retreat payment, or route policy.
+Next mechanical Forretress step: extract post-Ability retreat-target ranking only if its comparator can be reproduced over `visit_board_pokemon_in_zones()` with byte-for-byte deterministic tie ordering. Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2 Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1 Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117 Core evolution rules: https://www.pokemon.com/us/pokemon-tcg/rules Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
 
-Completed in `cleanup-1786766083113`: `board_index_matching_in_zones()` now delegates its Active-first iteration to `visit_board_pokemon_in_zones()`, and the remaining internal lookup helpers use the same `board_*` vocabulary as their public seams. This leaves one reusable indexed traversal primitive for future deterministic ranking queries without changing match order, pointer identity, or any gameplay policy.
+## Steven route cleanup
 
-Completed in `cleanup-1786767670470`: `board_index_for_card()` centralizes exact-card board discovery, and both Exploding Energy resolution and setup now derive the Forretress ex source and Active role through the canonical board-index vocabulary. This removes the last direct Active-specific Forretress source-card test from `use_exploding_energy_for_setup()` without changing attachment selection, self-Knock-Out, promotion, retreat payment, DCI/UDP/AMR, K0/K1, or route policy.
+Named Steven route owners live under `src/trace_engine_v2/core/routes/`. The issue-3653 free-slot connector and issue-3202 VSTAR/Vessel route are composed directly from their canonical owners. The issue-3203 Active-VSTAR route is composed at its established nested parent boundary. Historical forwarders for those routes are retired.
 
-Next mechanical Forretress step: extract the post-Ability retreat-target ranking only if its current comparator can be expressed over `visit_board_pokemon_in_zones()` with byte-for-byte deterministic tie ordering. Add a named best-match board query only when that equivalence is demonstrated. Preserve selection, attachment distribution, self-Knock-Out, promotion, retreat payment, and route policy at the Forretress owner.
+Next Steven step: inventory remaining Steven-named root `part_*.inc` files and retire only composition-only forwarders whose canonical route owner can be included at the exact same member and macro boundary. Preserve route admission, DCI/UDP/AMR, Supporter contention, connector domination, and source URLs. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
-Board query owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
-Forretress runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/runtime.inc
-Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
-Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
-Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
-Core evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
+## Setup lifecycle cleanup
 
-## Steven route package cleanup
+`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `core/simulation_labels.inc` remains a compatibility shell while historical textual include sites or raw-source readers still require it.
 
-`src/trace_engine_v2/core/routes/steven_package_policy.inc` owns the issue-1745, issue-1771, issue-1772, and issue-2622 Steven package implementations through colocated route files under `core/routes/`.
+Next setup step: retarget the remaining live parent include from `core/simulation_labels.inc` directly to `core/setup_lifecycle.inc` at the same Engine member boundary, migrate raw-source readers and same-repository anchors, then retire the shell. Preserve setup choice policy, K0/K1 state, mulligan counting, Active/Bench selection, Prize placement, declaration order, DCI/UDP/AMR behavior, Supporter contention, and connector domination. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
-The issue-3653 Steven free-slot connector has canonical policy ownership at `src/trace_engine_v2/core/routes/steven_free_slot_connector_policy.inc`, and `composition/opening_engine_overrides.inc` now composes that canonical route directly inside the established `play_steven` macro boundary. The historical `part_issue_3653_steven_free_slot_connector.inc` forwarder is retired, leaving one executable include path for this policy. Connector policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_free_slot_connector_policy.inc Composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc Confirmed connector-domination bug: https://github.com/FlareZ123/pokemon-sims/issues/3653 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+## Shared policy owners
 
-The issue-3202 Steven/VSTAR/Vessel policy now has one executable include path: `composition/opening_engine_overrides.inc` composes `core/routes/steven_vstar_vessel_route_policy.inc` directly at the same post-`part_010_steven_crispin_override.inc` member and macro boundary, and the historical `part_issue_3202_steven_vstar_vessel_semantic_override.inc` forwarder is retired. Canonical route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_vstar_vessel_route_policy.inc Composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc Route specification: https://github.com/FlareZ123/pokemon-sims/issues/3202 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+- Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.
+- Garbodor scenario/timing: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
+- Setup lifecycle labels, mulligans, Prize deal, and setup trace mechanics: `src/trace_engine_v2/core/setup_lifecycle.inc`.
+- Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
+- Turn action runtime: `src/trace_engine_v2/turn_action_policy_runtime.inc`.
 
-The issue-3203 Active-VSTAR Steven policy is composed directly from `core/routes/active_vstar_steven_route_policy.inc` by `part_issue_1067_arven_before_late_steven_override.inc` at the exact former forwarder boundary. CI exposed that nested parent include after the initial deletion probe, so the parent was retargeted before retiring `part_issue_3203_active_vstar_steven_semantic_override.inc`. Canonical route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/active_vstar_steven_route_policy.inc Parent composition layer: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_1067_arven_before_late_steven_override.inc Route specification: https://github.com/FlareZ123/pokemon-sims/issues/3203 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
-
-Next mechanical Steven step: inventory the remaining Steven-named root `part_*.inc` files and retire only composition-only forwarders whose canonical `core/routes/` owner can be included at the exact same member and macro boundary. Preserve route admission, DCI/UDP/AMR, Supporter contention, connector domination, and all direct card/rule URLs while doing those moves. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Decision priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-
-Route specifications: https://github.com/FlareZ123/pokemon-sims/issues/1745 https://github.com/FlareZ123/pokemon-sims/issues/1771 https://github.com/FlareZ123/pokemon-sims/issues/1772 https://github.com/FlareZ123/pokemon-sims/issues/2622 https://github.com/FlareZ123/pokemon-sims/issues/3653 https://github.com/FlareZ123/pokemon-sims/issues/3202 https://github.com/FlareZ123/pokemon-sims/issues/3203
-
-## Shared policy cleanup plan
-
-`src/trace_engine_v2/core/payload_hand_policy.inc` owns payload preference order, payload-zone membership, payload-zone counts, and physical-order first-payload selection through `PayloadPreferencePolicy`. Route files should reuse `payload_zone_contains()` and `first_payload_card_in_zone()` where their existing semantics match.
-
-Keep payload role, DCI/UDP, strict-JIT admission, connector priority, and K0/K1 decisions in Engine strategy. Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-
-`src/trace_engine_v2/core/garbodor_lock_policy.inc` owns Garbodor scenario-prefix matching and seat-relative activation timing. Preserve Garbotoxin semantics and Rule Box lock interaction at their current policy owners. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
-
-Future policy cleanup should reuse these named seams before adding another payload preference loop or Garbodor scenario-label/timing branch.
-
-## Route predicate consolidation
-
-Keep route predicates named when a single policy question is repeated or would otherwise be buried in a resolver. `quick_ball_has_live_connector_route()` owns the issue-1016 Quick Ball connector test, while `issue_1674_turo_promotion_ready()` owns the deadline Turo promotion readiness test. Both remain Engine strategy predicates because they depend on route state, readiness, DCI/JIT timing, and connector value. Their callers continue to own the actual Legacy Star and Professor Turo resolution paths.
-
-Future cleanup should prefer one named predicate for an established policy question before adding another inline conjunction in a resolver. Preserve the exact card/rule URLs beside the resolver that consumes the predicate, and keep printed card validation in card/rules code rather than moving route policy into `src/cards/`.
-
-Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
-Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
-Decision priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-
-## Numbered policy-fragment migration
-
-`part_013.inc`, `part_014a.inc`, and `part_014b.inc` are retired. `composition/post_014a_overrides.inc` now includes `core/recovery_supporter_policy.inc` directly inside the exact historical `#define choose_supporter choose_supporter_original` / `#undef choose_supporter` boundary, leaving one executable include path for the recovery Supporter selector. Canonical recovery owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/recovery_supporter_policy.inc Composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include
-
-`part_013.inc` retirement moved `core/supporter_legacy_runtime.inc` directly into `composition/opening_engine_overrides.inc` at the former VSTAR-power member and macro boundary, preserving the `use_legacy_star` wrapper lifetime and exported `use_celestial_roar` continuation. `part_014a.inc` retirement moved `turn_action_policy_runtime.inc` directly into `composition/engine_body.inc` at its former member and macro boundary. The turn-action runtime remains at the trace-engine root because its established nested `core/routes/...` includes are relative to that directory.
-
-The earlier deletion-only probe for `part_013.inc` failed because it removed the forwarder before retargeting the live parent include. The completed numbered-fragment migrations follow the safe order: retarget the parent at the identical textual boundary, validate the direct owner, then remove the compatibility file. Prior failed probe evidence: https://github.com/FlareZ123/pokemon-sims/actions/runs/31849652554
-
-The next mechanical consolidation target is setup lifecycle support: retarget the live parent include from `core/simulation_labels.inc` directly to `core/setup_lifecycle.inc` at the same Engine member boundary, migrate raw-source readers and same-repository anchors, then retire the compatibility forwarder. Preserve setup choice policy, K0/K1 state, mulligan counting, opening Active/Bench selection, Prize placement, declaration order, macro order, DCI/UDP/AMR behavior, Supporter contention, connector domination, and direct rule/card URLs throughout that work.
-
-Supporter legacy runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/supporter_legacy_runtime.inc
-Recovery supporter policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/recovery_supporter_policy.inc
-Turn action runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/turn_action_policy_runtime.inc
-Opening composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_engine_overrides.inc
-Post-search composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
-C++ textual-include semantics: https://eel.is/c++draft/cpp.include
-Advanced rules and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-Decision priorities and knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
-
-## Setup lifecycle consolidation
-
-`src/trace_engine_v2/core/setup_lifecycle.inc` now owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `core/simulation_labels.inc` remains only as a compatibility forwarder so historical textual include sites keep compiling while the executable setup support has one owner.
-
-Opening-hand Basic validation and mulligan hand return now use named helpers inside that owner. The helpers preserve the existing seven-card draw, all-card return, reshuffle, and retry sequence. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-
-Next mechanical setup step: retarget the live parent include from `core/simulation_labels.inc` directly to `core/setup_lifecycle.inc` at the same Engine member boundary, then remove the compatibility forwarder after raw-source readers and same-repository anchors are migrated. Keep setup choice policy, K0/K1 state, mulligan counting, opening Active/Bench selection, and Prize placement semantics unchanged.
-
-## Rules and policy anchors
-
-Advanced rules procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-
-K0/K1, DCI/JIT, route priority, and lock-model policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
-
-Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
-
-Exact migrated-card metadata and source URLs: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-
-## Current cleanup wave
-
-`cleanup-1786760569376` centralizes presence-only board queries through `board_index_matching()` and separates registry-owned card names from the shrinking legacy fallback in `core/card_catalog.inc`. These changes preserve gameplay policy while narrowing future board and card-class migrations. Board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc Registry owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp Catalog owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
-
-`cleanup-1786764420546` removes the remaining duplicate pointer-to-index board walk and aligns the internal Active-first traversal name with the public board-index query seam. The next Forretress cleanup remains the Active-specific source questions in `use_exploding_energy_for_setup()` and the post-Ability retreat-target ranking described above. Keep attachment selection, self-Knock-Out, promotion, retreat payment, DCI/UDP/AMR, K0/K1, and route policy at their existing owners.
-
-`cleanup-1786766083113` centralizes Active-before-Bench iteration in `visit_board_pokemon_in_zones()` and normalizes internal board lookup names around the canonical board-index vocabulary. The branch deliberately leaves Forretress action policy unchanged and documents the exact next extraction boundary for Active-specific source tests and retreat-target ranking.
-
-`cleanup-1786767670470` adds the reusable `board_index_for_card()` exact-card query and routes Exploding Energy's Forretress ex source-role checks through it. The next Forretress cleanup is limited to deterministic post-Ability retreat-target ranking once tie-order equivalence is proven.
-
-`cleanup-1786768012408` retires the final numbered recovery-policy compatibility forwarder after retargeting the exact `choose_supporter_original` composition boundary to the canonical `core/recovery_supporter_policy.inc` owner. The next mechanical consolidation target is the setup-lifecycle forwarder described above. Recovery owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/recovery_supporter_policy.inc Composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+Before adding a new loop or route-local helper, check these owners and reuse a named seam when ordering and semantics match exactly.
 
 ## Validation gate
 
-A cleanup PR is mergeable only when:
+A cleanup PR is mergeable only when strict Release compilation succeeds, focused tests and the full regression suite show no new failure, sanitizer/structural checks show no new failure, representative `--simulate-this` traces preserve legal action ordering/readiness, the paired T2/T3 matrix has no unexplained drift, and the PR contains no gameplay behavior change.
 
-- strict Release compilation succeeds;
-- focused card tests and the full regression suite show no new failure;
-- sanitizer/structural checks show no new failure;
-- representative `--simulate-this` traces preserve legal action ordering and readiness;
-- the paired T2/T3 probability matrix has no unexplained drift;
-- the PR contains no unrelated gameplay behavior change.
-
-Known baseline failures must be identified by their existing issue and shown unchanged before merge. Any new gameplay defect discovered during cleanup must go through the separate bug-confirmation workflow instead of silently combining it with architecture cleanup.
+Known baseline failures must be tied to their existing issue and shown unchanged. Any newly discovered gameplay defect uses the separate bug-confirmation workflow.

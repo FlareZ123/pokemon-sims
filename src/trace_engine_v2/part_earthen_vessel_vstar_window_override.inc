@@ -1,3 +1,18 @@
+  int earthen_vessel_known_or_unresolved_energy_count(const Card card) const {
+    if (deck_seen_ || prizes_revealed_) return count_of(state_.deck, card);
+    // At K0, exact deck-versus-Prize placement is hidden. Reuse the centralized
+    // fixed-list/public-zone count so identical public states cannot make different
+    // irreversible Vessel and Dragon-payload decisions. At K1, the branch above
+    // uses the legally inspected remaining deck exactly:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Core deck-search and Prize procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
+    // Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // Centralized helper: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/deck_knowledge.inc
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1471
+    return unresolved_fixed_list_copy_count(card);
+  }
+
   bool hold_earthen_vessel_for_next_turn_latias_jit() const {
     if (!strict_payload_timing() || scenario_.locks != LockMode::None ||
         state_.turn >= scenario_.max_turn || !state_.manual_energy_used ||
@@ -15,26 +30,12 @@
       return false;
     }
 
-    const auto remaining_energy_count = [this](const Card card) {
-      if (deck_seen_ || prizes_revealed_) return count_of(state_.deck, card);
-      // At K0, exact deck-versus-Prize placement is hidden. Reuse the centralized
-      // fixed-list/public-zone count so identical public states cannot make different
-      // irreversible Vessel and Dragon-payload decisions. At K1, the branch above
-      // uses the legally inspected remaining deck exactly:
-      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-      // Core deck-search and Prize procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-      // K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
-      // Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
-      // Centralized helper: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/deck_knowledge.inc
-      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1471
-      return unresolved_fixed_list_copy_count(card);
-    };
-    const int grass_remaining = remaining_energy_count(Card::Grass);
-    const int fire_remaining = remaining_energy_count(Card::Fire);
+    const int grass_remaining = earthen_vessel_known_or_unresolved_energy_count(Card::Grass);
+    const int fire_remaining = earthen_vessel_known_or_unresolved_energy_count(Card::Fire);
     const int basic_energy_remaining = grass_remaining + fire_remaining;
     const auto completing_basic = completing_basic_energy_for(
-        *setup_regi, [&remaining_energy_count](const Card card) {
-          return remaining_energy_count(card) > 0;
+        *setup_regi, [this](const Card card) {
+          return earthen_vessel_known_or_unresolved_energy_count(card) > 0;
         }); // https://github.com/FlareZ123/pokemon-sims/issues/2425
     // Preserve Vessel and the held Dragon together when T2 has established GF and
     // Latias can promote the Benched VSTAR. On T3, Vessel discards that Dragon during
@@ -50,7 +51,7 @@
     // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/1009
     // K0 hidden-inventory correction: https://github.com/FlareZ123/pokemon-sims/issues/1471
     return completing_basic.has_value() &&
-        remaining_energy_count(*completing_basic) >= 1 &&
+        earthen_vessel_known_or_unresolved_energy_count(*completing_basic) >= 1 &&
         basic_energy_remaining >= 2;
   }
 

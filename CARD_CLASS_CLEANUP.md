@@ -224,17 +224,13 @@ Decision priorities: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/PO
 
 ## Numbered policy-fragment migration
 
-One compatibility forwarder remains for a previously anonymous trace-engine fragment with a named canonical owner at the same textual include boundary:
+`part_013.inc`, `part_014a.inc`, and `part_014b.inc` are retired. `composition/post_014a_overrides.inc` now includes `core/recovery_supporter_policy.inc` directly inside the exact historical `#define choose_supporter choose_supporter_original` / `#undef choose_supporter` boundary, leaving one executable include path for the recovery Supporter selector. Canonical recovery owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/recovery_supporter_policy.inc Composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
-- `part_014b.inc` forwards to `core/recovery_supporter_policy.inc`.
+`part_013.inc` retirement moved `core/supporter_legacy_runtime.inc` directly into `composition/opening_engine_overrides.inc` at the former VSTAR-power member and macro boundary, preserving the `use_legacy_star` wrapper lifetime and exported `use_celestial_roar` continuation. `part_014a.inc` retirement moved `turn_action_policy_runtime.inc` directly into `composition/engine_body.inc` at its former member and macro boundary. The turn-action runtime remains at the trace-engine root because its established nested `core/routes/...` includes are relative to that directory.
 
-`part_013.inc` is retired. `composition/opening_engine_overrides.inc` now includes `core/supporter_legacy_runtime.inc` directly at the exact former VSTAR-power member and macro boundary, preserving the `use_legacy_star` wrapper lifetime and exported `use_celestial_roar` continuation while leaving one executable path for the named runtime owner.
+The earlier deletion-only probe for `part_013.inc` failed because it removed the forwarder before retargeting the live parent include. The completed numbered-fragment migrations follow the safe order: retarget the parent at the identical textual boundary, validate the direct owner, then remove the compatibility file. Prior failed probe evidence: https://github.com/FlareZ123/pokemon-sims/actions/runs/31849652554
 
-The earlier deletion-only probe failed because it removed `part_013.inc` before retargeting the live parent include. The completed migration retargets the parent first, then removes the compatibility file. Prior failed probe evidence: https://github.com/FlareZ123/pokemon-sims/actions/runs/31849652554
-
-`part_014a.inc` is retired. `composition/engine_body.inc` now includes `turn_action_policy_runtime.inc` directly at the exact former `part_014a.inc` member and macro boundary, leaving one executable include path for that runtime owner. The runtime remains at the trace-engine root because its established nested `core/routes/...` includes are relative to that directory.
-
-Future retirement of the remaining forwarder must first retarget its composition owner at the identical member and macro boundary, then migrate raw-source readers and same-repository anchors. Preserve DCI/UDP/AMR behavior, Supporter contention, connector domination, K0/K1 semantics, declaration order, macro order, and direct rule/card URLs throughout that work.
+The next mechanical consolidation target is setup lifecycle support: retarget the live parent include from `core/simulation_labels.inc` directly to `core/setup_lifecycle.inc` at the same Engine member boundary, migrate raw-source readers and same-repository anchors, then retire the compatibility forwarder. Preserve setup choice policy, K0/K1 state, mulligan counting, opening Active/Bench selection, Prize placement, declaration order, macro order, DCI/UDP/AMR behavior, Supporter contention, connector domination, and direct rule/card URLs throughout that work.
 
 Supporter legacy runtime: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/supporter_legacy_runtime.inc
 Recovery supporter policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/recovery_supporter_policy.inc
@@ -272,6 +268,8 @@ Exact migrated-card metadata and source URLs: https://github.com/FlareZ123/pokem
 `cleanup-1786766083113` centralizes Active-before-Bench iteration in `visit_board_pokemon_in_zones()` and normalizes internal board lookup names around the canonical board-index vocabulary. The branch deliberately leaves Forretress action policy unchanged and documents the exact next extraction boundary for Active-specific source tests and retreat-target ranking.
 
 `cleanup-1786767670470` adds the reusable `board_index_for_card()` exact-card query and routes Exploding Energy's Forretress ex source-role checks through it. The next Forretress cleanup is limited to deterministic post-Ability retreat-target ranking once tie-order equivalence is proven.
+
+`cleanup-1786768012408` retires the final numbered recovery-policy compatibility forwarder after retargeting the exact `choose_supporter_original` composition boundary to the canonical `core/recovery_supporter_policy.inc` owner. The next mechanical consolidation target is the setup-lifecycle forwarder described above. Recovery owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/recovery_supporter_policy.inc Composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 ## Validation gate
 

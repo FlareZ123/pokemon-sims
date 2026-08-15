@@ -23,6 +23,19 @@
   // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
   using AttachmentDestinations = BoardAttachmentDestinations;
 
+  // Keep repeated Forretress/Regidrago board-role questions in one card-facing
+  // contract so runtime branches can share the same exact-print classification.
+  [[nodiscard]] static constexpr bool is_forretress_ex_board_pokemon(
+      const Pokemon& pokemon) {
+    return pokemon.card == Card::ForretressEx; // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  }
+
+  [[nodiscard]] static constexpr bool is_regidrago_board_pokemon(
+      const Pokemon& pokemon) {
+    return pokemon.card == Card::RegidragoV ||
+           pokemon.card == Card::RegidragoVstar; // Regidrago V/VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+  }
+
   // Combo availability and board setup. Keep this order aligned with runtime.inc
   // so declaration ownership is easy to audit across the textual class boundary.
   [[nodiscard]] bool forretress_combo_enabled() const;

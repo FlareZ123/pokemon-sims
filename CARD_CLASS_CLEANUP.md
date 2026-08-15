@@ -45,7 +45,7 @@ Next catalog step: migrate remaining `LegacyCardCatalog` entries one card at a t
 
 Regidrago VSTAR now owns exact Silver Tempest 136/195 metadata beside Regidrago V in `src/cards/pokemon/regidrago_v.hpp`, is explicitly registered, and has focused V/VSTAR metadata/parity coverage. The live Pokémon, Pokémon V, Rule Box, Dragon/Mysterious Treasure target, and Retreat Cost classifiers consume registered metadata for the Regidrago line. Exact print: https://api.pokemontcg.io/v2/cards/swsh12-136 Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Pokémon V ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
 
-Next Regidrago metadata step: remove the now-shadowed Regidrago VSTAR compatibility name row from `LegacyCardCatalog` in a later isolated catalog cleanup after its name-path source contract is checked. Keep V -> VSTAR evolution/devolution relations, Legacy Star, Apex Dragon, payload policy, DCI/JIT, and route choice at their existing behavioral owners.
+Regidrago VSTAR's now-shadowed compatibility name row has been removed from `LegacyCardCatalog`, leaving registered `CardDefinition` metadata as its sole name owner. The fallback table now derives its array size from its entries so later isolated metadata migrations remove only the compatibility row itself. Keep V -> VSTAR evolution/devolution relations, Legacy Star, Apex Dragon, payload policy, DCI/JIT, and route choice at their existing behavioral owners. Next Regidrago metadata work should target a distinct intrinsic metadata seam rather than restoring a compatibility name path.
 
 ## Active card migrations
 
@@ -130,13 +130,13 @@ Next setup step: route future setup recipe classification through `SetupRecipePo
 
 ## Catalog and knowledge cleanup
 
-`src/trace_engine_v2/core/card_catalog.inc` keeps legacy name metadata behind `LegacyCardCatalog`. `LegacyCardCatalog::find()` is the single fallback-table traversal, and `name()` now falls directly through to `LegacyCardCatalog::name()` after the registered `CardDefinition` lookup. Registered metadata remains canonical: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+`src/trace_engine_v2/core/card_catalog.inc` keeps legacy name metadata behind `LegacyCardCatalog`. `LegacyCardCatalog::find()` is the single fallback-table traversal, its `std::array` size is inferred from the compatibility entries, and `name()` falls directly through to `LegacyCardCatalog::name()` after the registered `CardDefinition` lookup. Registered metadata remains canonical: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
 The global `name(Card)` compatibility seam now falls directly from registered `CardDefinition` lookup to `LegacyCardCatalog::name()` without a forwarding-only legacy helper. Keep future metadata cleanup on those two owners rather than adding another name-routing layer.
 
 `src/trace_engine_v2/core/deck_knowledge.inc` keeps copy arithmetic behind `KnowledgeCopyPolicy`. `KnowledgeCopyPolicy::combined()` owns repeated two-source count aggregation for public hand/discard/attached zones and K1 hand/deck counts. K0/K1 visibility rules remain unchanged at their Engine callers: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 
-Next catalog/knowledge step: move only duplicate metadata lookup or copy-count arithmetic into these helpers. Do not add forwarding-only wrappers around the legacy catalog fallback. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns.
+Next catalog/knowledge step: migrate one remaining `LegacyCardCatalog` row only after its exact `CardDefinition`, registration, source, and focused metadata contract exist; the inferred fallback size should require no companion bookkeeping edit. Move only duplicate metadata lookup or copy-count arithmetic into existing helpers. Do not add forwarding-only wrappers around the legacy catalog fallback. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns.
 
 ## Shared policy owners
 

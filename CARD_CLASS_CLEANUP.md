@@ -107,9 +107,11 @@ Next Steven step: inventory remaining Steven-named root `part_*.inc` files and r
 
 ## Setup lifecycle cleanup
 
-`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `core/simulation_labels.inc` remains a compatibility shell while historical textual include sites or raw-source readers still require it.
+`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. The live parent already includes that canonical owner directly. `core/simulation_labels.inc` is now a non-executable compatibility shell retained only for historical raw-source readers and anchors.
 
-Next setup step: retarget the remaining live parent include from `core/simulation_labels.inc` directly to `core/setup_lifecycle.inc` at the same Engine member boundary, migrate raw-source readers and same-repository anchors, then retire the shell. Preserve setup choice policy, K0/K1 state, mulligan counting, Active/Bench selection, Prize placement, declaration order, DCI/UDP/AMR behavior, Supporter contention, and connector domination. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+Completed in `cleanup-1786771204658`: grouped DCI/lock display vocabulary under `SetupLabelPolicy` and replaced the local recipe-classification lambda with the named `setup_recipe_contains()` seam. These are behavior-preserving ownership changes inside the canonical setup lifecycle owner. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+Next setup step: migrate remaining raw-source readers and same-repository anchors away from `core/simulation_labels.inc`, then remove its redundant parent include and delete the empty compatibility shell in the same mechanical change. Preserve setup choice policy, K0/K1 state, mulligan counting, Active/Bench selection, Prize placement, declaration order, DCI/UDP/AMR behavior, Supporter contention, and connector domination.
 
 ## Shared policy owners
 

@@ -6,6 +6,28 @@ namespace sim::trace_engine_v2 {
 
 using CardContext = rules::CardContext;
 
+// Keep the callback bundle at the trace-engine boundary so card resolvers depend on
+// rules::CardContext rather than Engine implementation details.
+// Cleanup architecture: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+// Context contract: https://github.com/FlareZ123/pokemon-sims/blob/main/src/rules/card_context.hpp
+struct CardContextCallbacks {
+  CardContext::HandCountFn hand_count;
+  CardContext::MoveHandToDiscardFn move_hand_to_discard;
+  CardContext::DiscardFromHandFn discard_from_hand;
+  CardContext::SearchDeckToHandFn search_deck_to_hand;
+  CardContext::ShuffleDeckFn shuffle_deck;
+  CardContext::IsBasicPokemonFn is_basic_pokemon;
+  CardContext::BeginDeckSearchFn begin_deck_search;
+};
+
+inline CardContext make_card_context_adapter(
+    void* engine, const CardContextCallbacks& callbacks) {
+  return CardContext{engine, callbacks.hand_count, callbacks.move_hand_to_discard,
+                     callbacks.discard_from_hand, callbacks.search_deck_to_hand,
+                     callbacks.shuffle_deck, callbacks.is_basic_pokemon,
+                     callbacks.begin_deck_search};
+}
+
 // Transitional seam between Engine internals and reusable card effects. Each
 // migrated resolver supplies callbacks that delegate to the Engine's existing zone,
 // knowledge, trace, and shuffle helpers. Keeping construction here prevents card

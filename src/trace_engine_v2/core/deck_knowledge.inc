@@ -52,6 +52,18 @@
     return unresolved_copy_count(card, publicly_known_copy_count(card));
   }
 
+  [[nodiscard]] int searchable_copy_count(const Card card) const {
+    // Preserve the existing K0/K1 searchable-copy contract behind one named seam:
+    // exact remaining deck contents are actionable after a legal deck inspection or
+    // complete Prize inspection; otherwise policy may use only fixed-list/public-zone
+    // arithmetic rather than hidden deck-versus-Prize placement.
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // Advanced search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    return (deck_seen_ || prizes_revealed_) ? count_of(state_.deck, card)
+                                            : unresolved_fixed_list_copy_count(card);
+  }
+
   [[nodiscard]] int known_deck_copy_count(const Card card) const {
     // Exact deck membership is actionable only after a legal deck inspection (K1):
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states

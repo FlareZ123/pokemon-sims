@@ -5,7 +5,7 @@
         !is_basic(state_.active->card) || !in_play(Card::LatiasEx) ||
         !ability_available_for_pokemon(Card::LatiasEx) ||
         hand_count(Card::EarthenVessel) == 0 ||
-        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+        !payload_zone_contains(state_.hand)) {
       return false;
     }
 
@@ -15,19 +15,15 @@
       return false;
     }
 
+    // Reuse the canonical K0/K1 searchable-copy seam instead of re-encoding
+    // hidden deck-versus-Prize visibility inside this route:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Canonical deck-count owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/deck_knowledge.inc
+    // Canonical payload owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
     const auto remaining_energy_count = [this](const Card card) {
-      if (deck_seen_ || prizes_revealed_) return count_of(state_.deck, card);
-      // At K0, exact deck-versus-Prize placement is hidden. Reuse the centralized
-      // fixed-list/public-zone count so identical public states cannot make different
-      // irreversible Vessel and Dragon-payload decisions. At K1, the branch above
-      // uses the legally inspected remaining deck exactly:
-      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-      // Core deck-search and Prize procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-      // K0 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
-      // Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
-      // Centralized helper: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/deck_knowledge.inc
-      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1471
-      return unresolved_fixed_list_copy_count(card);
+      return searchable_copy_count(card);
     };
     const int grass_remaining = remaining_energy_count(Card::Grass);
     const int fire_remaining = remaining_energy_count(Card::Fire);

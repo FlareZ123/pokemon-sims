@@ -123,6 +123,14 @@
         state_.active, state_.bench, target);
   }
 
+  [[nodiscard]] OptionalBoardIndex board_index_for_card(const Card card) const {
+    // Exact-card lookup reuses the canonical Active-first index query so callers
+    // do not duplicate card predicates or direct Active/Bench source checks.
+    // Canonical board-query owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+    return board_index_matching(
+        [card](const Pokemon& pokemon) { return pokemon.card == card; });
+  }
+
   template <typename Predicate>
   [[nodiscard]] bool board_has_pokemon_matching(Predicate predicate) const {
     // Existence queries share canonical Active-first index discovery instead of

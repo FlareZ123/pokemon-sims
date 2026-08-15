@@ -200,7 +200,6 @@ constexpr bool is_item(const Card card) {
 
   switch (card) {
     case Card::UltraBall:
-    case Card::EarthenVessel:
       return true;
     default:
       return false;

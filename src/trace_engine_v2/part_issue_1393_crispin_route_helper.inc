@@ -21,24 +21,21 @@
         deck_count_after_search_started(Card::Grass) > 0;
     const bool fire_available =
         deck_count_after_search_started(Card::Fire) > 0;
-    const auto one_basic_completes = [this](const Card energy) {
-      Pokemon projected = *state_.active;
-      return attach_energy_card(projected, energy) &&
-          pays_apex_energy_cost(projected);
-    };
-    const auto two_basics_complete = [this](const Card first, const Card second) {
-      Pokemon projected = *state_.active;
-      return attach_energy_card(projected, first) &&
-          attach_energy_card(projected, second) &&
-          pays_apex_energy_cost(projected);
-    };
+    const auto projected_apex_ready =
+        [this](const Card first, const std::optional<Card> second) {
+          Pokemon projected = *state_.active;
+          if (!attach_energy_card(projected, first)) return false;
+          if (second.has_value() &&
+              !attach_energy_card(projected, *second)) return false;
+          return pays_apex_energy_cost(projected);
+        };
     const bool one_found_manual_completion =
-        (grass_available && one_basic_completes(Card::Grass)) ||
-        (fire_available && one_basic_completes(Card::Fire));
+        (grass_available && projected_apex_ready(Card::Grass, std::nullopt)) ||
+        (fire_available && projected_apex_ready(Card::Fire, std::nullopt));
     const bool two_found_crispin_manual_completion =
         grass_available && fire_available &&
-        (two_basics_complete(Card::Grass, Card::Fire) ||
-         two_basics_complete(Card::Fire, Card::Grass));
+        (projected_apex_ready(Card::Grass, Card::Fire) ||
+         projected_apex_ready(Card::Fire, Card::Grass));
     const bool crispin_completes_energy =
         one_found_manual_completion || two_found_crispin_manual_completion;
     const bool payload_outlet = has_live_blender_payload_line() ||

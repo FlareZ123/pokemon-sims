@@ -192,13 +192,13 @@ constexpr bool is_supporter(const Card card) {
   // Gladion exact Supporter print: https://api.pokemontcg.io/v2/cards/sm4-95 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3604
   // Grant exact Supporter print: https://api.pokemontcg.io/v2/cards/swsh10-144 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3589
   // Steven's Resolve exact Supporter print: https://api.pokemontcg.io/v2/cards/sm7-145 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3595
+  // Tate & Liza exact Supporter print: https://api.pokemontcg.io/v2/cards/sm7-148 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3562
   // Team Yell's Cheer exact Supporter print: https://api.pokemontcg.io/v2/cards/swsh9-149 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3620
   // Advanced Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   if (cards::has_definition(card)) return cards::registered_is_supporter(card);
 
   switch (card) {
     case Card::Serena:
-    case Card::TateLiza:
       return true;
     default:
       return false;

@@ -50,7 +50,7 @@ bool Engine::evolve_forretress_ex() {
   // https://www.pokemon.com/us/pokemon-tcg/rules
   Pokemon* pineco = find_board_pokemon_matching(
       [current_turn, forest_active](const Pokemon& pokemon) {
-        return pokemon.card == Card::Pineco &&
+        return is_pineco_board_pokemon(pokemon) &&
             (pokemon_entered_before_turn(pokemon, current_turn) ||
              forest_active);
       });
@@ -114,8 +114,7 @@ bool Engine::use_exploding_energy_for_setup() {
 
   AttachmentDestinations destinations;
   const bool active_blocks_regi = !source_is_active && state_.active &&
-      state_.active->card != Card::RegidragoV &&
-      state_.active->card != Card::RegidragoVstar;
+      !is_regidrago_board_pokemon(*state_.active);
   const bool retreat_available = active_blocks_regi && !state_.retreat_used;
   // Skyliner gives every Basic Pokémon in play no Retreat Cost while Latias ex's
   // Rule Box Ability is available. Apply that effective cost before distributing
@@ -204,9 +203,7 @@ bool Engine::use_exploding_energy_for_setup() {
       best_benched_pokemon_index(retreat_rank);
   Pokemon* target = retreat_target_index
       ? board_pokemon_at_index(*retreat_target_index) : nullptr;
-  if (target == nullptr ||
-      (target->card != Card::RegidragoV &&
-       target->card != Card::RegidragoVstar)) {
+  if (target == nullptr || !is_regidrago_board_pokemon(*target)) {
     throw std::logic_error("Exploding Energy retreat target disappeared");
   }
   std::swap(*state_.active, *target);
@@ -241,12 +238,12 @@ bool Engine::advance_forretress_combo() {
   // https://www.pokemon.com/us/pokemon-tcg/rules
   const bool pineco_can_evolve_normally = board_has_pokemon_matching(
       [current_turn](const Pokemon& pokemon) {
-        return pokemon.card == Card::Pineco &&
+        return is_pineco_board_pokemon(pokemon) &&
             pokemon_entered_before_turn(pokemon, current_turn);
       });
   const bool current_turn_pineco = board_has_pokemon_matching(
       [current_turn](const Pokemon& pokemon) {
-        return pokemon.card == Card::Pineco &&
+        return is_pineco_board_pokemon(pokemon) &&
             pokemon.entered_turn == current_turn;
       });
   const bool pineco_can_enter_this_turn = in_play_count(Card::Pineco) == 0 &&

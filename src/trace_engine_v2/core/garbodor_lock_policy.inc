@@ -14,10 +14,15 @@
       return simulator_goes_first ? 2 : 1;
     }
 
+    [[nodiscard]] static constexpr bool activation_turn_reached(
+        const int turn, const bool simulator_goes_first) {
+      return turn >= lock_activation_turn(simulator_goes_first);
+    }
+
     [[nodiscard]] static constexpr bool active(
         const std::string_view label, const int turn,
         const bool simulator_goes_first) {
-      return matches(label) && turn >= lock_activation_turn(simulator_goes_first);
+      return matches(label) && activation_turn_reached(turn, simulator_goes_first);
     }
   };
 
@@ -43,7 +48,8 @@
     // https://api.pokemontcg.io/v2/cards/swsh7-142
     // https://api.pokemontcg.io/v2/cards/xy9-57
     // https://github.com/FlareZ123/pokemon-sims/issues/2808
-    return state_.turn >= garbodor_lock_activation_turn();
+    return GarbodorScenarioPolicy::activation_turn_reached(
+        state_.turn, scenario_.going_first);
   }
 
   [[nodiscard]] bool garbodor_lock_present() const {

@@ -21,6 +21,7 @@
 
 #include "../../cards/card_registry.hpp"
 #include "card_context_adapter.hpp"
+#include "catalog/legacy_card_catalog.hpp"
 #include "knowledge/knowledge_copy_policy.hpp"
 
 #if defined(_WIN32)
@@ -49,45 +50,6 @@ constexpr std::array<std::pair<Card, int>, 36> kDeckRecipe{{
 }};
 
 using DeckRecipe = std::vector<std::pair<Card, int>>;
-
-struct LegacyCardCatalog {
-  inline static constexpr std::array<std::pair<Card, std::string_view>, 20> kNames{{
-      {Card::RegidragoVstar, "Regidrago VSTAR"},
-      {Card::Dragapult, "Dragapult ex"},
-      {Card::MegaDragonite, "Mega Dragonite ex"},
-      {Card::DialgaGX, "Dialga-GX"},
-      {Card::GoodraVstar, "Hisuian Goodra VSTAR"},
-      {Card::TapuLeleGX, "Tapu Lele-GX"},
-      {Card::CrobatV, "Crobat V"},
-      {Card::LatiasEx, "Latias ex"},
-      {Card::Dipplin, "Dipplin TWM 127"},
-      {Card::Pineco, "Pineco"},
-      {Card::ForretressEx, "Forretress ex"},
-      {Card::UltraBall, "Ultra Ball"},
-      {Card::EarthenVessel, "Earthen Vessel"},
-      {Card::Grant, "Grant"},
-      {Card::Serena, "Serena"},
-      {Card::TateLiza, "Tate & Liza"},
-      {Card::StevensResolve, "Steven's Resolve"},
-      {Card::PathToPeak, "Path to the Peak"},
-      {Card::Grass, "Grass Energy"},
-      {Card::Fire, "Fire Energy"},
-  }};
-
-  [[nodiscard]] static constexpr auto find(const Card card) {
-    // Keep the shrinking fallback catalog behind one lookup seam while registered
-    // CardDefinition metadata remains the canonical name owner.
-    // C++20 constexpr find_if: https://eel.is/c++draft/alg.find
-    // Registry owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-    return std::find_if(kNames.begin(), kNames.end(),
-                        [card](const auto& entry) { return entry.first == card; });
-  }
-
-  [[nodiscard]] static constexpr std::string_view name(const Card card) {
-    const auto found = find(card);
-    return found == kNames.end() ? "Unknown" : found->second;
-  }
-};
 
 constexpr std::string_view name(const Card card) {
   // Registered metadata remains the canonical name owner; this function keeps

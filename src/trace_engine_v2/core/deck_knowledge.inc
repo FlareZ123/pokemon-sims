@@ -3,6 +3,11 @@
       return count > 0;
     }
 
+    [[nodiscard]] static constexpr int combined(const int first_count,
+                                                const int second_count) {
+      return first_count + second_count;
+    }
+
     [[nodiscard]] static int unresolved(const int total_copies,
                                         const int known_copies) {
       return std::max(0, total_copies - known_copies);
@@ -14,7 +19,11 @@
   }
 
   [[nodiscard]] int unattached_public_copy_count(const Card card) const {
-    return hand_count(card) + count_of(state_.discard, card);
+    // Public-copy aggregation remains source-bounded to zones the player may
+    // actually know before K1:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
+    return KnowledgeCopyPolicy::combined(hand_count(card),
+                                         count_of(state_.discard, card));
   }
 
   [[nodiscard]] int publicly_known_copy_count(const Card card) const {
@@ -22,8 +31,8 @@
     // deck-versus-Prize placement:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
-    const int unattached = unattached_public_copy_count(card);
-    return unattached + attached_public_count(card);
+    return KnowledgeCopyPolicy::combined(unattached_public_copy_count(card),
+                                         attached_public_count(card));
   }
 
   [[nodiscard]] int unresolved_copy_count(
@@ -46,7 +55,8 @@
   }
 
   [[nodiscard]] int known_hand_or_deck_copy_count(const Card card) const {
-    return hand_count(card) + known_deck_copy_count(card);
+    return KnowledgeCopyPolicy::combined(hand_count(card),
+                                         known_deck_copy_count(card));
   }
 
   [[nodiscard]] bool has_known_hand_or_deck_copy(const Card card) const {

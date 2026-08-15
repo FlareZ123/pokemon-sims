@@ -117,6 +117,8 @@ Next setup step: move only state-transition helpers from opening Active/Bench se
 
 `src/trace_engine_v2/core/card_catalog.inc` keeps legacy name metadata behind `LegacyCardCatalog`. `LegacyCardCatalog::find()` is the single fallback-table traversal, while registered `CardDefinition` metadata remains canonical: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
+The global `name(Card)` compatibility seam now falls directly from registered `CardDefinition` lookup to `LegacyCardCatalog::name()` without a forwarding-only legacy helper. Keep future metadata cleanup on those two owners rather than adding another name-routing layer.
+
 `src/trace_engine_v2/core/deck_knowledge.inc` keeps copy arithmetic behind `KnowledgeCopyPolicy`. `KnowledgeCopyPolicy::combined()` owns repeated two-source count aggregation for public hand/discard/attached zones and K1 hand/deck counts. K0/K1 visibility rules remain unchanged at their Engine callers: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 
 Next catalog/knowledge step: move only duplicate metadata lookup or copy-count arithmetic into these helpers. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns.
@@ -124,12 +126,14 @@ Next catalog/knowledge step: move only duplicate metadata lookup or copy-count a
 ## Shared policy owners
 
 - Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.
-- Garbodor scenario/timing: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
+- Garbodor scenario/timing: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. `GarbodorScenarioPolicy::active()` is the canonical combined scenario-label and activation-turn predicate; Engine wrappers remain compatibility/query seams for callers that need the individual facts. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
 - Setup lifecycle labels, mulligans, Prize deal, and setup trace mechanics: `src/trace_engine_v2/core/setup_lifecycle.inc`.
 - Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
 - Turn action runtime: `src/trace_engine_v2/turn_action_policy_runtime.inc`.
 
 Before adding a new loop or route-local helper, check these owners and reuse a named seam when ordering and semantics match exactly.
+
+Next shared-policy step: replace duplicated Garbodor scenario-prefix plus activation-turn conjunctions only when they are semantically identical to `GarbodorScenarioPolicy::active()`. Preserve separate `matches()` and `lock_activation_turn()` queries where callers need one fact without the other.
 
 ## Validation gate
 

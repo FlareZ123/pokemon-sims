@@ -7,7 +7,7 @@
 // Card catalog: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 // Card classification: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
 // Simulator state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
-// Banked-Tapu policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/banked_tapu_policy_stage.inc
+// Banked-Tapu replacement policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/banked_tapu_retreat_policy.inc
 // Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/lock_removal_policy_stage.inc
 // Battle Compressor / VS Seeker policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/battle_compressor_vs_seeker_policy.inc
 // Late composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_engine_stage.inc
@@ -35,12 +35,30 @@
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_legacy_stage.inc
 #include "opening_legacy_stage.inc"
 
-// Middle stage. Compose the two macro-owning policy substages directly at the
-// canonical Engine boundary so no forwarding-only layer can drift from the actual
-// banked-Tapu -> lock-removal sequence.
-// Banked-Tapu owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/banked_tapu_policy_stage.inc
-#include "banked_tapu_policy_stage.inc"
-// Lock-removal owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/lock_removal_policy_stage.inc
+// Middle stage: own the banked-Tapu alias lifetime directly at the canonical
+// Engine boundary. This removes a forwarding-only .inc layer while preserving the
+// exact macro setup/include/teardown sequence.
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
+// DDE-aware Apex payment / confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/3089
+// Search-item runtime owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/turn_action_policy_runtime.inc
+// Replacement policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/banked_tapu_retreat_policy.inc
+#if defined(retreat_banked_tapu_to_regidrago)
+#error "Banked-Tapu composition requires the retreat alias to be undefined on entry"
+#endif
+#define retreat_banked_tapu_to_regidrago retreat_banked_tapu_to_regidrago_issue3089_original
+#include "opening_engine_overrides.inc"
+#include "../turn_action_policy_runtime.inc"
+#undef retreat_banked_tapu_to_regidrago
+#if defined(retreat_banked_tapu_to_regidrago)
+#error "Banked-Tapu composition leaked the temporary retreat alias"
+#endif
+#if defined(begin_turn)
+#error "Banked-Tapu composition expected opening_engine_overrides.inc to release begin_turn"
+#endif
+#include "../core/routes/banked_tapu_retreat_policy.inc"
+
+// Lock-removal remains a named substage until its own forwarding layer is retired.
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/lock_removal_policy_stage.inc
 #include "lock_removal_policy_stage.inc"
 
 // Battle Compressor and VS Seeker must be composed after the current search/DCI

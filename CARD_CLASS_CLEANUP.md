@@ -71,11 +71,13 @@ If migration exposes gameplay behavior that is wrong, use the normal bug-confirm
 
 ## Composition ownership
 
-`src/trace_engine_v2/composition/engine_body.inc` is the canonical Engine composition owner. `composition/opening_engine_overrides.inc` owns the early Supporter/VSTAR continuation. `composition/post_014a_overrides.inc` owns late-search composition.
+`src/trace_engine_v2/composition/engine_body.inc` is the canonical Engine composition owner. `composition/opening_stage.inc` owns the ordered opening composition from the legacy turn-body aliases through Garbotoxin composition and the banked-Tapu replacement boundary. `composition/opening_engine_overrides.inc` owns the early Supporter/VSTAR continuation inside that stage. `composition/post_014a_overrides.inc` owns late-search composition. Opening stage: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_stage.inc
 
 Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. Route admission/projection/decision policy stays under `src/trace_engine_v2/core/routes/`. Retire a compatibility forwarder only after its parent is retargeted at the identical textual boundary and raw-source readers or anchors are migrated. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
-The numbered policy fragments `part_013.inc`, `part_014a.inc`, and `part_014b.inc` are retired. `composition/opening_engine_overrides.inc` composes `core/supporter_legacy_runtime.inc` directly; `composition/engine_body.inc` composes `turn_action_policy_runtime.inc` directly; `composition/post_014a_overrides.inc` composes `core/recovery_supporter_policy.inc` directly at the historical `choose_supporter_original` macro boundary. Recovery owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/recovery_supporter_policy.inc
+The numbered policy fragments `part_013.inc`, `part_014a.inc`, and `part_014b.inc` are retired. `composition/opening_engine_overrides.inc` composes `core/supporter_legacy_runtime.inc` directly; `composition/opening_stage.inc` composes `turn_action_policy_runtime.inc` directly at the established banked-Tapu member boundary; `composition/post_014a_overrides.inc` composes `core/recovery_supporter_policy.inc` directly at the historical `choose_supporter_original` macro boundary. Recovery owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/recovery_supporter_policy.inc
+
+Completed in `cleanup-1786769771984`: extracted the existing opening block from `engine_body.inc` into `composition/opening_stage.inc` while preserving the historical `part_003.inc` -> `part_004.inc` -> `part_005.inc` continuation, Garbotoxin alias lifetime, opening overrides, turn-action continuation, and banked-Tapu replacement boundary. This is an ownership-only refactor. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 Root `part_000.inc` and `part_001.inc` remain source-contract shims while unified-test generation, raw-source payload contracts, and same-repository anchors depend on their historical paths. Canonical owners: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc and https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
 
@@ -108,6 +110,8 @@ Next Steven step: inventory remaining Steven-named root `part_*.inc` files and r
 ## Setup lifecycle cleanup
 
 `src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `core/simulation_labels.inc` remains a compatibility shell while historical textual include sites or raw-source readers still require it.
+
+The opening Engine composition is now grouped under `composition/opening_stage.inc`, so the next setup-lifecycle consolidation can retarget the remaining compatibility shell without also disentangling the legacy opening macro sequence. Opening stage: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_stage.inc
 
 Next setup step: retarget the remaining live parent include from `core/simulation_labels.inc` directly to `core/setup_lifecycle.inc` at the same Engine member boundary, migrate raw-source readers and same-repository anchors, then retire the shell. Preserve setup choice policy, K0/K1 state, mulligan counting, Active/Bench selection, Prize placement, declaration order, DCI/UDP/AMR behavior, Supporter contention, and connector domination. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 

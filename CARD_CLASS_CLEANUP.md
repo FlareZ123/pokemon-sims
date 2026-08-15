@@ -112,9 +112,11 @@ Named Steven route owners live under `src/trace_engine_v2/core/routes/`. Retire 
 
 ## Setup lifecycle cleanup
 
-`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels together with opening-hand, mulligan, Prize-deal, and setup-trace mechanics. `src/trace_engine_v2/part_005.inc` composes that canonical owner at the established Engine member boundary.
+`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels together with opening-deck initialization, opening-hand and mulligan mechanics, Prize dealing, and setup-trace output. `src/trace_engine_v2/part_005.inc` composes that canonical owner at the established Engine member boundary.
 
-Next setup step: move only state-transition helpers from opening Active/Bench setup into `core/setup_lifecycle.inc` once exact source-contract coverage exists for hand removal, `started_regi`, Bench insertion, and declaration ordering. Keep strategic route predicates in Engine. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+`prepare_opening_deck()` now owns knowledge reset, recipe population, and the opening shuffle. `draw_opening_hand_once()` owns the repeated seven-card transfer used by the mulligan loop. Scenario summaries call `SetupLifecycleConfig` directly instead of retaining forwarding-only label wrappers. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+
+Next setup step: move only state-transition helpers from opening Active/Bench setup into `core/setup_lifecycle.inc` once exact source-contract coverage exists for hand removal, `started_regi`, Bench insertion, and declaration ordering. Keep strategic route predicates in Engine.
 
 ## Catalog and knowledge cleanup
 

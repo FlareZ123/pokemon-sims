@@ -261,6 +261,8 @@ Exact migrated-card metadata and source URLs: https://github.com/FlareZ123/pokem
 
 `cleanup-1786760569376` centralizes presence-only board queries through `board_index_matching()` and separates registry-owned card names from the shrinking legacy fallback in `core/card_catalog.inc`. These changes preserve gameplay policy while narrowing future board and card-class migrations. Board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc Registry owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp Catalog owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 
+`cleanup-1786764082302` centralizes the issue-3199 public-projection RAII guard beside its thread-local depth owner in `part_issue_1069_legacy_star_combined_energy_payload_override.inc` and reuses that guard from `part_turo_oricorio_override.inc`. The include order, depth increment/decrement semantics, exception-safe restoration, Legacy Star suppression boundary, and Tate held-route behavior remain unchanged. Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136 Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148 Projection-policy owner: https://github.com/FlareZ123/pokemon-sims/issues/3199 Future-card-oracle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+
 The next Forretress cleanup remains the Active-specific source questions in `use_exploding_energy_for_setup()` and the post-Ability retreat-target ranking described above. Keep attachment selection, self-Knock-Out, promotion, retreat payment, DCI/UDP/AMR, K0/K1, and route policy at their existing owners.
 
 ## Validation gate

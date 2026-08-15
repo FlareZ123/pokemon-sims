@@ -73,19 +73,23 @@ class CardContext final {
   }
 
   bool is_stadium(const Card card) const {
-    return is_stadium_ != nullptr && is_stadium_(const_opaque(), card);
+    return optional_card_predicate(is_stadium_, card);
   }
 
   bool is_pokemon_tool(const Card card) const {
-    return is_pokemon_tool_ != nullptr && is_pokemon_tool_(const_opaque(), card);
+    return optional_card_predicate(is_pokemon_tool_, card);
   }
 
   bool is_special_energy(const Card card) const {
-    return is_special_energy_ != nullptr && is_special_energy_(const_opaque(), card);
+    return optional_card_predicate(is_special_energy_, card);
   }
 
  private:
   const void* const_opaque() const { return static_cast<const void*>(opaque_); }
+
+  bool optional_card_predicate(const IsStadiumFn predicate, const Card card) const {
+    return predicate != nullptr && predicate(const_opaque(), card);
+  }
 
   void* opaque_;
   HandCountFn hand_count_;

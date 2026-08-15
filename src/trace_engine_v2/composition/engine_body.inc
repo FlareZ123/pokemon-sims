@@ -4,8 +4,7 @@
 // Preserve this textual include sequence because legacy aliases deliberately cross
 // stage boundaries before their owning sections release them.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
-// Card catalog: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
-// Card classification: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_classification.inc
+// Card catalog + intrinsic classification: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 // Runtime state + metrics + trace: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulation_runtime.inc
 // Banked-Tapu replacement policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/banked_tapu_retreat_policy.inc
 // Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forest_field_blower_policy.inc
@@ -21,9 +20,10 @@
 #include "../core/card_catalog.inc"
 #endif
 
+// Classification now shares the catalog owner. Preserve the historical feature
+// marker for downstream textual-composition guards without a second include.
 #ifndef SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
 #define SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
-#include "../core/card_classification.inc"
 #endif
 
 // Keep state ownership at the canonical composition boundary instead of a

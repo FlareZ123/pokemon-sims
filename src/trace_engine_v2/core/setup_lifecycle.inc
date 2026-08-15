@@ -1,27 +1,22 @@
 #ifndef SIM_TRACE_SETUP_LIFECYCLE_INCLUDED
 #define SIM_TRACE_SETUP_LIFECYCLE_INCLUDED
 
-  bool simulation_deck_contains(Card card) const {
-    return total_copies(card) > 0;
-  }
-
-  bool is_regidrago_shell_recipe() const {
-    return total_copies(Card::RegidragoV) == 4 &&
-           total_copies(Card::BrilliantBlender) == 1;
-  }
-
   std::string current_deck_id() const {
-    if (simulation_deck_contains(Card::DoubleDragonEnergy)) {
+    const auto recipe_contains = [this](const Card card) {
+      return total_copies(card) > 0;
+    };
+
+    if (recipe_contains(Card::DoubleDragonEnergy)) {
       return "regidrago-dde-model";  // Modeling recipe: https://github.com/FlareZ123/pokemon-sims/issues/2238 ; DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
     }
-    if (simulation_deck_contains(Card::CrobatV)) {
+    if (recipe_contains(Card::CrobatV)) {
       return "modeling-crobat-variant";
     }
-    if (simulation_deck_contains(Card::SecretBox) &&
-        simulation_deck_contains(Card::Pineco)) {
+    if (recipe_contains(Card::SecretBox) && recipe_contains(Card::Pineco)) {
       return "regidrago-pineco";
     }
-    if (is_regidrago_shell_recipe()) {
+    if (total_copies(Card::RegidragoV) == 4 &&
+        total_copies(Card::BrilliantBlender) == 1) {
       return "regidrago-shell";
     }
     return "custom";

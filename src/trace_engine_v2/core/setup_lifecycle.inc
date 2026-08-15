@@ -78,6 +78,13 @@
     }
   }
 
+  void prepare_setup_deck() {
+    // The setup sequence builds the 60-card recipe and shuffles before drawing the
+    // opening hand: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    add_recipe_cards_to_deck();
+    shuffle(state_.deck);
+  }
+
   void reset_setup_knowledge() {
     deck_seen_ = false;
     prizes_revealed_ = false;
@@ -127,8 +134,7 @@
 
   void setup() {
     reset_setup_knowledge();
-    add_recipe_cards_to_deck();
-    shuffle(state_.deck);
+    prepare_setup_deck();
     draw_opening_hand_with_mulligans();
 
     choose_opening_active();

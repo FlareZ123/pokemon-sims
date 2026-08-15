@@ -1,27 +1,42 @@
+  struct SimulationDeckIdentity {
+    [[nodiscard]] static bool contains(const Engine& engine, const Card card) {
+      return engine.total_copies(card) > 0;
+    }
+
+    [[nodiscard]] static bool is_regidrago_shell(const Engine& engine) {
+      return engine.total_copies(Card::RegidragoV) == 4 &&
+             engine.total_copies(Card::BrilliantBlender) == 1;
+    }
+
+    [[nodiscard]] static std::string id(const Engine& engine) {
+      if (contains(engine, Card::DoubleDragonEnergy)) {
+        // Modeling recipe: https://github.com/FlareZ123/pokemon-sims/issues/2238
+        // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        return "regidrago-dde-model";
+      }
+      if (contains(engine, Card::CrobatV)) {
+        return "modeling-crobat-variant";
+      }
+      if (contains(engine, Card::SecretBox) && contains(engine, Card::Pineco)) {
+        return "regidrago-pineco";
+      }
+      if (is_regidrago_shell(engine)) {
+        return "regidrago-shell";
+      }
+      return "custom";
+    }
+  };
+
   bool simulation_deck_contains(Card card) const {
-    return total_copies(card) > 0;
+    return SimulationDeckIdentity::contains(*this, card);
   }
 
   bool is_regidrago_shell_recipe() const {
-    return total_copies(Card::RegidragoV) == 4 &&
-           total_copies(Card::BrilliantBlender) == 1;
+    return SimulationDeckIdentity::is_regidrago_shell(*this);
   }
 
   std::string current_deck_id() const {
-    if (simulation_deck_contains(Card::DoubleDragonEnergy)) {
-      return "regidrago-dde-model";  // Modeling recipe: https://github.com/FlareZ123/pokemon-sims/issues/2238 ; DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-    }
-    if (simulation_deck_contains(Card::CrobatV)) {
-      return "modeling-crobat-variant";
-    }
-    if (simulation_deck_contains(Card::SecretBox) &&
-        simulation_deck_contains(Card::Pineco)) {
-      return "regidrago-pineco";
-    }
-    if (is_regidrago_shell_recipe()) {
-      return "regidrago-shell";
-    }
-    return "custom";
+    return SimulationDeckIdentity::id(*this);
   }
 
   static const char* dci_label(DciProfile profile) {

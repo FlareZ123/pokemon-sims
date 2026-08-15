@@ -18,8 +18,9 @@
     }
 
     const int held_payloads = payload_cards_in_hand_count();
+    // Canonical payload-zone owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
     const int spent_payloads_this_turn =
-        payload_card_count(state_.discarded_this_turn);
+        PayloadZonePolicy::count(state_.discarded_this_turn);
     const bool timer_started_this_turn =
         (state_.active && state_.active->card == Card::RegidragoV &&
          state_.active->entered_turn == state_.turn) ||

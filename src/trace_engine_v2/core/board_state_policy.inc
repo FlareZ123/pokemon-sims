@@ -50,10 +50,12 @@
   }
 
   template <typename ActiveZone, typename BenchZone>
-  [[nodiscard]] static OptionalBoardIndex find_board_index_for_pointer_in_zones(
+  [[nodiscard]] static OptionalBoardIndex board_index_for_pointer_in_zones(
       const ActiveZone& active, const BenchZone& bench, const Pokemon* target) {
     // Pointer lookup reuses the canonical Active-first predicate traversal instead
-    // of maintaining a second copy of the board-index loop.
+    // of maintaining a second copy of the board-index loop. Keep the internal name
+    // aligned with the public board_index_for_pointer() seam so callers do not need
+    // separate "find" and "index" vocabulary for the same operation.
     // C++ pointer equality semantics: https://eel.is/c++draft/expr.eq
     if (target == nullptr) return std::nullopt;
     return board_index_matching_in_zones(
@@ -104,7 +106,7 @@
 
   [[nodiscard]] OptionalBoardIndex board_index_for_pointer(
       const Pokemon* target) const {
-    return find_board_index_for_pointer_in_zones(
+    return board_index_for_pointer_in_zones(
         state_.active, state_.bench, target);
   }
 

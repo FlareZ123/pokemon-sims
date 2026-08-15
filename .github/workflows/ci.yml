@@ -24,25 +24,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+          # Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
           # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-          # Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-          # Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-          # Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
           # Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
           # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
           # Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 43 --require-ready-by 2 | tee trace-pass-3.txt
-          grep -q "T1 | DISCARD.*Grass Energy (Quick Ball cost)" trace-pass-3.txt
-          grep -q "T2 | DISCARD.*Dragapult ex (Mysterious Treasure cost)" trace-pass-3.txt
-          grep -q "T2 | WONDER TAG.*Crispin" trace-pass-3.txt
-          grep -q "T2 | READY" trace-pass-3.txt
-          if grep -q "STAR ALCHEMY" trace-pass-3.txt; then
-            echo "Dominated Star Alchemy route detected" >&2
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 58 --require-ready-by 3 | tee trace-pass-1.txt
+          grep -q "Searched up to 3 cards: Regidrago VSTAR, Brilliant Blender. Turn ended." trace-pass-1.txt
+          if grep -q "T3 | DISCARD.*Dragapult ex (Quick Ball cost)" trace-pass-1.txt; then
+            echo "Premature Quick Ball payload discard detected" >&2
             exit 1
           fi
+          grep -q "T3 | READY" trace-pass-1.txt
       - name: Upload trace
         uses: actions/upload-artifact@v4
         with:
-          name: simulate-this-pass-3
-          path: trace-pass-3.txt
+          name: simulate-this-pass-1-independent
+          path: trace-pass-1.txt
           if-no-files-found: error

@@ -73,11 +73,17 @@ struct LegacyCardCatalog {
       {Card::Fire, "Fire Energy"},
   }};
 
+  [[nodiscard]] static constexpr auto find(const Card card) {
+    // Keep legacy lookup on the same data table while giving future metadata
+    // migrations one searchable seam to retire entry-by-entry.
+    // C++20 constexpr find_if: https://eel.is/c++draft/alg.find
+    return std::find_if(kNames.begin(), kNames.end(),
+                        [card](const auto& entry) { return entry.first == card; });
+  }
+
   [[nodiscard]] static constexpr std::string_view name(const Card card) {
-    for (const auto& [id, label] : kNames) {
-      if (id == card) return label;
-    }
-    return "Unknown";
+    const auto found = find(card);
+    return found == kNames.end() ? "Unknown" : found->second;
   }
 };
 

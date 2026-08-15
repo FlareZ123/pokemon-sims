@@ -134,5 +134,39 @@
       // Original refined bug / confirmed follow-up: https://github.com/FlareZ123/pokemon-sims/issues/2323 https://github.com/FlareZ123/pokemon-sims/issues/3124
       return std::nullopt;
     }
-    return candidate;
+    if (candidate) return candidate;
+
+    const auto has_discardable_copy = [this, excluded_from_cost](const Card card) {
+      const int excluded = excluded_from_cost && *excluded_from_cost == card ? 1 : 0;
+      return hand_count(card) > excluded;
+    };
+
+    // Battle Compressor and VS Seeker are ordinary Items, so an extra physical copy
+    // may pay another Trainer's discard cost while a copy remains available for its
+    // live route. This fallback runs only after the established DCI selector and UDP
+    // guards find no better candidate.
+    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+    // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+    // Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Dynamic DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    if (hand_count(Card::BattleCompressor) >= 2 &&
+        has_discardable_copy(Card::BattleCompressor)) return Card::BattleCompressor;
+    if (hand_count(Card::VsSeeker) >= 2 &&
+        has_discardable_copy(Card::VsSeeker)) return Card::VsSeeker;
+
+    // Under a persistent Item lock, a singleton BC or VS Seeker has no legal future
+    // play and therefore becomes valid discard fuel after all higher-priority DCI
+    // candidates are exhausted.
+    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+    // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+    // Persistent-lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+    // Dynamic DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    const bool permanently_item_locked_from_here = item_locked() &&
+        (scenario_.locks == LockMode::FullItem ||
+         uses_turn_two_item_lock(scenario_.locks));
+    if (permanently_item_locked_from_here &&
+        has_discardable_copy(Card::BattleCompressor)) return Card::BattleCompressor;
+    if (permanently_item_locked_from_here &&
+        has_discardable_copy(Card::VsSeeker)) return Card::VsSeeker;
+    return std::nullopt;
   }

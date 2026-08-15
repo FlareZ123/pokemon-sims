@@ -7,6 +7,7 @@
 // Historical execution fragment: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
 // Historical registry continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_015.inc
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
+// Battle Compressor / VS Seeker policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/battle_compressor_vs_seeker_policy.inc
 // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
 // Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
 // Model specification: https://github.com/FlareZ123/pokemon-sims/issues/2808
@@ -18,7 +19,7 @@
 #define play_field_blower play_field_blower_original
 #define run_turn run_turn_original
 #define hand_count hand_count_issue_3057
-#define play_items_until_stable play_items_until_stable_issue_3057
+#define play_items_until_stable play_items_until_stable_issue3545
 #include "../part_014c.inc"
 #undef play_items_until_stable
 #undef hand_count

@@ -9,6 +9,7 @@
 // Simulator state: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulator_state.inc
 // Banked-Tapu policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/banked_tapu_policy_stage.inc
 // Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/lock_removal_policy_stage.inc
+// Battle Compressor / VS Seeker policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/battle_compressor_vs_seeker_policy.inc
 // Late composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/late_engine_stage.inc
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
 
@@ -41,6 +42,12 @@
 #include "banked_tapu_policy_stage.inc"
 // Lock-removal owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/lock_removal_policy_stage.inc
 #include "lock_removal_policy_stage.inc"
+
+// Battle Compressor and VS Seeker must be composed after the current search/DCI
+// policy stack but before part_014c binds the final Item fixed point.
+// Exact Items: https://api.pokemontcg.io/v2/cards/xy4-92 https://api.pokemontcg.io/v2/cards/xy4-109
+// Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
+#include "../core/battle_compressor_vs_seeker_policy.inc"
 
 // Late stage. The execution aliases deliberately span part_014c through part_016,
 // so one composition owner now holds their complete textual lifetime.

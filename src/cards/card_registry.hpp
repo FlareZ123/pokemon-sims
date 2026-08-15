@@ -9,6 +9,7 @@
 #include "pokemon/oricorio.hpp"
 #include "pokemon/regidrago_v.hpp"
 #include "trainers/arven.hpp"
+#include "trainers/battle_compressor.hpp"
 #include "trainers/battle_vip_pass.hpp"
 #include "trainers/brilliant_blender.hpp"
 #include "trainers/chaotic_swell.hpp"
@@ -40,11 +41,12 @@
 #include "trainers/stevens_resolve.hpp"
 #include "trainers/tate_liza.hpp"
 #include "trainers/team_yells_cheer.hpp"
+#include "trainers/vs_seeker.hpp"
 #include "trainers/wishful_baton.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 39> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 41> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
     &MawileGX::definition, // Exact Unified Minds Basic Metal Pokémon-GX: https://api.pokemontcg.io/v2/cards/sm11-141 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3704
     &Oricorio::definition, // Exact Guardians Rising Basic Psychic Pokémon: https://api.pokemontcg.io/v2/cards/sm2-55 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3712
@@ -52,6 +54,7 @@ inline constexpr std::array<const CardDefinition*, 39> kRegisteredCardDefinition
     &RegidragoVstar::definition, // Exact Silver Tempest Dragon Pokémon VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     &DoubleDragonEnergy::definition, // Exact Roaring Skies Special Energy: https://api.pokemontcg.io/v2/cards/xy6-97
     &Arven::definition, // Exact Scarlet & Violet Supporter: https://api.pokemontcg.io/v2/cards/sv1-166
+    &BattleCompressor::definition, // Exact Phantom Forces Item: https://api.pokemontcg.io/v2/cards/xy4-92 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3545
     &BattleVipPass::definition,
     &BrilliantBlender::definition, // Exact ACE SPEC Item: https://api.pokemontcg.io/v2/cards/sv8-164
     &ChaoticSwell::definition, // Exact Cosmic Eclipse Stadium: https://api.pokemontcg.io/v2/cards/sm12-187
@@ -83,6 +86,7 @@ inline constexpr std::array<const CardDefinition*, 39> kRegisteredCardDefinition
     &Lusamine::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
     &Klara::definition, // Exact Chilling Reign Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
     &TeamYellsCheer::definition, // Exact Brilliant Stars Supporter: https://api.pokemontcg.io/v2/cards/swsh9-149 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3620
+    &VsSeeker::definition, // Exact Phantom Forces Item: https://api.pokemontcg.io/v2/cards/xy4-109 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3545
     &WishfulBaton::definition, // Exact Burning Shadows Pokémon Tool: https://api.pokemontcg.io/v2/cards/sm3-128 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3631
 };
 
@@ -198,5 +202,10 @@ static_assert(definition_matches_registration(Guzma::definition, Card::Guzma,
                                               "sm3-115", "Guzma")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/sm3-115 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3618
 static_assert(definition_matches_registration(Serena::definition, Card::Serena,
                                               "swsh12-164", "Serena")); // Exact Supporter: https://api.pokemontcg.io/v2/cards/swsh12-164 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3585
+static_assert(definition_matches_registration(BattleCompressor::definition,
+                                              Card::BattleCompressor, "xy4-92",
+                                              "Battle Compressor Team Flare Gear")); // Exact Item: https://api.pokemontcg.io/v2/cards/xy4-92 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3545
+static_assert(definition_matches_registration(VsSeeker::definition, Card::VsSeeker,
+                                              "xy4-109", "VS Seeker")); // Exact Item: https://api.pokemontcg.io/v2/cards/xy4-109 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3545
 
 }  // namespace sim::cards

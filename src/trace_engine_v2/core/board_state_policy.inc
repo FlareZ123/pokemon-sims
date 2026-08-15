@@ -21,18 +21,6 @@
     return index - 1U;
   }
 
-  template <typename ActiveZone, typename BenchZone, typename Predicate>
-  [[nodiscard]] static auto find_board_pokemon_matching_in_zones(
-      ActiveZone& active, BenchZone& bench, Predicate predicate)
-      -> decltype(&*active) {
-    // Keep Active-before-Bench traversal in one implementation so mutable and
-    // const board queries cannot diverge as the policy layer evolves.
-    // C++ find_if semantics: https://eel.is/c++draft/alg.find
-    if (active && predicate(*active)) return &*active;
-    const auto match = std::find_if(bench.begin(), bench.end(), predicate);
-    return match == bench.end() ? nullptr : &*match;
-  }
-
   template <typename ActiveZone, typename BenchZone>
   [[nodiscard]] static auto board_pokemon_at_index_in_zones(
       ActiveZone& active, BenchZone& bench, const BoardIndex index)
@@ -58,6 +46,18 @@
       }
     }
     return std::nullopt;
+  }
+
+  template <typename ActiveZone, typename BenchZone, typename Predicate>
+  [[nodiscard]] static auto find_board_pokemon_matching_in_zones(
+      ActiveZone& active, BenchZone& bench, Predicate predicate)
+      -> decltype(&*active) {
+    // Reuse canonical index discovery plus index lookup so every mutable and const
+    // board query shares the same Active-before-Bench traversal and index mapping.
+    // C++ class-member lookup and find semantics: https://eel.is/c++draft/class.member.lookup
+    const OptionalBoardIndex index =
+        find_board_index_matching_in_zones(active, bench, predicate);
+    return index ? board_pokemon_at_index_in_zones(active, bench, *index) : nullptr;
   }
 
   template <typename Predicate>

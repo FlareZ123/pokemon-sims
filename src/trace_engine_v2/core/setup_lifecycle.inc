@@ -5,6 +5,10 @@
     return total_copies(card) > 0;
   }
 
+  [[nodiscard]] bool setup_recipe_has_exactly(const Card card, const int copies) const {
+    return total_copies(card) == copies;
+  }
+
   [[nodiscard]] std::string current_deck_id() const {
     if (setup_recipe_contains(Card::DoubleDragonEnergy)) {
       return "regidrago-dde-model";  // Modeling recipe: https://github.com/FlareZ123/pokemon-sims/issues/2238 ; DDE: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
@@ -15,8 +19,8 @@
     if (setup_recipe_contains(Card::SecretBox) && setup_recipe_contains(Card::Pineco)) {
       return "regidrago-pineco";
     }
-    if (total_copies(Card::RegidragoV) == 4 &&
-        total_copies(Card::BrilliantBlender) == 1) {
+    if (setup_recipe_has_exactly(Card::RegidragoV, 4) &&
+        setup_recipe_has_exactly(Card::BrilliantBlender, 1)) {
       return "regidrago-shell";
     }
     return "custom";
@@ -56,6 +60,11 @@
 
   [[nodiscard]] std::string lock_name() const {
     return SetupLifecycleConfig::lock_label(scenario_.locks);
+  }
+
+  [[nodiscard]] std::string setup_scenario_summary() const {
+    return "Scenario: " + scenario_.label + " | DCI: " + dci_name() +
+           " | Locks: " + lock_name();
   }
 
   void move_top_cards_from_deck(std::vector<Card>& destination, int count) {
@@ -114,7 +123,7 @@
     if (trace_ == nullptr || !trace_->enabled) return;
     trace_->note("===== SIMULATE THIS =====");
     trace_->note("Deck: " + current_deck_id());
-    trace_->note("Scenario: " + scenario_.label + " | DCI: " + dci_name() + " | Locks: " + lock_name());
+    trace_->note(setup_scenario_summary());
     trace_->note("Mulligans: " + std::to_string(outcome_.mulligans));
     trace_->note("Opening player-known state: " + state_line());
     trace_->note("DEBUG ONLY: prizes=" + join_cards(state_.prizes) + ". Policy may use them only after a legal deck or Prize inspection.");

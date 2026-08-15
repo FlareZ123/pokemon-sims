@@ -43,6 +43,10 @@ Quick Ball is the reference for explicit registration, exact-print metadata, int
 
 Next catalog step: migrate remaining `LegacyCardCatalog` entries one card at a time through the normal ownership workflow. Delete a compatibility row only after that card has an explicit `CardDefinition`, registration, exact-print source, and focused metadata test. Keep gameplay resolution and strategy at their current owners during metadata-only migrations.
 
+Regidrago VSTAR now owns exact Silver Tempest 136/195 metadata beside Regidrago V in `src/cards/pokemon/regidrago_v.hpp`, is explicitly registered, and has focused V/VSTAR metadata/parity coverage. The live Pokémon, Pokémon V, Rule Box, Dragon/Mysterious Treasure target, and Retreat Cost classifiers consume registered metadata for the Regidrago line. Exact print: https://api.pokemontcg.io/v2/cards/swsh12-136 Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Pokémon V ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+
+Next Regidrago metadata step: remove the now-shadowed Regidrago VSTAR compatibility name row from `LegacyCardCatalog` in a later isolated catalog cleanup after its name-path source contract is checked. Keep V -> VSTAR evolution/devolution relations, Legacy Star, Apex Dragon, payload policy, DCI/JIT, and route choice at their existing behavioral owners.
+
 ## Active card migrations
 
 Do not create a parallel migration while one of these owners is active:
@@ -106,7 +110,9 @@ Next payload step: replace remaining ad hoc Dragon-payload membership and cardin
 
 `src/trace_engine_v2/core/board_state_policy.inc` owns Active-first traversal, `BoardIndex` vocabulary, attachment-destination storage, pointer-to-index conversion, index lookup, exact-card source discovery, deterministic ranked board queries, and the prior-turn evolution timing predicate. Canonical board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
 
-Next mechanical Forretress step: replace remaining direct Pineco / Forretress ex board-card identity checks only where they exactly match the contract classifiers, then inventory the remaining orchestration in `runtime.inc` for another complete semantic boundary. Preserve state-count queries, entry-turn evolution timing, route ordering, attachment distribution, retreat planning, and strategic ranking at their existing owners. Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117 Core evolution rules: https://www.pokemon.com/us/pokemon-tcg/rules Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
+Board-object Pineco identity in the evolution-timing queries and Regidrago-line identity in the Exploding Energy retreat path now reuse the contract classifiers. State-count queries still intentionally use exact `Card` counts, and retreat ranking still distinguishes Regidrago VSTAR from Regidrago V because that ordering is strategic rather than a board-family membership question.
+
+Next mechanical Forretress step: inventory the remaining orchestration in `runtime.inc` for another complete semantic boundary, and replace only board-object identity checks whose semantics exactly match an existing contract classifier. Preserve state-count queries, entry-turn evolution timing, route ordering, attachment distribution, retreat planning, and strategic ranking at their existing owners. Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117 Core evolution rules: https://www.pokemon.com/us/pokemon-tcg/rules Official February 2026 ruling: https://professorprogram.pokemon.com/news/11473085
 
 ## Steven route cleanup
 

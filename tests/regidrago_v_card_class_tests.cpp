@@ -36,6 +36,26 @@ void test_registry_metadata() {
           "Regidrago V must retain Rule Box and Pokémon V metadata."); // Pokémon V print: https://api.pokemontcg.io/v2/cards/swsh12-135
 }
 
+void test_vstar_registry_metadata() {
+  const auto* definition = sim::cards::find_definition(sim::Card::RegidragoVstar);
+  require(definition != nullptr,
+          "Regidrago VSTAR must be explicitly registered.");
+  require(definition->canonical_id == "swsh12-136",
+          "Regidrago VSTAR canonical print changed."); // Exact card data: https://api.pokemontcg.io/v2/cards/swsh12-136
+  require(definition->name == "Regidrago VSTAR",
+          "Regidrago VSTAR display name changed."); // Exact card data: https://api.pokemontcg.io/v2/cards/swsh12-136
+  require(definition->kind == sim::cards::CardKind::Pokemon,
+          "Regidrago VSTAR must remain a Pokémon."); // Exact card data: https://api.pokemontcg.io/v2/cards/swsh12-136
+  require(definition->pokemon_stage == sim::cards::PokemonStage::VStar,
+          "Regidrago VSTAR must remain VSTAR stage."); // Exact subtype: https://api.pokemontcg.io/v2/cards/swsh12-136
+  require(sim::cards::has_pokemon_type(*definition, sim::cards::PokemonType::Dragon),
+          "Regidrago VSTAR must remain Dragon type."); // Exact type: https://api.pokemontcg.io/v2/cards/swsh12-136
+  require(definition->retreat_cost == 3,
+          "Regidrago VSTAR metadata must preserve Retreat Cost 3."); // Printed Retreat Cost: https://api.pokemontcg.io/v2/cards/swsh12-136
+  require(definition->rule_box && definition->pokemon_v,
+          "Regidrago VSTAR must retain Rule Box and Pokémon V metadata."); // Exact VSTAR print: https://api.pokemontcg.io/v2/cards/swsh12-136 ; Pokémon V ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+}
+
 void test_legacy_intrinsic_parity() {
   require(sim::name(sim::Card::RegidragoV) == "Regidrago V",
           "Registered display name must preserve legacy traces."); // Exact card data: https://api.pokemontcg.io/v2/cards/swsh12-135
@@ -54,13 +74,33 @@ void test_legacy_intrinsic_parity() {
           "Cleanup must preserve the live Retreat Cost resolver."); // Printed Retreat Cost: https://api.pokemontcg.io/v2/cards/swsh12-135 ; confirmed sibling bug remains separate: https://github.com/FlareZ123/pokemon-sims/issues/3652
 }
 
+void test_vstar_intrinsic_parity() {
+  require(sim::name(sim::Card::RegidragoVstar) == "Regidrago VSTAR",
+          "Registered VSTAR display name must preserve legacy traces."); // Exact card data: https://api.pokemontcg.io/v2/cards/swsh12-136
+  require(!sim::is_basic(sim::Card::RegidragoVstar),
+          "Regidrago VSTAR must remain an Evolution Pokémon."); // Exact VSTAR subtype: https://api.pokemontcg.io/v2/cards/swsh12-136
+  require(sim::is_pokemon(sim::Card::RegidragoVstar),
+          "Registered Regidrago VSTAR must remain a Pokémon."); // Exact card data: https://api.pokemontcg.io/v2/cards/swsh12-136
+  require(sim::is_pokemon_v(sim::Card::RegidragoVstar),
+          "Registered Regidrago VSTAR must remain a Pokémon V."); // Pokémon VSTAR ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/
+  require(sim::is_rule_box_pokemon(sim::Card::RegidragoVstar),
+          "Registered Regidrago VSTAR must remain a Rule Box Pokémon."); // Exact VSTAR print: https://api.pokemontcg.io/v2/cards/swsh12-136
+  require(sim::is_dragon_or_psychic(sim::Card::RegidragoVstar) &&
+              sim::is_dragon(sim::Card::RegidragoVstar),
+          "Registered Regidrago VSTAR must remain a Mysterious Treasure Dragon target."); // Regidrago VSTAR type: https://api.pokemontcg.io/v2/cards/swsh12-136 ; Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  require(sim::retreat_cost(sim::Card::RegidragoVstar) == 3,
+          "Registered Regidrago VSTAR must preserve Retreat Cost 3."); // Printed Retreat Cost: https://api.pokemontcg.io/v2/cards/swsh12-136
+}
+
 }  // namespace
 
 int main() {
   try {
     test_registry_metadata();
+    test_vstar_registry_metadata();
     test_legacy_intrinsic_parity();
-    std::cout << "Regidrago V card-class tests passed\n";
+    test_vstar_intrinsic_parity();
+    std::cout << "Regidrago V/VSTAR card-class tests passed\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

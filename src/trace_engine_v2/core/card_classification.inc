@@ -29,7 +29,6 @@ constexpr bool is_basic(const Card card) {
 constexpr bool is_pokemon(const Card card) {
   if (registered_pokemon_definition(card) != nullptr) return true;
   switch (card) {
-    case Card::RegidragoVstar:
     case Card::Dragapult:
     case Card::MegaDragonite:
     case Card::DialgaGX:
@@ -56,8 +55,7 @@ constexpr bool is_pokemon_v(const Card card) {
   if (const cards::CardDefinition* definition = registered_pokemon_definition(card)) {
     return definition->pokemon_v;
   }
-  return card == Card::RegidragoVstar ||
-         card == Card::GoodraVstar ||  // Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136 ; Pokémon V ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/ ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3608
+  return card == Card::GoodraVstar ||  // Goodra VSTAR: https://api.pokemontcg.io/v2/cards/swsh11-136 ; Pokémon V ruling: https://compendium.pokegym.net/category/7-gameplay/pokemon-v/ ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3608
          card == Card::CrobatV;  // Pokémon V: https://api.pokemontcg.io/v2/cards/swsh3-104
 }
 
@@ -73,7 +71,6 @@ constexpr bool is_rule_box_pokemon(const Card card) {
     return definition->rule_box;
   }
   switch (card) {
-    case Card::RegidragoVstar:
     case Card::Dragapult:
     case Card::MegaDragonite:
     case Card::DialgaGX:
@@ -95,7 +92,6 @@ constexpr bool is_dragon_or_psychic(const Card card) {
            cards::has_pokemon_type(*definition, cards::PokemonType::Psychic);
   }
   switch (card) {
-    case Card::RegidragoVstar:
     case Card::Dragapult:
     case Card::MegaDragonite:
     case Card::DialgaGX:
@@ -123,7 +119,6 @@ constexpr bool is_dragon(const Card card) {
     return cards::has_pokemon_type(*definition, cards::PokemonType::Dragon);
   }
   switch (card) {
-    case Card::RegidragoVstar:
     case Card::Dragapult:
     case Card::MegaDragonite:
     case Card::DialgaGX:
@@ -141,6 +136,15 @@ constexpr bool is_payload(const Card card) {
 }
 
 constexpr int retreat_cost(const Card card) {
+  // Registered Regidrago prints own their exact intrinsic Retreat Cost while
+  // evolution and route policy remain separate engine concerns.
+  // Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+  if (is_regidrago_v_line(card)) {
+    const cards::CardDefinition* definition = registered_pokemon_definition(card);
+    return definition != nullptr ? definition->retreat_cost : 0;
+  }
+
   // Retreat requires discarding attached Energy whose total meets or exceeds the printed Retreat Cost:
   // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   // Printed Retreat Costs for the opening-position recovery modeled by the
@@ -153,8 +157,6 @@ constexpr int retreat_cost(const Card card) {
     case Card::CrobatV: return 1;  // Printed Retreat Cost: https://api.pokemontcg.io/v2/cards/swsh3-104
     case Card::Pineco: return 2;
     case Card::DialgaGX: return 3;
-    case Card::RegidragoV: return 3;  // Exact swsh12-135 print: https://api.pokemontcg.io/v2/cards/swsh12-135
-    case Card::RegidragoVstar: return 3;
     case Card::Dragapult: return 1;  // Exact sv6-130 print: https://api.pokemontcg.io/v2/cards/sv6-130
     case Card::MegaDragonite: return 2;  // Exact me2pt5-152 print: https://api.pokemontcg.io/v2/cards/me2pt5-152
     case Card::GoodraVstar: return 3;  // Exact swsh11-136 print: https://api.pokemontcg.io/v2/cards/swsh11-136

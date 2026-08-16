@@ -165,6 +165,39 @@ void test_prize_inspection_alone_establishes_k1() {
          "The route must remain unavailable at K0.");
 }
 
+void test_action_specific_lock_semantics() {
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  const auto route_available_under = [&recipe](const sim::LockMode locks) {
+    const sim::Scenario scenario{"issue-4035", sim::DciProfile::StrictJit,
+                                 locks, false, 4};
+    std::mt19937_64 rng{4035};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::EngineTestAccess::set_state(engine, exact_state());
+    return sim::EngineTestAccess::route_available(engine);
+  };
+
+  // The route plays Crispin as its one Supporter and uses an Item payload outlet.
+  // Path-style Rule Box Ability suppression does not prohibit either Trainer class,
+  // while Supporter lock or the turn-two Item lock blocks a required action:
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Rule Box / Item / Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Simulator lock contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-interpretation
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4035
+  expect(route_available_under(sim::LockMode::None),
+         "The unlocked held-Crispin route must remain available.");
+  expect(route_available_under(sim::LockMode::FullRuleBoxAbility),
+         "Rule Box Ability suppression must not block the Trainer-only route.");
+  expect(!route_available_under(sim::LockMode::TurnTwoItem),
+         "Turn-two Item lock must block the route's payload outlet.");
+  expect(!route_available_under(sim::LockMode::FullItem),
+         "Synthetic full Item lock must block the route's payload outlet.");
+  expect(!route_available_under(sim::LockMode::FullSupporter),
+         "Supporter lock must block Crispin.");
+  expect(!route_available_under(sim::LockMode::FullCombined),
+         "Combined lock must block the turn-two Item payload outlet.");
+}
+
 void test_missing_fire_preserves_gladion_fallback() {
   const sim::Scenario scenario{"issue-1393-control", sim::DciProfile::StrictJit,
                                sim::LockMode::None, false, 4};
@@ -188,6 +221,7 @@ int main() {
     test_exact_route_holds_fss_and_plays_crispin();
     test_issue_2768_shared_jit_profiles();
     test_prize_inspection_alone_establishes_k1();
+    test_action_specific_lock_semantics();
     test_seed_61_reaches_turn_two();
     test_missing_fire_preserves_gladion_fallback();
     std::cout << "Issue 1393 Crispin-before-Gladion tests passed\n";

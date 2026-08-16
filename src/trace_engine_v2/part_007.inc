@@ -197,7 +197,6 @@
         deck_count_after_search_started(Card::Grass) > 0 &&
         deck_count_after_search_started(Card::Fire) > 0;
   }
-
   bool issue_2343_burnet_quick_ball_latias_route_available() const {
     const bool burnet_available = hand_count(Card::ProfessorBurnet) > 0 ||
         deck_count_after_search_started(Card::ProfessorBurnet) > 0;
@@ -227,13 +226,15 @@
     // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
     // Core Item, Supporter, Bench, Ability, attachment, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Canonical lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
     // K1 and same-ready-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed semantic-admission bugs: https://github.com/FlareZ123/pokemon-sims/issues/3372 https://github.com/FlareZ123/pokemon-sims/issues/3402
+    // Confirmed recovered-Path lock bug: https://github.com/FlareZ123/pokemon-sims/issues/4097
     return strict_payload_timing() &&
-        scenario_.locks == LockMode::None &&
         state_.turn <= scenario_.max_turn && // Current-state route horizon: https://github.com/FlareZ123/pokemon-sims/issues/3402
         prizes_known() && supporter_allowed() &&
         !item_locked() && !state_.retreat_used && state_.active &&

@@ -90,6 +90,12 @@ The issue-1368 Earthen Vessel / Celestial Roar route now has a canonical semanti
 
 Next composition step: rewire the post-`part_014a` Earthen Vessel composition directly to `core/routes/earthen_vessel_celestial_roar_policy.inc` only after raw-source/tooling consumers of the historical root path are proven absent, then retire that compatibility include. Migrate direct `CardContext` bridge consumers to `core/adapters/card_context_adapter.hpp`, then remove the old forwarding include once repository-wide references are gone. Inspect another root `part_*` seam only when its complete macro lifetime or function body can move intact. Keep tooling-only compatibility paths minimal, preserve declaration order and route semantics, and retain direct source URLs beside rule-sensitive logic.
 
+### Banked Tapu paid-retreat seam
+
+`src/trace_engine_v2/core/routes/banked_tapu_retreat_policy.inc` now names two route boundaries that were previously embedded in broader helpers. `banked_tapu_paid_retreat_priority_open()` owns the route-priority gate that preserves Latias ex free Retreat and Tate & Liza switching ahead of paid Retreat. `banked_tapu_retreat_payment()` owns the deterministic physical Basic Energy choice used to pay Tapu Lele-GX's one-Colorless Retreat Cost. Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60 Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76 Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148 Advanced Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+These helpers keep the route strategy-owned and preserve existing action ordering, legality checks, energy-payment order, and state mutation. Future extraction should move only a complete query or state-transition boundary whose semantics already have focused coverage; card validation and general Retreat procedure remain separate from route selection.
+
 ## Payload policy cleanup
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner.

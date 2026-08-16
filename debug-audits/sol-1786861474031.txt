@@ -1,0 +1,3 @@
+Debug audit pass 2
+Base main: 8451425c9f35b03db659519dae82c529e5e4e894
+Purpose: independent CI + --simulate-this review only; do not merge.

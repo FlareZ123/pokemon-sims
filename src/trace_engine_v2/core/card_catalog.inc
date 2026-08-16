@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "../../cards/card_registry.hpp"
-#include "card_context_adapter.hpp"
+#include "adapters/card_context_adapter.hpp"  // Canonical bridge owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -130,14 +130,11 @@ constexpr bool is_basic(const Card card) {
   return is_legacy_basic_pokemon(card);
 }
 
-// Ultra Ball may search any Pokémon, so K1 target legality must recognize every
-// Pokémon represented by the simulator rather than only Basic or payload subsets:
-// https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-constexpr bool is_pokemon(const Card card) {
-  if (registered_pokemon_definition(card) != nullptr ||
-      is_legacy_basic_pokemon(card)) {
-    return true;
-  }
+// Keep all unmigrated Pokémon identity in one compatibility seam. Registered
+// Pokémon bypass this list through CardDefinition metadata.
+// Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#catalog-and-knowledge-cleanup
+constexpr bool is_legacy_pokemon(const Card card) {
+  if (is_legacy_basic_pokemon(card)) return true;
   switch (card) {
     case Card::Dragapult:
     case Card::MegaDragonite:
@@ -148,6 +145,13 @@ constexpr bool is_pokemon(const Card card) {
     default:
       return false;
   }
+}
+
+// Ultra Ball may search any Pokémon, so K1 target legality must recognize every
+// Pokémon represented by the simulator rather than only Basic or payload subsets:
+// https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+constexpr bool is_pokemon(const Card card) {
+  return registered_pokemon_definition(card) != nullptr || is_legacy_pokemon(card);
 }
 
 // TPCi defines Pokémon V to include Pokémon VSTAR. Forest Seal Stone can remain

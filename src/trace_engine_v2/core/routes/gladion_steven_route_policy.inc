@@ -54,12 +54,13 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // https://github.com/FlareZ123/pokemon-sims/issues/1191
-    return std::any_of(
+    const bool prior_turn_regidrago_ready = std::any_of(
         state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoV &&
               pokemon.entered_turn <= state_.turn && pokemon.grass == 1 &&
               pokemon.fire == 0;
         });
+    return prior_turn_regidrago_ready;
   }
 
   bool play_gladion_issue1204_original() {

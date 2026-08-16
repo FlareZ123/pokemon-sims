@@ -7,38 +7,18 @@ permissions:
   contents: write
 
 jobs:
-  compose:
+  repair:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           ref: cleanup-1786908861701
           fetch-depth: 0
-      - name: Reset cleanup branch to latest main
+      - name: Restore Forretress cleanup anchors
         run: |
-          git fetch origin main
-          git reset --hard origin/main
+          python -c 'from pathlib import Path; p=Path("CARD_CLASS_CLEANUP.md"); lines=p.read_text().splitlines(); para="The namespace-scope Forretress composition has its canonical package at `src/trace_engine_v2/core/forretress/package.inc`. Public scenario aliases and registry declarations live in `src/trace_engine_v2/core/forretress/scenario_contract.inc`, keeping namespace contract ownership separate from runtime mechanics and scenario-family composition at the same verified boundary. `part_014c.inc` now consumes the canonical package directly at the same post-Engine namespace boundary, and the historical `src/trace_engine_v2/part_forretress_ex_combo.inc` forwarding path is retired and should not be recreated. Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/package.inc Canonical contract: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/scenario_contract.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include"; bullet="- Forretress namespace composition: `src/trace_engine_v2/core/forretress/package.inc`; registry declarations remain in `src/trace_engine_v2/core/forretress/scenario_contract.inc`, with runtime mechanics in `core/forretress/runtime.inc`."; step="7. Keep `core/forretress/package.inc` as the sole namespace-scope Forretress composition owner and `core/forretress/scenario_contract.inc` as the registry declaration owner. `part_014c.inc` consumes the package directly and the historical `part_forretress_ex_combo.inc` forwarding path is retired; do not recreate that compatibility layer."; counts=[0,0,0]; out=[]; [(counts.__setitem__(0,counts[0]+1),out.append(para)) if line.startswith("The namespace-scope Forretress composition") else (counts.__setitem__(1,counts[1]+1),out.append(bullet)) if line.startswith("- Forretress namespace composition:") else (counts.__setitem__(2,counts[2]+1),out.append(step)) if line.startswith("7. Keep ") and "Forretress composition owner" in line else out.append(line) for line in lines]; assert counts==[1,1,1], counts; p.write_text("\n".join(out)+"\n")'
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-      - name: Compose Forretress directly through canonical package
-        run: |
-          python -c "from pathlib import Path; p=Path('src/trace_engine_v2/part_014c.inc'); s=p.read_text(); old='#include \"part_forretress_ex_combo.inc\"'; new='// Canonical namespace package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/package.inc\n// C++ textual include semantics: https://eel.is/c++draft/cpp.include\n#include \"core/forretress/package.inc\"'; assert s.count(old)==1; p.write_text(s.replace(old,new))"
-          git add src/trace_engine_v2/part_014c.inc
-          git commit -m "Cleanup: compose Forretress through canonical package"
-      - name: Retire compatibility include
-        run: |
-          git rm src/trace_engine_v2/part_forretress_ex_combo.inc
-          git commit -m "Cleanup: retire Forretress compatibility include"
-      - name: Advance cleanup plan
-        run: |
-          python -c "from pathlib import Path; p=Path('CARD_CLASS_CLEANUP.md'); lines=p.read_text().splitlines(); para='The namespace-scope Forretress composition has its canonical package at `src/trace_engine_v2/core/forretress/package.inc`. Public scenario aliases and registry declarations live in `src/trace_engine_v2/core/forretress/scenario_contract.inc`, keeping namespace contract ownership separate from runtime mechanics and scenario-family composition at the same verified boundary. `part_014c.inc` now consumes the canonical package directly at the same post-Engine namespace boundary, and the historical `src/trace_engine_v2/part_forretress_ex_combo.inc` forwarding path is retired and should not be recreated. Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/package.inc Canonical contract: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/scenario_contract.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include'; step='7. Keep `core/forretress/package.inc` as the sole namespace-scope Forretress composition owner and `core/forretress/scenario_contract.inc` as the registry declaration owner. `part_014c.inc` consumes the package directly and the historical `part_forretress_ex_combo.inc` forwarding path is retired; do not recreate that compatibility layer.'; bullet='- Forretress namespace composition: `src/trace_engine_v2/core/forretress/package.inc`; registry declarations remain in `src/trace_engine_v2/core/forretress/scenario_contract.inc`, with runtime mechanics in `core/forretress/runtime.inc`.'; counts=[0,0,0]; out=[]; import re; [(counts.__setitem__(0,counts[0]+1),out.append(para)) if line.startswith('The namespace-scope Forretress composition') else (counts.__setitem__(1,counts[1]+1),out.append(step)) if line.startswith('7. Keep Forretress') else (counts.__setitem__(2,counts[2]+1),out.append(bullet)) if line.startswith('- Forretress namespace registry contract:') else out.append(line) for line in lines]; assert counts==[1,1,1], counts; p.write_text('\n'.join(out)+'\n')"
           git add CARD_CLASS_CLEANUP.md
-          git commit -m "Cleanup: advance Forretress package cleanup plan"
-      - name: Refresh source-bound provenance
-        run: |
-          python -c "from pathlib import Path; import json; from scripts.baseline_provenance import simulator_policy_source_digest; d=simulator_policy_source_digest(Path('.')); print('DIGEST='+d); paths=['results/baseline_manifest.json','results/multi_deck_manifest.json']; [(lambda p: (lambda obj: p.write_text(json.dumps(obj,indent=2)+'\n'))(dict(json.loads(p.read_text()), simulator_policy_source_sha256=d)))(Path(x)) for x in paths]"
-          python scripts/update_multi_deck_docs.py --repo-root .
-          git add results/baseline_manifest.json results/multi_deck_manifest.json docs/MULTI_DECK_REPORT.md
-          git commit -m "Cleanup: refresh validation provenance"
-      - name: Push composed cleanup branch
-        run: git push --force-with-lease origin HEAD:cleanup-1786908861701
+          git commit -m "Cleanup: restore Forretress plan anchors"
+          git push origin HEAD:cleanup-1786908861701

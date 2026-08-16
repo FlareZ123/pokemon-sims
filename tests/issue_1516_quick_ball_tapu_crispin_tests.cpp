@@ -17,8 +17,7 @@ struct EngineTestAccess {
     engine.prizes_revealed_ = prizes_revealed;
   }
   static bool duplicate_crispin_route(const Engine& engine) {
-    return engine.issue_1516_quick_ball_tapu_duplicate_crispin_is_redundant(
-        false);
+    return engine.quick_ball_tapu_duplicate_crispin_is_redundant(false);
   }
   static const State& state(const Engine& engine) {
     return engine.state_;

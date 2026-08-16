@@ -1,15 +1,16 @@
   int issue_1772_completion_turn_{0};
 
   const Pokemon* issue_1772_prepared_fire_regidrago() const {
-    const auto found = std::find_if(
-        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+    const int current_turn = state_.turn;
+    return find_benched_pokemon_matching(
+        [this, current_turn](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoV &&
-              pokemon.entered_turn < state_.turn &&
+              pokemon_entered_before_turn(pokemon, current_turn) &&
               ((pokemon.grass == 0 && pokemon.fire >= 1) ||
                (pokemon.double_dragon > 0 && !pays_apex_energy_cost(pokemon)));
               // https://github.com/FlareZ123/pokemon-sims/issues/2424
+              // Canonical Bench/evolution query owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
         });
-    return found == state_.bench.end() ? nullptr : &*found;
   }
 
   bool issue_1772_steven_t3_package_available() const {
@@ -28,6 +29,7 @@
     const bool dde_one_basic_finish = prepared_regi != nullptr &&
         prepared_regi->double_dragon > 0 && !pays_apex_energy_cost(*prepared_regi) &&
         basic_attachment_completes_apex(*prepared_regi, Card::Grass);
+    const int projected_completion_turn = state_.turn + 1;
 
     // The package is a relative bank-now / finish-next-turn route. Steven is the
     // current Supporter, while Earthen Vessel must still be legal on the recorded
@@ -39,11 +41,11 @@
     // JIT, K1, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed relative-continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/3278
     if (!prizes_known() || !strict_payload_timing() || !supporter_allowed() ||
-        item_locked() || item_locked_on_turn(state_.turn + 1) ||
-        state_.turn + 1 > scenario_.max_turn ||
+        item_locked() || item_locked_on_turn(projected_completion_turn) ||
+        projected_completion_turn > scenario_.max_turn ||
         !state_.active || !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV || state_.retreat_used ||
-        bench_space() == 0 || issue_1772_prepared_fire_regidrago() == nullptr ||
+        bench_space() == 0 || prepared_regi == nullptr ||
         !need_energy() || !need_payload() || state_.manual_energy_used ||
         hand_count(Card::StevensResolve) == 0 || hand_count(Card::Gladion) == 0 ||
         (!dde_one_basic_finish && hand_count(Card::Crispin) == 0) ||

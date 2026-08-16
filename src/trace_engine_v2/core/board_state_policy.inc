@@ -69,6 +69,25 @@
     return match;
   }
 
+  template <typename ActiveZone, typename BenchZone, typename Predicate>
+  [[nodiscard]] static OptionalBoardIndex benched_pokemon_index_matching_in_zones(
+      const ActiveZone& active, const BenchZone& bench, Predicate predicate) {
+    // Bench-only route queries use the same board-index mapping and traversal as
+    // every other board lookup. This replaces route-local std::find_if/std::any_of
+    // scans without changing Bench order or strategy-owned predicates.
+    // C++20 traversal semantics: https://eel.is/c++draft/alg.find
+    // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+    OptionalBoardIndex match;
+    (void)visit_board_pokemon_in_zones(
+        active, bench,
+        [&](const BoardIndex index, const Pokemon& pokemon) {
+          if (board_index_is_active(index) || !predicate(pokemon)) return true;
+          match = index;
+          return false;
+        });
+    return match;
+  }
+
   template <typename ActiveZone, typename BenchZone, typename Predicate,
             typename Rank>
   [[nodiscard]] static OptionalBoardIndex board_index_best_matching_in_zones(
@@ -147,6 +166,25 @@
       Predicate predicate) const {
     return board_index_matching_in_zones(
         state_.active, state_.bench, predicate);
+  }
+
+  template <typename Predicate>
+  [[nodiscard]] OptionalBoardIndex benched_pokemon_index_matching(
+      Predicate predicate) const {
+    return benched_pokemon_index_matching_in_zones(
+        state_.active, state_.bench, predicate);
+  }
+
+  template <typename Predicate>
+  [[nodiscard]] const Pokemon* find_benched_pokemon_matching(
+      Predicate predicate) const {
+    const OptionalBoardIndex index = benched_pokemon_index_matching(predicate);
+    return index ? board_pokemon_at_index(*index) : nullptr;
+  }
+
+  template <typename Predicate>
+  [[nodiscard]] bool bench_has_pokemon_matching(Predicate predicate) const {
+    return benched_pokemon_index_matching(predicate).has_value();
   }
 
   template <typename Predicate, typename Rank>

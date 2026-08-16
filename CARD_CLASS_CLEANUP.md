@@ -51,6 +51,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc` owns the Legacy Star/Quick Ball pure connector and inertness projections through `LegacyStarQuickBallPolicy`; Engine retains DCI/JIT state queries and the temporary projection-only hand mutation around Legacy Star. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
 - `src/trace_engine_v2/core/tate/package.inc` owns the established discard-provenance, Tate attachment, and Tate action override sequence as one composition package. The historical member fragments remain the rule-sensitive implementation owners while this package centralizes their textual order: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/package.inc
 - `src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc` is the canonical Battle Compressor / VS Seeker route owner. The historical `src/trace_engine_v2/core/battle_compressor_vs_seeker_policy.inc` path is a thin compatibility include while composition and source-contract references migrate. Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92 VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- `src/trace_engine_v2/core/routes/search_connector_helpers.inc` owns the complete `need_regi`, `need_vstar`, payload-outlet, and Mysterious Treasure fallback helper members previously embedded in `part_008b.inc`. `part_008b.inc` composes this owner at the same Engine member boundary. DCI/UDP/AMR, K0/K1 visibility, and route-specific target choice remain Engine strategy concerns. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
 ## Active card migrations
 
@@ -82,6 +83,8 @@ The issue-1368 Earthen Vessel / Celestial Roar route remains owned by `src/trace
 The issue-1516/2164 Quick Ball, Tapu Lele-GX, Crispin route family remains owned by `src/trace_engine_v2/core/routes/quick_ball_tapu_crispin_policy.inc`. Its Latias completion projection delegates Bench traversal to `core/board_state_policy.inc` and Rule Box Ability admission to the canonical per-Pokémon Ability predicate, while route-specific JIT, evolution, connector, and action decisions remain in the route owner. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60 Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76 Canonical board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc Canonical Ability-lock owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
 
 The Hisuian Heavy Ball route body is now owned by `src/trace_engine_v2/core/routes/hisuian_heavy_ball_policy.inc`. `src/trace_engine_v2/part_008b.inc` composes that complete member body at its existing Engine boundary before continuing into the shared search-connector helpers, so K0/K1 inspection timing, Prize recovery preference, Supporter-contention projections, and trace behavior remain in the same strategy layer. Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+
+The complete search-connector preparation helpers now have a named owner at `src/trace_engine_v2/core/routes/search_connector_helpers.inc`. `part_008b.inc` includes that owner directly after the Heavy Ball policy and before the historical Quick Ball fallback continuation. This cleanup deliberately leaves the cross-file Quick Ball continuation in place until both sides can move together without changing member order. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 ## Payload policy cleanup
 
@@ -122,6 +125,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Tate/provenance composition: `src/trace_engine_v2/core/tate/package.inc`; preserve its three included member fragments in their current order until each fragment has its own canonical lower-level owner.
 - Battle Compressor / VS Seeker route policy: `src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc`.
 - Hisuian Heavy Ball route policy: `src/trace_engine_v2/core/routes/hisuian_heavy_ball_policy.inc`.
+- Shared search-connector preparation helpers: `src/trace_engine_v2/core/routes/search_connector_helpers.inc`.
 
 ## Next cleanup steps
 
@@ -140,6 +144,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 13. Reuse generic `PayloadZonePolicy` range operations for fixed-size Card cost plans only when the query is purely physical membership, count, or first-match traversal; keep route-specific DCI/JIT admission outside the utility class.
 14. Migrate `composition/engine_body.inc` and any source-contract references to `core/routes/battle_compressor_vs_seeker_policy.inc`, then remove the historical `core/battle_compressor_vs_seeker_policy.inc` compatibility include after repository-wide references are proven gone.
 15. Continue moving complete route-specific member bodies out of numbered `part_*.inc` fragments into named `core/routes/` owners only when the exact textual member boundary can be preserved. Keep cross-file continuations in place until both sides can move together safely.
+16. Move the historical Quick Ball fallback continuation and adjacent Ultra Ball fallback together into a named owner only after the full `part_008b.inc` / `part_009a.inc` member boundary can be migrated atomically. Do not split a C++ member across a new ownership boundary.
 
 ## One-card workflow
 

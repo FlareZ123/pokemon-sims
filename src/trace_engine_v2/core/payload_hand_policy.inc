@@ -91,6 +91,15 @@
       return first_preferred(
           [&count](const Card card) { return count(card) > 0; });
     }
+
+    template <typename CountFunction>
+    [[nodiscard]] static bool any_preferred_with_positive_count(
+        const CountFunction& count) {
+      // Membership-only callers should share the exact same strategic payload set
+      // as selectors without re-declaring another local array:
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+      return first_preferred_with_positive_count(count).has_value();
+    }
   };
 
   [[nodiscard]] static bool payload_zone_contains(const std::vector<Card>& zone) {

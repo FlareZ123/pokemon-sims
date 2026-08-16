@@ -43,10 +43,8 @@ class QuickBall final {
                        const Action& action) {
     if (context.hand_count(Card::QuickBall) == 0) return false;
 
-    // Quick Ball says to discard another card. A second Quick Ball is legal cost,
-    // while the copy being played cannot pay for itself.
-    const int copies_required = action.discard == Card::QuickBall ? 2 : 1;
-    return context.hand_count(action.discard) >= copies_required;
+    return context.hand_count(action.discard) >=
+           required_discard_copies(action.discard);
   }
 
   static Resolution resolve(rules::CardContext& context,
@@ -76,6 +74,13 @@ class QuickBall final {
     return Resolution{.played = true,
                       .search_target = target,
                       .found_target = found};
+  }
+
+ private:
+  static constexpr int required_discard_copies(const Card discard) {
+    // Quick Ball requires "another" card, so the played copy cannot pay its own cost.
+    // Exact printed effect: https://api.pokemontcg.io/v2/cards/swsh1-179
+    return discard == Card::QuickBall ? 2 : 1;
   }
 };
 

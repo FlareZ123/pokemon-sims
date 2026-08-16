@@ -7,8 +7,12 @@
     }
 
     auto costs = secret_box_cost_plan();
-    if (!costs ||
-        !std::any_of(costs->begin(), costs->end(), is_payload)) {
+    // Secret Box's fixed three-card cost plan is a physical Card range, so reuse
+    // the same payload traversal owner as hand/deck zones instead of maintaining a
+    // route-local std::any_of scan:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+    if (!costs || !PayloadZonePolicy::contains(*costs)) {
       // Preserve the historical first physical Dragon in hand through the canonical
       // payload-zone selector instead of repeating a route-local find_if scan:
       // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc

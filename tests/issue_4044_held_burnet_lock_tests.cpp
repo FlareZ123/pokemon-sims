@@ -47,6 +47,7 @@ bool route_ready_for(const sim::LockMode locks) {
   // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
   // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Official rulebook: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
   // Advanced Supporter, evolution, attachment, and attack procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   // Repository lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4044

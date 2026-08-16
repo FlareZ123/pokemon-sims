@@ -121,6 +121,8 @@
     const bool payload_held = payload_zone_contains(state_.hand);
     // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
     // Apex Dragon payload semantics: https://api.pokemontcg.io/v2/cards/swsh12-136
+    const Pokemon* prepared_regi = issue_1772_prepared_fire_regidrago();
+    // Reuse the same prepared-bench witness throughout this pure predicate: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1772_steven_t3_package_override.inc
 
     // Only the package banked by this helper on the immediately preceding turn may
     // unlock its specialized Crispin/Vessel continuation. The recorded relative turn
@@ -137,9 +139,8 @@
         strict_payload_timing() && supporter_allowed() && !item_locked() &&
         state_.turn <= scenario_.max_turn && state_.active &&
         is_basic(state_.active->card) && state_.active->card != Card::RegidragoV &&
-        !state_.retreat_used && bench_space() > 0 &&
-        issue_1772_prepared_fire_regidrago() != nullptr &&
-        issue_1772_prepared_fire_regidrago()->double_dragon == 0 &&
+        !state_.retreat_used && bench_space() > 0 && prepared_regi != nullptr &&
+        prepared_regi->double_dragon == 0 &&
         hand_count(Card::Gladion) > 0 && hand_count(Card::Crispin) > 0 &&
         hand_count(Card::EarthenVessel) > 0 &&
         hand_count(Card::RegidragoVstar) > 0 && hand_count(Card::Grass) > 0 &&

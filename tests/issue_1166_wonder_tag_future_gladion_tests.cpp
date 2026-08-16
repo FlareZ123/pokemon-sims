@@ -87,6 +87,64 @@ void test_banks_gladion_over_redundant_crispin() {
   }
 }
 
+void test_recovered_rule_box_lock_keeps_route_legal() {
+  Fixture fixture{sim::LockMode::FullRuleBoxAbility};
+  sim::State state = route_state();
+  state.path_lock_removed = true;
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state), true, true);
+
+  // Path to the Peak suppresses Rule Box Abilities only while its Stadium effect
+  // remains active. After legal removal, Wonder Tag is available and the remaining
+  // route uses Gladion, Mysterious Treasure, normal evolution, and Apex Dragon.
+  // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+  // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Advanced Ability, Supporter, Item, evolution, and attack procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Canonical lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4055
+  if (!sim::EngineTestAccess::future_gladion_route(fixture.engine) ||
+      sim::EngineTestAccess::choose_supporter(fixture.engine) != sim::Card::Gladion) {
+    throw std::runtime_error("Recovered Rule Box Ability lock must keep the #1166 route legal");
+  }
+}
+
+void test_action_class_locks_reject_route() {
+  {
+    Fixture fixture{sim::LockMode::FullRuleBoxAbility};
+    sim::EngineTestAccess::set_state(fixture.engine, route_state(), true, true);
+    // Live Path suppression blocks the current Wonder Tag Ability:
+    // https://api.pokemontcg.io/v2/cards/sm2-60
+    // https://api.pokemontcg.io/v2/cards/swsh6-148
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // https://github.com/FlareZ123/pokemon-sims/issues/4055
+    if (sim::EngineTestAccess::future_gladion_route(fixture.engine)) {
+      throw std::runtime_error("Live Rule Box Ability lock must reject the Wonder Tag route");
+    }
+  }
+
+  for (const sim::LockMode lock : {sim::LockMode::TurnTwoItem,
+                                   sim::LockMode::FullItem,
+                                   sim::LockMode::FullSupporter,
+                                   sim::LockMode::FullCombined}) {
+    Fixture fixture{lock};
+    sim::State state = route_state();
+    state.path_lock_removed = true;
+    sim::EngineTestAccess::set_state(fixture.engine, std::move(state), true, true);
+    // Gladion is a future Supporter and Mysterious Treasure is a future Item.
+    // The route must reject the action class that is locked on its scheduled turn.
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Advanced Supporter and Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Canonical lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4055
+    if (sim::EngineTestAccess::future_gladion_route(fixture.engine)) {
+      throw std::runtime_error("A required future Supporter or Item lock admitted the #1166 route");
+    }
+  }
+}
+
 void test_requires_known_prized_treasure_chain() {
   sim::State state = route_state();
   state.prizes.clear();
@@ -151,6 +209,8 @@ void test_requires_future_legal_window() {
 
 int main() {
   test_banks_gladion_over_redundant_crispin();
+  test_recovered_rule_box_lock_keeps_route_legal();
+  test_action_class_locks_reject_route();
   test_requires_known_prized_treasure_chain();
   test_k1_provenance_equivalence();
   test_requires_held_fire_and_protected_payload();

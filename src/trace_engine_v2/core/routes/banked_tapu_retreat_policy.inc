@@ -6,18 +6,24 @@
 // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
 // Advanced Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
-bool banked_tapu_paid_retreat_available() {
-  // Tapu's printed one-Colorless Retreat Cost may be paid with its banked Basic
-  // Energy. Preserve the cheaper free-Latias and Tate routes ahead of this path:
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+bool banked_tapu_paid_retreat_priority_open() {
+  // Preserve the cheaper free-Latias and Tate routes ahead of the paid retreat:
   // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
   // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+  // Earliest deterministic route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  return !can_free_retreat_with_latias() &&
+         !(supporter_allowed() && hand_count(Card::TateLiza) > 0);
+}
+
+bool banked_tapu_paid_retreat_available() {
+  // Tapu's printed one-Colorless Retreat Cost may be paid with its banked Basic
+  // Energy after higher-priority zero-cost and Supporter retreat routes are absent:
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Official Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   return !state_.retreat_used && state_.active &&
          state_.active->card == Card::TapuLeleGX &&
          state_.active->grass + state_.active->fire >= 1 &&
-         !can_free_retreat_with_latias() &&
-         !(supporter_allowed() && hand_count(Card::TateLiza) > 0);
+         banked_tapu_paid_retreat_priority_open();
 }
 
 bool banked_tapu_regidrago_ready(const Pokemon* target) {
@@ -39,12 +45,21 @@ bool banked_tapu_regidrago_ready(const Pokemon* target) {
   return historical_two_grass_state || pays_apex_energy_cost(*target);
 }
 
-void pay_banked_tapu_retreat_cost() {
-  // The active Tapu is already proven to have at least one Basic Energy, so pay
-  // exactly one physical Energy for its one-Colorless printed Retreat Cost:
+Card banked_tapu_retreat_payment() {
+  // The route preflight guarantees a Basic Energy is attached. Prefer Grass when
+  // both physical Basic types are available, preserving the historical payment
+  // order while giving the mutation helper one canonical choice point:
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Official Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-  const Card payment = state_.active->grass > 0 ? Card::Grass : Card::Fire;
+  return state_.active->grass > 0 ? Card::Grass : Card::Fire;
+}
+
+void pay_banked_tapu_retreat_cost() {
+  // Pay exactly one physical Energy for Tapu Lele-GX's one-Colorless printed
+  // Retreat Cost using the canonical payment choice above:
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Official Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  const Card payment = banked_tapu_retreat_payment();
   if (payment == Card::Grass) {
     --state_.active->grass;
   } else {

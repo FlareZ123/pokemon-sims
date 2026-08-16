@@ -17,6 +17,7 @@
     // Persistent T2 Item-lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
     // K1/JIT/lock/priority policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3203
+    // Canonical payload membership: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
     if (!prizes_known() || !strict_payload_timing() || next_turn_items_locked ||
         state_.turn >= scenario_.max_turn || !supporter_allowed() ||
         state_.manual_energy_used || !state_.active ||
@@ -26,14 +27,14 @@
         hand_count(Card::MysteriousTreasure) == 0 ||
         hand_count(Card::Grass) > 0 || hand_count(Card::Crispin) > 0 ||
         !need_energy() || !need_payload() ||
-        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+        !payload_zone_contains(state_.hand)) {
       return false;
     }
 
     const int grass_in_deck = deck_count_after_search_started(Card::Grass);
     const int fire_in_deck = deck_count_after_search_started(Card::Fire);
-    const int treasure_targets = static_cast<int>(std::count_if(
-        state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic));
+    const int treasure_targets =
+        PayloadZonePolicy::count_matching(state_.deck, is_dragon_or_psychic);
     if (deck_count_after_search_started(Card::Crispin) == 0 ||
         grass_in_deck < 2 || fire_in_deck == 0 || treasure_targets == 0) {
       return false;

@@ -513,10 +513,27 @@
 
   Card choose_supporter_after_search_started() {
 
+    // The #1597 line finishes its Item and Wonder Tag work on T1. A
+    // scheduled T2 Item lock is therefore irrelevant after this point;
+    // admission depends on the actions the route still needs: future
+    // Supporters, a currently available Wonder Tag, and the existing T1
+    // Item legality gate below.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // TurnTwoItem schedule: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+    // Lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4050
     const bool issue_1597_banked_steven_turo_route =
         scenario_.dci == DciProfile::NoDiscardControl &&
         scenario_.going_first && state_.turn == 1 &&
-        scenario_.locks == LockMode::None && scenario_.max_turn >= 4 &&
+        scenario_.max_turn >= 4 &&
+        !uses_full_supporter_lock(scenario_.locks) &&
+        ability_available_for_pokemon(Card::TapuLeleGX) &&
         !supporter_allowed() && deck_seen_ && state_.active &&
         state_.active->card == Card::Oricorio &&
         in_play_count(Card::RegidragoV) > 0 &&
@@ -618,9 +635,18 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2086
 
+    // This continuation uses Supporters, normal evolution, and a manual attachment.
+    // Item-only and Rule Box Ability-only locks leave those actions legal; the
+    // persistent Supporter lock remains rejected by supporter_allowed().
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4044
     if (!prizes_known() || state_.turn >= scenario_.max_turn ||
         scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::None || !supporter_allowed() ||
+        !supporter_allowed() ||
         !state_.active || state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
         state_.active->grass != 1 || state_.active->fire < 1 ||

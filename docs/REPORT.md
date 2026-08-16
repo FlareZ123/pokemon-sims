@@ -15,7 +15,7 @@ Seed: `20260705`.
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
 | Strict JIT, going first | 12.158% | 41.807% | 59.222% |
-| Matchup-flex JIT, going first | 17.232% | 50.806% | 68.194% |
+| Matchup-flex JIT, going first | 17.172% | 50.772% | 68.179% |
 | No discard control, going first | 19.74% | 56.829% | 73.585% |
 | Strict JIT, going second | 29.667% | 55.561% | 67.523% |
 | Matchup-flex JIT, going second | 37.321% | 64.185% | 75.793% |
@@ -27,16 +27,16 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, turn-two Item lock, first | 4.537% | 10.401% | 18.494% |
-| Strict JIT, Rule Box Ability lock, first | 4.531% | 27.748% | 42.666% |
-| Strict JIT, turn-two Item + Rule Box Ability lock, first | 0.775% | 4.615% | 9.62% |
-| Strict JIT, turn-two Item lock, second | 14.127% | 28.377% | 37.109% |
-| Strict JIT, Rule Box Ability lock, second | 18.467% | 37.137% | 49.356% |
-| Strict JIT, turn-two Item + Rule Box Ability lock, second | 3.905% | 14.488% | 20.18% |
+| Strict JIT, turn-two Item lock, first | 4.583% | 10.484% | 18.587% |
+| Strict JIT, Rule Box Ability lock, first | 4.524% | 27.794% | 42.757% |
+| Strict JIT, turn-two Item + Rule Box Ability lock, first | 0.779% | 4.667% | 9.645% |
+| Strict JIT, turn-two Item lock, second | 14.203% | 28.493% | 37.272% |
+| Strict JIT, Rule Box Ability lock, second | 18.426% | 37.117% | 49.31% |
+| Strict JIT, turn-two Item + Rule Box Ability lock, second | 3.924% | 14.705% | 20.389% |
 | Strict JIT, Supporter lock, first | 0.005% | 16.426% | 23.376% |
 | Strict JIT, Supporter lock, second | 7.85% | 20.357% | 26.735% |
-| Garbodor + Boost Shake Ability lock, first | 5.613% | 24.854% | 37.117% |
-| Garbodor + Boost Shake Ability lock, second | 15.127% | 29.451% | 40.366% |
+| Garbodor + Boost Shake Ability lock, first | 5.604% | 25.133% | 37.799% |
+| Garbodor + Boost Shake Ability lock, second | 15.389% | 30.67% | 42.053% |
 
 ## Interpretation boundary
 

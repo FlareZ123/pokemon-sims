@@ -63,8 +63,12 @@
         static_cast<int>(hand_count(Card::BrilliantBlender) == 0);
     if (targets_needed == 0 || targets_needed > 3) return false;
 
-    const int payloads_remaining = static_cast<int>(std::count_if(
-        state_.deck.begin(), state_.deck.end(), is_payload));
+    // Count the same canonical A/S Dragon payload predicate through the shared zone
+    // policy rather than recreating route-local count_if traversal:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    const int payloads_remaining = PayloadZonePolicy::count(state_.deck);
 
     // Steven's Resolve can search up to three unrestricted cards and then ends the
     // turn. This route is admitted only after K1 proves that those search slots can

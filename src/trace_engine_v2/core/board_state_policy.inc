@@ -133,6 +133,18 @@
         state_.active, state_.bench, predicate);
   }
 
+  template <typename Predicate>
+  [[nodiscard]] const Pokemon* find_benched_pokemon_matching(
+      Predicate predicate) const {
+    // Bench-only route queries preserve physical Bench order behind one shared seam
+    // instead of repeating route-local std::find_if scans:
+    // https://eel.is/c++draft/alg.find
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#shared-policy-owners
+    const auto found = std::find_if(
+        state_.bench.begin(), state_.bench.end(), predicate);
+    return found == state_.bench.end() ? nullptr : &*found;
+  }
+
   [[nodiscard]] Pokemon* board_pokemon_at_index(const BoardIndex index) {
     return board_pokemon_at_index_in_zones(state_.active, state_.bench, index);
   }

@@ -1,7 +1,9 @@
 name: Refresh 4035 combined evidence
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - fix/4035-post-4027-lock-semantics
 
 permissions:
   contents: write

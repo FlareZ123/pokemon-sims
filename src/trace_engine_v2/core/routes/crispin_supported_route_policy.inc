@@ -1,3 +1,21 @@
+  struct Issue1393BasicEnergyAvailability final {
+    bool grass = false;
+    bool fire = false;
+  };
+
+  Issue1393BasicEnergyAvailability issue_1393_known_basic_energy_availability()
+      const {
+    // This route runs only after Prize inspection has established K1. Keep the
+    // known-deck copy queries together so the completion predicate consumes one
+    // explicit availability snapshot.
+    // K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    return {
+        deck_count_after_search_started(Card::Grass) > 0,
+        deck_count_after_search_started(Card::Fire) > 0,
+    };
+  }
+
   bool issue_1393_projected_apex_ready(
       const Pokemon& active_regidrago, const Card first,
       const std::optional<Card> second) const {
@@ -34,17 +52,15 @@
       return false;
     }
 
-    const bool grass_available =
-        deck_count_after_search_started(Card::Grass) > 0;
-    const bool fire_available =
-        deck_count_after_search_started(Card::Fire) > 0;
+    const Issue1393BasicEnergyAvailability available =
+        issue_1393_known_basic_energy_availability();
     const bool one_found_manual_completion =
-        (grass_available && issue_1393_projected_apex_ready(
+        (available.grass && issue_1393_projected_apex_ready(
                                 *state_.active, Card::Grass, std::nullopt)) ||
-        (fire_available && issue_1393_projected_apex_ready(
+        (available.fire && issue_1393_projected_apex_ready(
                                *state_.active, Card::Fire, std::nullopt));
     const bool two_found_crispin_manual_completion =
-        grass_available && fire_available &&
+        available.grass && available.fire &&
         (issue_1393_projected_apex_ready(
              *state_.active, Card::Grass, Card::Fire) ||
          issue_1393_projected_apex_ready(

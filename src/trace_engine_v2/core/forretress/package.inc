@@ -14,8 +14,7 @@
 #include "scenario_contract.inc"
 
 // Reuse the canonical append/lookup abstraction and keep the concrete Garbodor
-// scenario family beside that shared Forretress-side machinery.
+// scenario family in that same named owner.
 // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
 // Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
 #include "scenario_extension.inc"
-#include "garbodor_scenario_extension.inc"

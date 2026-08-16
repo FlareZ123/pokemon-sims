@@ -53,6 +53,9 @@
   // Combo availability and board setup. Keep this order aligned with runtime.inc
   // so declaration ownership is easy to audit across the textual class boundary.
   [[nodiscard]] bool forretress_combo_enabled() const;
+  [[nodiscard]] bool forretress_line_in_play() const;
+  [[nodiscard]] bool normally_evolvable_pineco_in_play() const;
+  [[nodiscard]] bool current_turn_pineco_in_play() const;
   [[nodiscard]] bool needs_pineco_connector() const;
   [[nodiscard]] bool needs_forretress_connector() const;
   bool bench_pineco_if_useful();

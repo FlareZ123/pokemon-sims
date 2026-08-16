@@ -2,11 +2,45 @@ bool Engine::forretress_combo_enabled() const {
   return total_copies(Card::Pineco) > 0 && total_copies(Card::ForretressEx) > 0;
 }
 
+bool Engine::forretress_line_in_play() const {
+  // This is an exact public-zone state-count question shared by setup admission
+  // and Dawn's Basic search. Keep it distinct from board-object traversal and
+  // strategic ranking.
+  // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+  // Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  return in_play_count(Card::Pineco) > 0 ||
+      in_play_count(Card::ForretressEx) > 0;
+}
+
+bool Engine::normally_evolvable_pineco_in_play() const {
+  const int current_turn = state_.turn;
+  // Preserve the canonical Active-first board traversal and ordinary prior-turn
+  // evolution timing as one reusable Forretress-line predicate.
+  // Board policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+  // Advanced evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Pineco / Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  return board_has_pokemon_matching([current_turn](const Pokemon& pokemon) {
+    return is_pineco_board_pokemon(pokemon) &&
+        pokemon_entered_before_turn(pokemon, current_turn);
+  });
+}
+
+bool Engine::current_turn_pineco_in_play() const {
+  const int current_turn = state_.turn;
+  // Forest of Vitality admission needs the complementary entry-turn Pineco query;
+  // keep that timing fact beside the ordinary prior-turn predicate.
+  // Forest of Vitality: https://api.pokemontcg.io/v2/cards/me1-117
+  // Advanced evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  return board_has_pokemon_matching([current_turn](const Pokemon& pokemon) {
+    return is_pineco_board_pokemon(pokemon) &&
+        pokemon.entered_turn == current_turn;
+  });
+}
+
 bool Engine::needs_pineco_connector() const {
   return forretress_combo_enabled() && has_any_regi() && need_energy() &&
          bench_space() > 0 && hand_count(Card::Pineco) == 0 &&
-         in_play_count(Card::Pineco) == 0 &&
-         in_play_count(Card::ForretressEx) == 0 &&
+         !forretress_line_in_play() &&
          ability_available_for_pokemon(Card::ForretressEx) &&
          might_be_unseen(Card::Pineco);
 }
@@ -22,8 +56,7 @@ bool Engine::needs_forretress_connector() const {
 
 bool Engine::bench_pineco_if_useful() {
   if (!forretress_combo_enabled() || !has_any_regi() || !need_energy() ||
-      in_play_count(Card::Pineco) > 0 ||
-      in_play_count(Card::ForretressEx) > 0) {
+      forretress_line_in_play()) {
     return false;
   }
   // Pineco is a Basic Pokémon and may be played from hand to the Bench. The
@@ -230,22 +263,13 @@ bool Engine::advance_forretress_combo() {
 
   bool changed = false;
 
-  const int current_turn = state_.turn;
-  // These are board-presence questions, so route both through the shared
-  // Active-first traversal instead of duplicating Active and Bench scans here:
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
-  // https://api.pokemontcg.io/v2/cards/sv4pt5-1
-  // https://www.pokemon.com/us/pokemon-tcg/rules
-  const bool pineco_can_evolve_normally = board_has_pokemon_matching(
-      [current_turn](const Pokemon& pokemon) {
-        return is_pineco_board_pokemon(pokemon) &&
-            pokemon_entered_before_turn(pokemon, current_turn);
-      });
-  const bool current_turn_pineco = board_has_pokemon_matching(
-      [current_turn](const Pokemon& pokemon) {
-        return is_pineco_board_pokemon(pokemon) &&
-            pokemon.entered_turn == current_turn;
-      });
+  // Keep ordinary prior-turn and entry-turn Pineco timing in the shared
+  // Forretress board predicates so evolution admission cannot drift between
+  // setup orchestration and the actual resolver.
+  // Board policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+  // Advanced evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  const bool pineco_can_evolve_normally = normally_evolvable_pineco_in_play();
+  const bool current_turn_pineco = current_turn_pineco_in_play();
   const bool pineco_can_enter_this_turn = in_play_count(Card::Pineco) == 0 &&
       bench_space() > 0 &&
       (hand_count(Card::Pineco) > 0 || might_be_unseen(Card::Pineco));
@@ -299,8 +323,8 @@ bool Engine::advance_forretress_combo() {
     changed = true;
   }
 
-  const bool pineco_present = in_play_count(Card::Pineco) > 0 ||
-      in_play_count(Card::ForretressEx) > 0 || hand_count(Card::Pineco) > 0;
+  const bool pineco_present = forretress_line_in_play() ||
+      hand_count(Card::Pineco) > 0;
   const bool pineco_searchable = pineco_present || might_be_unseen(Card::Pineco);
   const bool forretress_searchable = in_play_count(Card::ForretressEx) > 0 ||
       hand_count(Card::ForretressEx) > 0 || might_be_unseen(Card::ForretressEx);
@@ -341,8 +365,7 @@ bool Engine::advance_forretress_combo() {
     record_deck_search_knowledge("Dawn");
 
     std::vector<Card> selected;
-    if (in_play_count(Card::Pineco) == 0 &&
-        in_play_count(Card::ForretressEx) == 0 &&
+    if (!forretress_line_in_play() &&
         hand_count(Card::Pineco) == 0 && bench_space() > 0 &&
         move_deck_to_hand(Card::Pineco)) {
       selected.push_back(Card::Pineco);

@@ -11,10 +11,11 @@
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
     // Apex Dragon GGF: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Core Item, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Advanced Manual H, limited deck searches may choose fewer or zero cards: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#L690-L695
     // Earliest-route and resource-preservation policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // No-future-card-oracle boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1368
+    // Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/1368
+    // https://github.com/FlareZ123/pokemon-sims/issues/4131
     return state_.turn == 1 && !scenario_.going_first &&
         state_.turn < scenario_.max_turn && !state_.turn_ended &&
         !state_.manual_energy_used && state_.active &&
@@ -36,15 +37,16 @@
 
   std::vector<Card> search_earthen_vessel_energy_for_celestial_roar() {
     std::vector<Card> searched;
-    // Search Fire after legal inspection when it exists. If every Fire is outside
-    // the deck, selecting one Grass remains a legal up-to-one fallback without
-    // inventing a hidden Fire target:
+    // Fire is the only useful target on this route. Once the legal search proves
+    // Fire is absent, take zero cards rather than removing surplus Grass before
+    // Celestial Roar. Earthen Vessel's limited "up to 2" search permits zero:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Advanced Manual H, limited deck searches may choose fewer or zero cards: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#L690-L695
     // K1 deck inspection: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/4131
     if (move_deck_to_hand(Card::Fire)) {
       searched.push_back(Card::Fire);
-    } else if (move_deck_to_hand(Card::Grass)) {
-      searched.push_back(Card::Grass);
     }
     shuffle(state_.deck);
     return searched;

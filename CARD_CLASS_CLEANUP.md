@@ -52,6 +52,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/tate/package.inc` owns the established discard-provenance, Tate attachment, and Tate action override sequence as one composition package. The historical member fragments remain the rule-sensitive implementation owners while this package centralizes their textual order: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/package.inc
 - `src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc` is the canonical Battle Compressor / VS Seeker route owner and is consumed directly by `composition/engine_body.inc`. The historical `src/trace_engine_v2/core/battle_compressor_vs_seeker_policy.inc` compatibility include is retired. Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92 VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 - `src/trace_engine_v2/core/routes/search_connector_helpers.inc` owns `need_regi`, `need_vstar`, payload-outlet checks, and the complete K1 fallback selectors for Mysterious Treasure, Quick Ball, and Ultra Ball. `part_008b.inc` composes this owner at the same Engine member boundary, while `part_009a.inc` now starts with the remaining Mysterious Treasure route body. DCI/UDP/AMR, K0/K1 visibility, and route-specific target choice remain Engine strategy concerns. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+- `src/trace_engine_v2/core/routes/pokemon_search_items/pokemon_communication.inc` now owns the complete Pokémon Communication strategy and resolution member body. The historical `part_pokemon_communication.inc` path is a compatibility include at the same Engine member boundary, so K0/K1 visibility, target preference, Supporter contention, exchange scoring, and physical search resolution keep their established semantics. Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 ## Active card migrations
 
@@ -126,6 +127,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Battle Compressor / VS Seeker route policy: `src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc`.
 - Hisuian Heavy Ball route policy: `src/trace_engine_v2/core/routes/hisuian_heavy_ball_policy.inc`.
 - Shared search-connector preparation and K1 fallback helpers: `src/trace_engine_v2/core/routes/search_connector_helpers.inc`.
+- Pokémon Communication route strategy and resolution: `src/trace_engine_v2/core/routes/pokemon_search_items/pokemon_communication.inc`.
 
 ## Next cleanup steps
 
@@ -144,6 +146,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 13. Reuse generic `PayloadZonePolicy` range operations for fixed-size Card cost plans only when the query is purely physical membership, count, or first-match traversal; keep route-specific DCI/JIT admission outside the utility class.
 14. Keep `composition/engine_body.inc` pointed directly at `core/routes/battle_compressor_vs_seeker_policy.inc`; the historical root compatibility include is retired and should not be recreated.
 15. Continue moving complete route-specific member bodies out of numbered `part_*.inc` fragments into named `core/routes/` owners only when the exact textual member boundary can be preserved. The next search-connector boundary is the Mysterious Treasure route beginning in `part_009a.inc`; move its continuation only when the full member can migrate atomically without changing declaration order. C++ textual-include semantics: https://eel.is/c++draft/cpp.include Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+16. Migrate the live composition consumer of `part_pokemon_communication.inc` to `core/routes/pokemon_search_items/pokemon_communication.inc`, then retire the historical compatibility include after source-contract references are proven gone. Preserve the complete member body and all K0/K1, DCI, Supporter-contention, target-order, and resolution semantics. Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
 
 ## One-card workflow
 

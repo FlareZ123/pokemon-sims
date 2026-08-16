@@ -89,7 +89,23 @@ The issue-1368 Earthen Vessel / Celestial Roar route has a canonical semantic ow
 
 Next composition step: prove raw-source/tooling consumers of the issue-1368 historical root path absent, rewire the identical post-`part_014a` macro boundary directly to the canonical route owner, then retire that forwarding include. Inspect another root `part_*` seam only when its complete macro lifetime or function body can move intact. Keep tooling-only compatibility paths minimal and retain direct source URLs beside rule-sensitive logic.
 
-## Shared strategy and runtime owners
+## Payload policy cleanup
+
+`src/trace_engine_v2/core/payload_hand_policy.inc` owns physical-zone payload traversal and explicit preference traversal. Replace remaining ad hoc Dragon-payload membership/cardinality scans only where semantics exactly match an existing policy operation. Preserve physical order when observable, explicit strategic order where required, and DCI/JIT timing at strategy owners.
+
+## Setup lifecycle cleanup
+
+`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels, opening-deck initialization, opening-hand and mulligan mechanics, Prize dealing, and setup-trace output. `src/trace_engine_v2/part_005.inc` composes that owner at the established Engine member boundary. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+
+Next setup step: route future setup recipe classification through the existing setup policy seams. Move state-transition helpers only with exact source-contract coverage and preserve declaration ordering.
+
+## Catalog and knowledge cleanup
+
+`src/trace_engine_v2/core/card_catalog.inc` owns the shrinking legacy name bridge and intrinsic classification compatibility seam. Registered `CardDefinition` lookup remains canonical for migrated names and metadata: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+
+`src/trace_engine_v2/core/deck_knowledge.inc` owns reusable copy arithmetic after the Engine caller has resolved K0/K1 visibility. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns. K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+
+## Shared policy owners
 
 - Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.
 - Board traversal, `BoardIndex`, attachment destination, and evolution-age queries: `src/trace_engine_v2/core/board_state_policy.inc`.
@@ -107,10 +123,6 @@ Before adding a new loop or route-local helper, check these owners and reuse a n
 Named Steven route policies live under `src/trace_engine_v2/core/routes/`. `gladion_steven_route_policy.inc` owns the shared `resolve_gladion_prize_exchange()` state transition after legal Prize reveal and target selection. `active_vstar_steven_route_policy.inc` delegates projected Item legality to the canonical `item_locked_on_turn()` seam and names the exact projected Treasure turn. Route overlays retain admission, target choice, hidden-information sequencing, DCI/JIT policy, and trace text. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Gladion: https://api.pokemontcg.io/v2/cards/sm4-95 Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Shared lock timing: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
 
 Next route step: migrate duplicated Gladion Prize-exchange mutations to `resolve_gladion_prize_exchange()` only when reveal and target-selection semantics match exactly. Continue retiring composition-only `part_*steven*` forwarders whose canonical `core/routes/` owner can replace them at the identical textual boundary.
-
-## Payload cleanup
-
-`src/trace_engine_v2/core/payload_hand_policy.inc` owns physical-zone payload traversal and explicit preference traversal. Replace remaining ad hoc Dragon-payload membership/cardinality scans only where semantics exactly match an existing policy operation. Preserve physical order when observable, explicit strategic order where required, and DCI/JIT timing at strategy owners.
 
 ## Forretress cleanup
 

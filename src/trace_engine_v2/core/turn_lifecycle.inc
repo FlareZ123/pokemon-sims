@@ -27,10 +27,19 @@
     }
   };
 
+  class TurnLifecyclePolicy final {
+   public:
+    static void reset_for_turn(State& state, const int turn,
+                               const bool garbodor_shake_active) {
+      state.turn = turn;
+      TurnActionStatePolicy::reset(state);
+      TransientTurnLockPolicy::reset(state, garbodor_shake_active);
+    }
+  };
+
   void reset_per_turn_state(const int turn) {
-    state_.turn = turn;
-    TurnActionStatePolicy::reset(state_);
-    TransientTurnLockPolicy::reset(state_, garbodor_shake_scenario());
+    TurnLifecyclePolicy::reset_for_turn(
+        state_, turn, garbodor_shake_scenario());
   }
 
   bool draw_start_of_turn_card() {

@@ -45,8 +45,9 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/payload_hand_policy.inc` owns shared Dragon-payload zone and preference queries. `PayloadZonePolicy` and `PayloadPreferencePolicy` are explicit final stateless policy classes so traversal and preference order stay centralized without becoming extensible Engine subtypes.
 - `src/trace_engine_v2/core/board_state_policy.inc` owns reusable board traversal and board-index queries.
 - `src/trace_engine_v2/core/setup_lifecycle.inc` owns opening-hand, mulligan, Prize-deal, and setup-trace mechanics.
-- `src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn action-state reset semantics.
+- `src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn reset orchestration through the final stateless `TurnActionStatePolicy`, `TransientTurnLockPolicy`, and `TurnLifecyclePolicy` seams.
 - `src/trace_engine_v2/core/deck_knowledge.inc` owns reusable copy arithmetic after visibility is resolved. `KnowledgeCopyPolicy` is an explicit final stateless policy class; hidden-zone visibility and route admission remain Engine concerns.
+- `src/trace_engine_v2/core/tapu_connector_policy.inc` owns copy-aware Tapu connector presence projection through final stateless `TapuConnectorPolicy`; Engine retains board presence and K0/K1 known-copy reads. Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
 - `src/trace_engine_v2/core/routes/oricorio_connector_policy.inc` owns the Oricorio connector's pure energy-need and connector-admission projections through `OricorioConnectorPolicy`; Engine retains Ability availability, K0/K1 visibility, Bench-space, and action execution. Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
 - `src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc` owns the Legacy Star/Quick Ball pure connector and inertness projections through `LegacyStarQuickBallPolicy`; Engine retains DCI/JIT state queries and the temporary projection-only hand mutation around Legacy Star. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
 - `src/trace_engine_v2/core/tate/package.inc` owns the established discard-provenance, Tate attachment, and Tate action override order. `core/tate/discard_recovery_provenance.inc` and `core/tate/attachment_policy.inc` are now the live named lower-level owners for the first two bodies; the historical root files remain source-contract mirrors while Tate action migration is still pending: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/package.inc
@@ -121,6 +122,8 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Board traversal and board indices: `src/trace_engine_v2/core/board_state_policy.inc`.
 - Garbodor scenario and Ability-lock composition: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
 - Setup lifecycle: `src/trace_engine_v2/core/setup_lifecycle.inc`.
+- Turn reset orchestration: `src/trace_engine_v2/core/turn_lifecycle.inc` via `TurnLifecyclePolicy`, with action and transient-lock resets delegated to their named policy classes.
+- Tapu copy-aware connector presence: `src/trace_engine_v2/core/tapu_connector_policy.inc` via `TapuConnectorPolicy`. Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
 - Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
 - Turn action runtime: `src/trace_engine_v2/turn_action_policy_runtime.inc`.
 - Intrinsic exact-print predicates: `src/cards/card_definition.hpp` via `CardDefinitionPredicates`.
@@ -151,6 +154,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 13. Reuse generic `PayloadZonePolicy` range operations for fixed-size Card cost plans and physical route-zone queries only when the query is purely membership, count, or first-match traversal; keep route-specific DCI/JIT admission outside the utility class.
 14. Keep `composition/engine_body.inc` pointed directly at `core/routes/battle_compressor_vs_seeker_policy.inc`; the historical root compatibility include is retired and should not be recreated.
 15. Keep `core/mysterious_treasure_target_policy.inc` as the ordered target-priority owner and continue moving the remaining Mysterious Treasure member body out of `part_009a.inc` only when the full continuation can migrate atomically without changing declaration order. C++ textual-include semantics: https://eel.is/c++draft/cpp.include Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+16. Keep copy-aware Tapu presence projections and per-turn reset sequencing on their named stateless policy seams; extend those seams only when a new caller has identical visibility and ordering semantics.
 
 ## One-card workflow
 

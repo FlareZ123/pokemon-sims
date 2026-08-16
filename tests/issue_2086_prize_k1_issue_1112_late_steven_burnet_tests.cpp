@@ -105,12 +105,17 @@ void test_required_components_gate_route() {
     std::mt19937_64 rng{1115};
     sim::Engine engine(scenario, recipe, rng);
     sim::EngineTestAccess::set_k1_state(engine, issue_1112_state());
-    // The confirmed route is restricted to the repository no-lock scenario:
-    // https://api.pokemontcg.io/v2/cards/sm7-145
-    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
-    expect(!sim::EngineTestAccess::late_steven_burnet_route(engine),
-           "Full Item lock must reject the route.");
+    // This continuation uses Steven, a manual Grass attachment, normal
+    // evolution, and held Burnet. It has no Item action, so Full Item lock
+    // leaves every required step legal.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Confirmed correction: https://github.com/FlareZ123/pokemon-sims/issues/4044
+    expect(sim::EngineTestAccess::late_steven_burnet_route(engine),
+           "Full Item lock must preserve the Trainer/evolution route.");
   }
 }
 

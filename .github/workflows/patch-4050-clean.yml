@@ -1,0 +1,85 @@
+name: Patch 4050 clean branch
+
+on:
+  push:
+    branches:
+      - bug-4050-turntwoitem-steven-turo-clean
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bug-4050-turntwoitem-steven-turo-clean
+          fetch-depth: 0
+
+      - name: Apply action-specific route legality
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import tempfile
+          from pathlib import Path
+
+          path = Path('src/trace_engine_v2/part_010_steven_crispin_override.inc')
+          text = path.read_text(encoding='utf-8')
+          old = '\n'.join([
+              '    const bool issue_1597_banked_steven_turo_route =',
+              '        scenario_.dci == DciProfile::NoDiscardControl &&',
+              '        scenario_.going_first && state_.turn == 1 &&',
+              '        scenario_.locks == LockMode::None && scenario_.max_turn >= 4 &&',
+              '        !supporter_allowed() && deck_seen_ && state_.active &&',
+          ]) + '\n'
+          new = '\n'.join([
+              '    // The #1597 line finishes its Item and Wonder Tag work on T1. A',
+              '    // scheduled T2 Item lock is therefore irrelevant after this point;',
+              '    // admission depends on the actions the route still needs: future',
+              '    // Supporters, a currently available Wonder Tag, and the existing T1',
+              '    // Item legality gate below.',
+              '    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113',
+              '    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163',
+              '    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60',
+              "    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145",
+              '    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133',
+              "    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171",
+              '    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md',
+              '    // TurnTwoItem schedule: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock',
+              '    // Lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment',
+              '    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4050',
+              '    const bool issue_1597_banked_steven_turo_route =',
+              '        scenario_.dci == DciProfile::NoDiscardControl &&',
+              '        scenario_.going_first && state_.turn == 1 &&',
+              '        scenario_.max_turn >= 4 &&',
+              '        !uses_full_supporter_lock(scenario_.locks) &&',
+              '        ability_available_for_pokemon(Card::TapuLeleGX) &&',
+              '        !supporter_allowed() && deck_seen_ && state_.active &&',
+          ]) + '\n'
+          if text.count(old) != 1:
+              raise SystemExit(f'expected exactly one #4050 target, found {text.count(old)}')
+          updated = text.replace(old, new, 1)
+          fd, temp_name = tempfile.mkstemp(dir=path.parent, prefix=path.name + '.', text=True)
+          try:
+              with os.fdopen(fd, 'w', encoding='utf-8', newline='') as handle:
+                  handle.write(updated)
+                  handle.flush()
+                  os.fsync(handle.fileno())
+              os.replace(temp_name, path)
+          finally:
+              if os.path.exists(temp_name):
+                  os.unlink(temp_name)
+          PY
+          rm .github/workflows/patch-4050-clean.yml
+
+      - name: Commit production fix and retire helper workflow
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/trace_engine_v2/part_010_steven_crispin_override.inc .github/workflows/patch-4050-clean.yml
+          git commit -m "Fix #4050: use action-specific route legality"
+          git push origin HEAD:bug-4050-turntwoitem-steven-turo-clean

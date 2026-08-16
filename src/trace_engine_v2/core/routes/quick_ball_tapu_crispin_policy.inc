@@ -116,11 +116,19 @@
       throw std::logic_error("Issue-4109 Quick Ball payload disappeared");
     }
 
+    if (trace_ != nullptr && hand_count(Card::Arven) > 0) {
+      trace_->add_policy_once(
+          state_, "issue-1208-held-quick-ball-latias", state_.turn,
+          "HOLD ARVEN",
+          "R-QB-01; R-LATIAS-01; P-JIT-01; P-CONNECTOR-01",
+          "Retained Arven because held Quick Ball completes the current-turn Latias promotion route without spending the Supporter action.");  // Connector domination and original hold contract: https://github.com/FlareZ123/pokemon-sims/issues/1208
+    }
+
     remove_one(state_.hand, Card::QuickBall);
     state_.discard.push_back(Card::QuickBall);
     if (!discard_from_hand(*payload,
-                           "Quick Ball issue-4109 current-turn payload cost",
-                           "R-QB-01; P-JIT-01; P-DCI-01; P-COMPRESS-01")) {  // Quick Ball discard cost: https://api.pokemontcg.io/v2/cards/swsh1-179
+                           "Quick Ball issue-2164 current-turn payload cost",
+                           "R-QB-01; P-JIT-01; P-DCI-01; P-COMPRESS-01")) {  // Preserve #2164 route provenance while generalizing its state: https://github.com/FlareZ123/pokemon-sims/issues/2164
       throw std::logic_error("Issue-4109 Quick Ball payload cost disappeared");
     }
     record_deck_search_knowledge("Quick Ball issue-4109 Latias route");

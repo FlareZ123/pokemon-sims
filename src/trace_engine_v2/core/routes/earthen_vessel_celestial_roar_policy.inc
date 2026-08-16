@@ -37,14 +37,15 @@
   std::vector<Card> search_earthen_vessel_energy_for_celestial_roar() {
     std::vector<Card> searched;
     // Search Fire after legal inspection when it exists. If every Fire is outside
-    // the deck, selecting one Grass remains a legal up-to-one fallback without
-    // inventing a hidden Fire target:
+    // the deck, choose zero targets so surplus Grass stays randomized for
+    // Celestial Roar. Earthen Vessel says "up to 2", and the advanced rules allow
+    // fewer cards, including none, when a deck search instructs several cards:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Search count rule: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#L690-L695
     // K1 deck inspection: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/4131
     if (move_deck_to_hand(Card::Fire)) {
       searched.push_back(Card::Fire);
-    } else if (move_deck_to_hand(Card::Grass)) {
-      searched.push_back(Card::Grass);
     }
     shuffle(state_.deck);
     return searched;

@@ -1,3 +1,38 @@
+  struct Issue1393BasicEnergyAvailability final {
+    bool grass = false;
+    bool fire = false;
+  };
+
+  Issue1393BasicEnergyAvailability issue_1393_known_basic_energy_availability()
+      const {
+    // This route runs only after Prize inspection has established K1. Keep the
+    // known-deck copy queries together so the completion predicate consumes one
+    // explicit availability snapshot.
+    // K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    return {
+        deck_count_after_search_started(Card::Grass) > 0,
+        deck_count_after_search_started(Card::Fire) > 0,
+    };
+  }
+
+  bool issue_1393_projected_apex_ready(
+      const Pokemon& active_regidrago, const Card first,
+      const std::optional<Card> second) const {
+    // Keep the two-step Crispin/manual-attachment projection on the canonical
+    // attachment and Apex-payment helpers instead of reimplementing Energy math.
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+    // Energy attachment procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    Pokemon projected = active_regidrago;
+    if (!attach_energy_card(projected, first)) return false;
+    if (second.has_value() && !attach_energy_card(projected, *second)) {
+      return false;
+    }
+    return pays_apex_energy_cost(projected);
+  }
+
   bool issue_1393_held_crispin_completion_available() const {
     // A resolved full Prize inspection establishes K1 without a deck search: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // StrictJit and MatchupFlexJit share current-turn payload timing; keep the
@@ -17,25 +52,19 @@
       return false;
     }
 
-    const bool grass_available =
-        deck_count_after_search_started(Card::Grass) > 0;
-    const bool fire_available =
-        deck_count_after_search_started(Card::Fire) > 0;
-    const auto projected_apex_ready =
-        [this](const Card first, const std::optional<Card> second) {
-          Pokemon projected = *state_.active;
-          if (!attach_energy_card(projected, first)) return false;
-          if (second.has_value() &&
-              !attach_energy_card(projected, *second)) return false;
-          return pays_apex_energy_cost(projected);
-        };
+    const Issue1393BasicEnergyAvailability available =
+        issue_1393_known_basic_energy_availability();
     const bool one_found_manual_completion =
-        (grass_available && projected_apex_ready(Card::Grass, std::nullopt)) ||
-        (fire_available && projected_apex_ready(Card::Fire, std::nullopt));
+        (available.grass && issue_1393_projected_apex_ready(
+                                *state_.active, Card::Grass, std::nullopt)) ||
+        (available.fire && issue_1393_projected_apex_ready(
+                               *state_.active, Card::Fire, std::nullopt));
     const bool two_found_crispin_manual_completion =
-        grass_available && fire_available &&
-        (projected_apex_ready(Card::Grass, Card::Fire) ||
-         projected_apex_ready(Card::Fire, Card::Grass));
+        available.grass && available.fire &&
+        (issue_1393_projected_apex_ready(
+             *state_.active, Card::Grass, Card::Fire) ||
+         issue_1393_projected_apex_ready(
+             *state_.active, Card::Fire, Card::Grass));
     const bool crispin_completes_energy =
         one_found_manual_completion || two_found_crispin_manual_completion;
     const bool payload_outlet = has_live_blender_payload_line() ||

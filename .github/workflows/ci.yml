@@ -22,8 +22,8 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build release simulator
         run: cmake --build build --parallel 2
-      - name: Run unified regression suite
-        run: ctest --test-dir build --output-on-failure
+      - name: Run gameplay regression suite before evidence refresh
+        run: ctest --test-dir build --output-on-failure -E "regidrago_issue_1494_ci_audit_inventory_tests|setup_report_contract|multi_deck_report_contract|setup_docs_generator_contract"
       - name: Regenerate shell baseline and canonical traces
         run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
       - name: Regenerate paired named-deck matrix

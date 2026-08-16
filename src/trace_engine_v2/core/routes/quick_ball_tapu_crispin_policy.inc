@@ -1,4 +1,4 @@
-  bool issue_1516_quick_ball_tapu_duplicate_crispin_is_redundant(
+  bool quick_ball_tapu_duplicate_crispin_is_redundant(
       const bool permit_payload) const {
     // Full Prize inspection and a resolved deck search establish the same K1
     // knowledge, so this route depends on known zones rather than provenance:
@@ -134,7 +134,7 @@
 
   bool play_quick_ball(const bool permit_payload) {
     if (play_issue_2164_quick_ball_latias_finish()) return true;
-    if (issue_1516_quick_ball_tapu_duplicate_crispin_is_redundant(
+    if (quick_ball_tapu_duplicate_crispin_is_redundant(
             permit_payload)) {
       if (trace_ != nullptr) {
         trace_->add_policy_once(

@@ -1,15 +1,17 @@
   int issue_1772_completion_turn_{0};
 
   const Pokemon* issue_1772_prepared_fire_regidrago() const {
-    const auto found = std::find_if(
-        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+    // Keep the route's first matching Bench witness on the canonical physical-order
+    // query seam instead of maintaining another route-local std::find_if loop:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+    return find_benched_pokemon_matching(
+        [this](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoV &&
               pokemon.entered_turn < state_.turn &&
               ((pokemon.grass == 0 && pokemon.fire >= 1) ||
                (pokemon.double_dragon > 0 && !pays_apex_energy_cost(pokemon)));
               // https://github.com/FlareZ123/pokemon-sims/issues/2424
         });
-    return found == state_.bench.end() ? nullptr : &*found;
   }
 
   bool issue_1772_steven_t3_package_available() const {
@@ -43,7 +45,7 @@
         state_.turn + 1 > scenario_.max_turn ||
         !state_.active || !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV || state_.retreat_used ||
-        bench_space() == 0 || issue_1772_prepared_fire_regidrago() == nullptr ||
+        bench_space() == 0 || prepared_regi == nullptr ||
         !need_energy() || !need_payload() || state_.manual_energy_used ||
         hand_count(Card::StevensResolve) == 0 || hand_count(Card::Gladion) == 0 ||
         (!dde_one_basic_finish && hand_count(Card::Crispin) == 0) ||
@@ -107,7 +109,7 @@
     // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
     // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
     // Official search/end-turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
-    // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1772
+    // Original confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1772
     // Confirmed relative-continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/3278
     trace("PLAY SUPPORTER",
           "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",

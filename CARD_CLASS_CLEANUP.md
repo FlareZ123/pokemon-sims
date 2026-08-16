@@ -93,6 +93,8 @@ The issue-3221 K0 Steven/Brilliant Blender route now has a canonical semantic ow
 
 The Quick Ball card-class base route now owns one `quick_ball_base_target_is_preferred()` predicate for its six strategic target channels. Both post-search target selection and trace classification reuse that predicate, and the inert `MawileGX` table entry has been removed. Printed Basic-Pokemon legality remains exclusively in `cards::QuickBall`, preserving the strategy-versus-resolution boundary. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Canonical base owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/quick_ball_card_class_base.inc
 
+`src/cards/trainers/quick_ball.hpp` now gives the exact-print resolver named helpers for the mandatory "another card" discard requirement and Basic-Pokemon target filtering. This keeps intrinsic printed validation together inside the card class while Engine continues to own DCI-aware discard choice and strategic target preference. Quick Ball exact print: https://api.pokemontcg.io/v2/cards/swsh1-179
+
 Next composition step: migrate direct `CardContext` bridge include consumers to `core/adapters/card_context_adapter.hpp`, then remove the old forwarding include once repository-wide references are gone. New bridge construction should use `CardContextAdapterCallbacks`. Inspect another root `part_*` seam only when its complete macro lifetime or function body can move intact. Keep tooling-only compatibility paths minimal, preserve declaration order and route semantics, and retain direct source URLs beside rule-sensitive logic.
 
 ### Banked Tapu paid-retreat seam

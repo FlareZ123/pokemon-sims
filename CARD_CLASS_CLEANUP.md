@@ -33,8 +33,6 @@ tests/quick_ball_card_class_tests.cpp
 
 Quick Ball remains the reference for explicit registration, exact-print metadata, intrinsic cost validation, K0 to K1 search timing, strategy-owned target choice, printed target filtering, source-card movement, failed-search behavior, shuffle, and trace compatibility. Exact print: https://api.pokemontcg.io/v2/cards/swsh1-179
 
-The Quick Ball reference resolver now names its two exact-print validation boundaries in `src/cards/trainers/quick_ball.hpp`: `required_discard_copies()` owns the mandatory "another card" payment count and `legal_search_target()` owns the Basic-Pokemon target filter. Engine remains the owner of DCI-aware discard choice and strategic target preference. Quick Ball exact print: https://api.pokemontcg.io/v2/cards/swsh1-179
-
 ## Current ownership
 
 - `src/cards/card_id.hpp` owns stable `sim::Card` identifiers. Exact external print identity belongs in `CardDefinition::canonical_id`.
@@ -67,6 +65,8 @@ For each migration, move intrinsic metadata and classification before printed re
 The Steven/Brilliant Blender macro-composition block now has an organized canonical owner at `src/trace_engine_v2/composition/steven/blender_overrides.inc`. The historical `src/trace_engine_v2/composition/steven_blender_overrides.inc` path is a thin compatibility include at the identical post-`part_009b2.inc` boundary. The canonical owner receives the intentionally live `play_ultra_ball` alias and releases the same search, Steven, and Blender aliases before later composition continues. This is a textual ownership move. Route admission remains with `core/routes/`. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/steven/blender_overrides.inc
 
 The source-bounded Steven route package now has a canonical organized owner at `src/trace_engine_v2/core/routes/steven/package.inc`. The historical `src/trace_engine_v2/core/routes/steven_package_policy.inc` path is a thin compatibility include. The package preserves the established #1745 -> #1771 -> #1772 -> #2622 textual route order while rule-sensitive function bodies remain in their existing route owners. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven/package.inc
+
+The namespace-scope Forretress composition now has a canonical package at `src/trace_engine_v2/core/forretress/package.inc`. The historical `src/trace_engine_v2/part_forretress_ex_combo.inc` path is a thin compatibility include. The package keeps the reusable runtime, public scenario forward declarations, shared scenario extension, and Garbodor scenario family at the same verified namespace boundary while preserving their textual order. Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/package.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 The issue-3221 K0 Steven/Brilliant Blender route remains owned by `src/trace_engine_v2/core/routes/k0_steven_blender_semantic_policy.inc`. Its historical root compatibility seam remains until source-contract and composition consumers are proven migrated. Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164 Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
@@ -106,7 +106,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 3. Migrate direct `CardContext` bridge consumers to `core/adapters/card_context_adapter.hpp`. Remove the old forwarding include only after references are proven gone. New bridge construction should use `CardContextAdapterCallbacks`.
 4. Migrate remaining `LegacyCardCatalog` and intrinsic compatibility rows one card at a time. Delete a row only after explicit `CardDefinition` registration, exact-print source, and focused metadata coverage exist.
 5. Reuse payload and board-state owners only when physical order, visibility, and strategic preference semantics match exactly.
-6. Keep Forretress reusable scenario and runtime ownership under `core/forretress/`. Move another boundary only when its complete state-transition or orchestration semantics can be preserved.
+6. Keep Forretress reusable scenario and runtime ownership under `core/forretress/`, with `core/forretress/package.inc` as the namespace-scope composition owner. Remove `part_forretress_ex_combo.inc` only after repository-wide and source-contract consumers are proven migrated.
 7. Prefer named pure-projection members over route-local anonymous projections when a projection is reused or has a distinct policy contract.
 
 ## One-card workflow

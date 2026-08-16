@@ -25,7 +25,6 @@ src/cards/card_registry.hpp
 src/cards/trainers/quick_ball.hpp
 src/rules/card_context.hpp
 src/trace_engine_v2/core/adapters/card_context_adapter.hpp
-src/trace_engine_v2/core/card_context_adapter.hpp
 src/trace_engine_v2/core/quick_ball_card_class_base.inc
 src/trace_engine_v2/core/quick_ball_card_class_tail.inc
 tests/quick_ball_card_class_tests.cpp
@@ -39,11 +38,11 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/cards/card_definition.hpp` owns intrinsic exact-print facts such as name, print ID, Trainer subtype, stage/type, Retreat Cost, Rule Box/Pokemon V/ACE SPEC/Basic Energy flags, and direct source URL.
 - `src/cards/card_registry.hpp` owns explicit deterministic registration. `kRegisteredCardDefinitions` is the canonical inventory and `find_definition()` is the canonical lookup: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 - `src/rules/card_context.hpp` owns reusable printed-rules operations. `CardContext::Classifiers` groups optional intrinsic classifier callbacks so migrated card modules do not grow another parallel callback list. Card-specific route policy stays outside that interface.
-- `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` owns the trace-engine construction bridge for reusable card effects. `CardContextAdapterCallbacks` is the named callback bundle for bridge consumers, and the positional compatibility overload has been retired after the live Quick Ball caller migrated. `src/trace_engine_v2/core/card_context_adapter.hpp` remains a compatibility include until direct consumers migrate to the organized adapter owner.
+- `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` owns the trace-engine construction bridge for reusable card effects. `CardContextAdapterCallbacks` is the named callback bundle for bridge consumers, and direct trace-engine consumers use this canonical owner.
 - Engine strategy owns route admission, strategic target preference, DCI/UDP/AMR, strict-JIT and matchup-flex timing, Supporter contention, connector domination, K0/K1 state, setup-axis value, lock schedules, readiness, and payload policy.
 - `src/trace_engine_v2/core/card_catalog.inc` is the compatibility owner for unmigrated names and intrinsic classification fallbacks. Registry lookup remains the first metadata path.
 
-Next adapter step: construct future trace-engine card bridges with `CardContextAdapterCallbacks` at the canonical `core/adapters/card_context_adapter.hpp` owner. Migrate direct consumers of the forwarding `core/card_context_adapter.hpp` include when their seams are touched, then remove that forwarding include only after repository-wide references are proven gone.
+The forwarding `src/trace_engine_v2/core/card_context_adapter.hpp` include is retired after repository-wide direct consumers migrated to `core/adapters/card_context_adapter.hpp`. Future trace-engine card bridges should construct `CardContextAdapterCallbacks` at that canonical owner. Canonical adapter: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/adapters/card_context_adapter.hpp
 
 Next catalog step: migrate remaining `LegacyCardCatalog` and intrinsic compatibility entries one card at a time. Delete a compatibility row only after that card has an explicit `CardDefinition`, registration, exact-print source, and focused metadata test. Keep gameplay resolution and strategy at their current owners during metadata-only migrations.
 
@@ -89,7 +88,7 @@ The issue-1516/2164 Quick Ball, Tapu Lele-GX, Crispin route family has a canonic
 
 The issue-1368 Earthen Vessel / Celestial Roar route has a canonical semantic owner at `src/trace_engine_v2/core/routes/earthen_vessel_celestial_roar_policy.inc`. Its route-specific search and action-legality boundaries are named `search_earthen_vessel_energy_for_celestial_roar()` and `earthen_vessel_celestial_roar_action_available()`, keeping strategy-owned target preference separate from the shared Item/search legality checks. `src/trace_engine_v2/composition/post_014a_overrides.inc` now includes that canonical owner directly at the established `play_earthen_vessel_issue1412_original` alias boundary, preserving the four pre-DDE macro exports consumed by the issue-2437 layer. The historical root `part_issue_1368_earthen_vessel_celestial_roar_override.inc` forwarding seam is retired after source-contract tooling showed no direct consumer and the live composition was rewired without changing macro lifetime. Route admission, K1 search behavior, DCI discard selection, and direct rules/card sources remain with the canonical route owner. Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163 Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136 Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/earthen_vessel_celestial_roar_policy.inc Live composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
 
-Next composition step: migrate direct `CardContext` bridge include consumers to `core/adapters/card_context_adapter.hpp`, then remove the old forwarding include once repository-wide references are gone. New bridge construction should use `CardContextAdapterCallbacks`. Inspect another root `part_*` seam only when its complete macro lifetime or function body can move intact. Keep tooling-only compatibility paths minimal, preserve declaration order and route semantics, and retain direct source URLs beside rule-sensitive logic.
+The card-context forwarding include has been retired. Future bridge consumers include `core/adapters/card_context_adapter.hpp` directly and construct `CardContextAdapterCallbacks`. Next composition step: inspect another root `part_*` seam only when its complete macro lifetime or function body can move intact. Keep tooling-only compatibility paths minimal, preserve declaration order and route semantics, and retain direct source URLs beside rule-sensitive logic.
 
 ### Banked Tapu paid-retreat seam
 
@@ -153,6 +152,8 @@ Next setup step: route future setup recipe classification through `SetupRecipePo
 ## Catalog and knowledge cleanup
 
 `src/trace_engine_v2/core/card_catalog.inc` owns the shrinking legacy name bridge and intrinsic classification compatibility seam. Registered `CardDefinition` lookup remains canonical for migrated names and intrinsic metadata: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+
+Legacy Pokémon identity now has one compatibility owner through `is_legacy_pokemon()`, which composes the existing Basic fallback and the remaining unmigrated evolved Pokémon. `is_pokemon()` delegates to registered metadata or that single fallback seam, eliminating the duplicated Basic membership list while preserving Ultra Ball legality. Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Canonical catalog: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
 
 `src/trace_engine_v2/core/deck_knowledge.inc` keeps copy arithmetic behind `KnowledgeCopyPolicy`. `combined_unattached_public_zones()` is the named hand-plus-discard public-zone arithmetic seam, and `combined_public_zones()` composes that base with attached public copies. K1 hand/deck aggregation continues to reuse `combined()`. K0/K1 visibility rules remain at Engine callers: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 

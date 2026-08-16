@@ -22,8 +22,8 @@ jobs:
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
       - name: Build release simulator
         run: cmake --build build --parallel 2
-      - name: Run focused #4035 regression
-        run: ./build/issue_1393_crispin_before_gladion_tests
+      - name: Run unified regression suite
+        run: ctest --test-dir build --output-on-failure
       - name: Regenerate shell baseline and canonical traces
         run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
       - name: Regenerate paired named-deck matrix

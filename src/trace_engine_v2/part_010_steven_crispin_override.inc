@@ -571,9 +571,19 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
   }
 
   bool late_steven_vstar_grass_with_held_blender_k0_route_available() const {
+    // Steven's Resolve is the current Supporter and held Brilliant Blender is used
+    // only on the projected ready turn. Rule Box Ability suppression is irrelevant;
+    // the route must instead reject when that projected Item or current Supporter is locked.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced Supporter, Item, evolution, and attack procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Canonical projected Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4027
+    const bool next_turn_item_locked = item_locked_on_turn(state_.turn + 1);
     if (deck_seen_ || state_.turn >= scenario_.max_turn ||
         scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::None || !supporter_allowed() ||
+        next_turn_item_locked || !supporter_allowed() ||
         !state_.active || state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
         state_.active->grass != 1 || state_.active->fire < 1 ||

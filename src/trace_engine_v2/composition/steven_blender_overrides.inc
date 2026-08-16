@@ -26,17 +26,7 @@
 #include "../part_010_late_steven_override.inc"
 
 #include "steven_vstar_vessel_overrides.inc"
-
-// The thinning policy remains the implementation wrapped by the later empty-deck
-// guard, while the legacy part_010 implementation stays dormant:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010_blender_thinning_override.inc#L1-L77
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_empty_deck_search_override.inc#L78-L85
-#define play_brilliant_blender play_brilliant_blender_empty_deck_original
-#include "../part_010_blender_thinning_override.inc"
-#undef play_brilliant_blender
-#undef play_earthen_vessel
-#undef play_evolution_incense
-#undef play_ultra_ball
+#include "blender_thinning_overrides.inc"
 
 #if defined(play_evolution_incense) || defined(play_earthen_vessel) || \
     defined(play_brilliant_blender) || defined(play_ultra_ball) || \

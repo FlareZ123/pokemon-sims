@@ -25,12 +25,13 @@ src/cards/card_registry.hpp
 src/cards/trainers/quick_ball.hpp
 src/rules/card_context.hpp
 src/trace_engine_v2/core/adapters/card_context_adapter.hpp
+src/trace_engine_v2/core/card_context_adapter.hpp
 src/trace_engine_v2/core/quick_ball_card_class_base.inc
 src/trace_engine_v2/core/quick_ball_card_class_tail.inc
 tests/quick_ball_card_class_tests.cpp
 ```
 
-The old `src/trace_engine_v2/core/card_context_adapter.hpp` forwarding include is retired. Repository consumers must include the canonical adapter owner directly.
+`src/trace_engine_v2/core/adapters/card_context_adapter.hpp` is the canonical adapter owner. The historical `src/trace_engine_v2/core/card_context_adapter.hpp` forwarding include remains while `core/card_catalog.inc` still consumes that path. CI proved that dependency during this cleanup slice, so retirement now requires rewiring the catalog first.
 
 Quick Ball remains the reference for explicit registration, exact-print metadata, intrinsic cost validation, K0 to K1 search timing, strategy-owned target choice, printed target filtering, source-card movement, failed-search behavior, shuffle, and trace compatibility. Exact print: https://api.pokemontcg.io/v2/cards/swsh1-179
 
@@ -40,7 +41,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/cards/card_definition.hpp` owns intrinsic exact-print facts such as name, print ID, Trainer subtype, stage/type, Retreat Cost, Rule Box/Pokemon V/ACE SPEC/Basic Energy flags, and direct source URL.
 - `src/cards/card_registry.hpp` owns explicit deterministic registration. `kRegisteredCardDefinitions` is the canonical inventory and `find_definition()` is the canonical lookup: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 - `src/rules/card_context.hpp` owns reusable printed-rules operations. Card-specific route policy stays outside that interface.
-- `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` is the sole trace-engine construction bridge for reusable card effects.
+- `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` owns the trace-engine construction bridge for reusable card effects; `src/trace_engine_v2/core/card_context_adapter.hpp` is a compatibility include for the remaining catalog consumer.
 - Engine strategy owns route admission, strategic target preference, DCI/UDP/AMR, strict-JIT and matchup-flex timing, Supporter contention, connector domination, K0/K1 state, setup-axis value, lock schedules, readiness, and payload policy.
 - `src/trace_engine_v2/core/card_catalog.inc` remains the compatibility owner for unmigrated names and intrinsic classification fallbacks. Registry lookup remains the first metadata path.
 
@@ -87,7 +88,7 @@ Retired route forwarding seams include the issue-1393 Crispin helper and issue-1
 
 The issue-1368 Earthen Vessel / Celestial Roar route has a canonical semantic owner at `src/trace_engine_v2/core/routes/earthen_vessel_celestial_roar_policy.inc`. Its historical root compatibility include remains until the post-`part_014a` composition boundary can point directly at the canonical owner without changing the pre-DDE macro exports consumed by the issue-2437 layer. Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163 Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
-Next composition step: prove raw-source/tooling consumers of the issue-1368 historical root path absent, rewire the identical post-`part_014a` macro boundary directly to the canonical route owner, then retire that forwarding include. Inspect another root `part_*` seam only when its complete macro lifetime or function body can move intact. Keep tooling-only compatibility paths minimal and retain direct source URLs beside rule-sensitive logic.
+Next composition step: first rewire `core/card_catalog.inc` to the canonical `core/adapters/card_context_adapter.hpp` owner and then retire the CardContext forwarding include. Separately prove raw-source/tooling consumers of the issue-1368 historical root path absent, rewire the identical post-`part_014a` macro boundary directly to the canonical route owner, then retire that forwarding include. Inspect another root `part_*` seam only when its complete macro lifetime or function body can move intact. Keep tooling-only compatibility paths minimal and retain direct source URLs beside rule-sensitive logic.
 
 ## Payload policy cleanup
 

@@ -102,6 +102,26 @@ Keep direct card, rule, ruling, specification, and issue URLs beside rule-sensit
 
 Next composition step: inspect another root `part_*` seam only when its complete macro lifetime or complete function body can move intact to a named composition or semantic owner. Prefer removing forwarding fragments over introducing new compatibility layers. Preserve alias lifetime, declaration order, trace behavior, route semantics, and direct source URLs.
 
+## Payload policy cleanup
+
+`src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner. `PayloadZonePolicy` owns physical-zone membership, cardinality, and first-match traversal; `PayloadPreferencePolicy` owns explicit strategic preference traversal. Route-local DCI/JIT admission and discard timing remain with strategy owners. Canonical payload owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+
+Next payload step: replace ad hoc Dragon-payload scans only when physical-order and preference semantics exactly match an existing payload policy operation.
+
+## Setup lifecycle cleanup
+
+`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup labels, opening-deck initialization, opening-hand and mulligan mechanics, Prize dealing, and setup-trace output. `src/trace_engine_v2/part_005.inc` composes that owner at the established Engine member boundary. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+
+Next setup step: reuse setup recipe predicates where semantics match exactly and move state-transition helpers only with source-contract coverage for hand removal, Active/Bench placement, and declaration order.
+
+## Catalog and knowledge cleanup
+
+`src/trace_engine_v2/core/card_catalog.inc` owns the shrinking legacy name and intrinsic-classification compatibility seam. Registered `CardDefinition` lookup remains canonical for migrated metadata: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+
+`src/trace_engine_v2/core/deck_knowledge.inc` owns copy arithmetic after the Engine caller has resolved visibility. K0/K1 visibility, Prize deduction, and search timing remain strategy concerns. Knowledge-state specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+
+Next catalog/knowledge step: move repeated copy-count arithmetic into the knowledge owner only after visibility is resolved, and retire legacy catalog rows only after explicit card registration and focused coverage.
+
 ## Shared policy owners
 
 - Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.

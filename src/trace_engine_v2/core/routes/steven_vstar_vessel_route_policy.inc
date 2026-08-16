@@ -24,7 +24,8 @@
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
         (hand_count(Card::EarthenVessel) == 0 &&
          deck_count_after_search_started(Card::EarthenVessel) == 0) ||
-        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+        !payload_zone_contains(state_.hand)) {
+      // Canonical Dragon-payload membership: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
       return false;
     }
 
@@ -71,8 +72,8 @@
   bool issue_3458_1797_connector_common_available() const {
     const int deck_grass = deck_count_after_search_started(Card::Grass);
     const int deck_fire = deck_count_after_search_started(Card::Fire);
-    const bool deck_payload = std::any_of(
-        state_.deck.begin(), state_.deck.end(), is_payload);
+    const bool deck_payload = payload_zone_contains(state_.deck);
+    // Canonical Dragon-payload membership: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
 
     // This is the shared semantic contract for both sides of the physical Quick Ball
     // transaction. K1 may come from any legal deck or Prize inspection. Quick Ball

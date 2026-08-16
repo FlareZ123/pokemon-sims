@@ -44,7 +44,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/card_catalog.inc` owns unmigrated name and intrinsic-classification fallbacks. Registry lookup remains the first metadata path.
 - `src/trace_engine_v2/core/payload_hand_policy.inc` owns shared Dragon-payload zone and preference queries. `PayloadZonePolicy` and `PayloadPreferencePolicy` are explicit final stateless policy classes so traversal and preference order stay centralized without becoming extensible Engine subtypes.
 - `src/trace_engine_v2/core/board_state_policy.inc` owns reusable board traversal and board-index queries.
-- `src/trace_engine_v2/core/setup_lifecycle.inc` owns opening-hand, mulligan, Prize-deal, and setup-trace mechanics.
+- `src/trace_engine_v2/core/setup_lifecycle.inc` owns opening-deck, mulligan, Prize-deal, and setup-trace state transitions. `src/trace_engine_v2/core/setup/recipe_policy.inc` owns pure recipe-count classification, and `src/trace_engine_v2/core/setup/lifecycle_config.inc` owns setup constants plus DCI/lock presentation labels.
 - `src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn action-state reset semantics.
 - `src/trace_engine_v2/core/deck_knowledge.inc` owns reusable copy arithmetic after visibility is resolved. `KnowledgeCopyPolicy` is an explicit final stateless policy class; hidden-zone visibility and route admission remain Engine concerns.
 - `src/trace_engine_v2/core/routes/oricorio_connector_policy.inc` owns the Oricorio connector's pure energy-need and connector-admission projections through `OricorioConnectorPolicy`; Engine retains Ability availability, K0/K1 visibility, Bench-space, and action execution. Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
@@ -101,7 +101,9 @@ The Mysterious Treasure route now uses the shared payload-zone membership seam f
 
 ## Setup lifecycle cleanup
 
-`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing labels, opening-deck initialization, opening-hand and mulligan mechanics, Prize dealing, and setup-trace output. `src/trace_engine_v2/part_005.inc` composes that owner at the established Engine member boundary. Preserve setup declaration order and hand, Active, Bench, and Prize transitions. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+`src/trace_engine_v2/core/setup_lifecycle.inc` remains the stateful setup owner. Pure recipe-count classification now lives in final `SetupRecipePolicy` under `src/trace_engine_v2/core/setup/recipe_policy.inc`, while opening-hand/Prize constants and DCI/lock presentation labels live in final `SetupLifecycleConfig` under `src/trace_engine_v2/core/setup/lifecycle_config.inc`. Keep opening-deck mutation, mulligan loops, Active/Bench selection, Prize dealing, K0 visibility state, and trace emission in the Engine-owned lifecycle. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+
+`src/trace_engine_v2/part_005.inc` continues to compose `core/setup_lifecycle.inc` at the established Engine member boundary. Preserve declaration order and the exact hand, Active, Bench, Prize, and shuffle transitions when moving additional pure setup policy.
 
 ## Catalog and knowledge cleanup
 
@@ -120,7 +122,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.
 - Board traversal and board indices: `src/trace_engine_v2/core/board_state_policy.inc`.
 - Garbodor scenario and Ability-lock composition: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
-- Setup lifecycle: `src/trace_engine_v2/core/setup_lifecycle.inc`.
+- Setup state transitions: `src/trace_engine_v2/core/setup_lifecycle.inc`; pure setup recipe/configuration policy: `src/trace_engine_v2/core/setup/recipe_policy.inc` and `src/trace_engine_v2/core/setup/lifecycle_config.inc`.
 - Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
 - Turn action runtime: `src/trace_engine_v2/turn_action_policy_runtime.inc`.
 - Intrinsic exact-print predicates: `src/cards/card_definition.hpp` via `CardDefinitionPredicates`.
@@ -151,6 +153,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 13. Reuse generic `PayloadZonePolicy` range operations for fixed-size Card cost plans and physical route-zone queries only when the query is purely membership, count, or first-match traversal; keep route-specific DCI/JIT admission outside the utility class.
 14. Keep `composition/engine_body.inc` pointed directly at `core/routes/battle_compressor_vs_seeker_policy.inc`; the historical root compatibility include is retired and should not be recreated.
 15. Keep `MysteriousTreasureTargetPolicy` limited to strategic route priority and `SearchConnectorFallbackPolicy` limited to legal post-search K1 fallback ordering/traversal. Continue moving the remaining Mysterious Treasure member body out of `part_009a.inc` only when the full continuation can migrate atomically without changing declaration order. C++ textual-include semantics: https://eel.is/c++draft/cpp.include Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+16. Continue setup organization under `core/setup/` only for pure policy. A next safe step is to centralize deck/scenario presentation classification there after proving output strings and source-contract anchors are unchanged; leave deck mutation, mulligan, Prize placement, K0 visibility, Active/Bench choice, and trace sequencing in `setup_lifecycle.inc`.
 
 ## One-card workflow
 

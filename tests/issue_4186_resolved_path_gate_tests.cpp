@@ -26,6 +26,10 @@ struct EngineTestAccess {
   static bool tapu_ability_available(const Engine& engine) {
     return engine.ability_available_for_pokemon(Card::TapuLeleGX);
   }
+
+  static bool uses_full_supporter_lock(const Engine& engine) {
+    return engine.uses_full_supporter_lock(engine.scenario_.locks);
+  }
 };
 }  // namespace sim
 
@@ -87,12 +91,35 @@ void test_full_combined_remains_blocked_by_future_item_lock() {
          "Removing Path should restore Tapu Lele-GX Ability legality even when a separate Item lock remains scheduled.");
 }
 
+void test_supporter_lock_blocks_the_t2_crispin_continuation() {
+  // The #1552 route specifically stages Tapu Lele-GX -> Wonder Tag -> Crispin on
+  // turn two. A persistent Supporter lock leaves Items and Wonder Tag legal, yet
+  // the searched Crispin cannot be played, so that future route is unavailable.
+  // Tapu Lele-GX: https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/cards/en/sm2.json
+  // Crispin: https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/cards/en/sv7.json
+  // Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed action-specific lock bug: https://github.com/FlareZ123/pokemon-sims/issues/4186
+  std::mt19937_64 rng(4188);
+  sim::Engine engine = make_engine(sim::LockMode::FullSupporter, rng);
+  sim::EngineTestAccess::set_turn(engine, 1);
+
+  expect(!sim::EngineTestAccess::item_locked_now(engine),
+         "Supporter lock unexpectedly blocked T1 Items.");
+  expect(!sim::EngineTestAccess::item_locked_on_turn(engine, 2),
+         "Supporter lock unexpectedly became a T2 Item lock.");
+  expect(sim::EngineTestAccess::tapu_ability_available(engine),
+         "Supporter lock unexpectedly blocked Tapu Lele-GX Wonder Tag.");
+  expect(sim::EngineTestAccess::uses_full_supporter_lock(engine),
+         "FullSupporter must block the T2 Crispin continuation.");
+}
+
 }  // namespace
 
 int main() {
   try {
     test_resolved_path_uses_live_ability_legality();
     test_full_combined_remains_blocked_by_future_item_lock();
+    test_supporter_lock_blocks_the_t2_crispin_continuation();
     std::cout << "Issue 4186 resolved-Path gate tests passed\n";
     return 0;
   } catch (const std::exception& error) {

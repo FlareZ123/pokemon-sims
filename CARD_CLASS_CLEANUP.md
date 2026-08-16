@@ -102,6 +102,8 @@ The complete search-connector preparation and post-search fallback helpers now h
 
 `src/trace_engine_v2/core/card_catalog.inc` owns the shrinking legacy name bridge and intrinsic-classification compatibility seam. Registered `CardDefinition` lookup remains canonical for migrated metadata: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
+The legacy classification shim `src/trace_engine_v2/part_001.inc` now composes `core/card_catalog.inc` directly, and `tests/generate_unified_tests.py` reads source headers from that canonical catalog owner. This removes the remaining internal dependency on `part_000.inc` while preserving its historical line-88 source-anchor compatibility until external/source-contract references are migrated. Canonical catalog: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc Unified-test generator: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/generate_unified_tests.py
+
 Reusable exact-print classification should flow through `CardDefinitionPredicates` before adding another raw `definition.kind`, `definition.trainer_kind`, or `definition.pokemon_types` comparison. Compatibility free functions may delegate to that owner until direct consumers migrate. Canonical definition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_definition.hpp
 
 `src/trace_engine_v2/core/deck_knowledge.inc` owns reusable copy arithmetic after the Engine caller resolves visibility. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns. K0/K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
@@ -144,6 +146,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 13. Reuse generic `PayloadZonePolicy` range operations for fixed-size Card cost plans only when the query is purely physical membership, count, or first-match traversal; keep route-specific DCI/JIT admission outside the utility class.
 14. Keep `composition/engine_body.inc` pointed directly at `core/routes/battle_compressor_vs_seeker_policy.inc`; the historical root compatibility include is retired and should not be recreated.
 15. Continue moving complete route-specific member bodies out of numbered `part_*.inc` fragments into named `core/routes/` owners only when the exact textual member boundary can be preserved. The next search-connector boundary is the Mysterious Treasure route beginning in `part_009a.inc`; move its continuation only when the full member can migrate atomically without changing declaration order. C++ textual-include semantics: https://eel.is/c++draft/cpp.include Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+16. Retire `part_000.inc` only after repository-wide source anchors have moved to `core/card_catalog.inc`. Internal classification and unified-test header discovery now use the canonical owner directly, so the remaining blocker is source-contract compatibility rather than execution.
 
 ## One-card workflow
 

@@ -81,6 +81,8 @@ The issue-1368 Earthen Vessel / Celestial Roar route remains owned by `src/trace
 
 The issue-1516/2164 Quick Ball, Tapu Lele-GX, Crispin route family remains owned by `src/trace_engine_v2/core/routes/quick_ball_tapu_crispin_policy.inc`. Its Latias completion projection delegates Bench traversal to `core/board_state_policy.inc` and Rule Box Ability admission to the canonical per-Pokémon Ability predicate, while route-specific JIT, evolution, connector, and action decisions remain in the route owner. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60 Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76 Canonical board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc Canonical Ability-lock owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
 
+The Hisuian Heavy Ball route body is now owned by `src/trace_engine_v2/core/routes/hisuian_heavy_ball_policy.inc`. `src/trace_engine_v2/part_008b.inc` composes that complete member body at its existing Engine boundary before continuing into the shared search-connector helpers, so K0/K1 inspection timing, Prize recovery preference, Supporter-contention projections, and trace behavior remain in the same strategy layer. Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+
 ## Payload policy cleanup
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner. Reuse `PayloadZonePolicy` only where physical-zone traversal, membership, and count semantics match exactly. Preserve physical order for observable first-match selection and preserve explicit strategic order for preference selection. DCI/JIT predicates and discard timing remain with strategy owners. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -119,6 +121,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Legacy Star/Quick Ball decision projection: `src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc` via `LegacyStarQuickBallPolicy`.
 - Tate/provenance composition: `src/trace_engine_v2/core/tate/package.inc`; preserve its three included member fragments in their current order until each fragment has its own canonical lower-level owner.
 - Battle Compressor / VS Seeker route policy: `src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc`.
+- Hisuian Heavy Ball route policy: `src/trace_engine_v2/core/routes/hisuian_heavy_ball_policy.inc`.
 
 ## Next cleanup steps
 
@@ -136,6 +139,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 12. Route new optional intrinsic card classifiers through `CardContext`'s shared classifier dispatch seam rather than duplicating callback-null checks in each public operation.
 13. Reuse generic `PayloadZonePolicy` range operations for fixed-size Card cost plans only when the query is purely physical membership, count, or first-match traversal; keep route-specific DCI/JIT admission outside the utility class.
 14. Migrate `composition/engine_body.inc` and any source-contract references to `core/routes/battle_compressor_vs_seeker_policy.inc`, then remove the historical `core/battle_compressor_vs_seeker_policy.inc` compatibility include after repository-wide references are proven gone.
+15. Continue moving complete route-specific member bodies out of numbered `part_*.inc` fragments into named `core/routes/` owners only when the exact textual member boundary can be preserved. Keep cross-file continuations in place until both sides can move together safely.
 
 ## One-card workflow
 

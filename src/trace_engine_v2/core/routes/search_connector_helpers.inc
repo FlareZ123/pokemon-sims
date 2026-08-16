@@ -7,6 +7,40 @@
            hand_count(Card::RegidragoVstar) == 0;
   }
 
+  class SearchConnectorFallbackPolicy final {
+   public:
+    [[nodiscard]] static constexpr std::array<Card, 11>
+    mysterious_treasure_targets() {
+      // This is the K1 post-search fallback legality/order, distinct from the
+      // route's strategic MysteriousTreasureTargetPolicy priority.
+      // Mysterious Treasure searches Psychic or Dragon Pokemon: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Appletun and Dipplin are legal Dragon targets: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/sv6-127
+      // Crobat V is Darkness and is intentionally absent: https://api.pokemontcg.io/v2/cards/swsh3-104
+      return {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
+              Card::Oricorio, Card::TapuLeleGX, Card::MegaDragonite,
+              Card::Dragapult, Card::GoodraVstar, Card::DialgaGX,
+              Card::Appletun, Card::Dipplin};
+    }
+
+    [[nodiscard]] static constexpr std::array<Card, 8> quick_ball_targets() {
+      // Quick Ball searches Basic Pokemon: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Pineco remains a legal modeled Basic fallback: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+      return {Card::RegidragoV, Card::LatiasEx, Card::Oricorio,
+              Card::TapuLeleGX, Card::CrobatV, Card::MawileGX,
+              Card::DialgaGX, Card::Pineco};
+    }
+
+    [[nodiscard]] static constexpr std::array<Card, 15> ultra_ball_targets() {
+      // Ultra Ball searches any Pokemon: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+      // Appletun and the Pineco/Forretress package remain modeled legal targets: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+      return {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
+              Card::Oricorio, Card::TapuLeleGX, Card::CrobatV,
+              Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+              Card::DialgaGX, Card::MawileGX, Card::Dipplin,
+              Card::Appletun, Card::Pineco, Card::ForretressEx};
+    }
+  };
+
   bool has_other_payload_outlet(const Card excluded) const {
     // A search connector can only fetch a future payload when a payload may still
     // be in deck. K1 derives this from legal deck or Prize inspection.
@@ -58,50 +92,21 @@
   }
 
   Card fallback_mysterious_target_after_search_started() const {
-    // Mysterious Treasure can search a Psychic or Dragon Pokémon: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Appletun sv8-140 and Dipplin TWM 127 are Dragon Pokémon and remain legal
-    // fallbacks. Dipplin's legal-search status stays separate from is_payload:
-    // https://api.pokemontcg.io/v2/cards/sv8-140
-    // https://api.pokemontcg.io/v2/cards/sv6-127
-    // Crobat V is Darkness and is excluded from this typed fallback:
-    // https://api.pokemontcg.io/v2/cards/swsh3-104
-    // https://github.com/FlareZ123/pokemon-sims/issues/1253
-    // https://github.com/FlareZ123/pokemon-sims/issues/1949
-    static constexpr std::array<Card, 11> targets{
-        Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
-        Card::Oricorio, Card::TapuLeleGX, Card::MegaDragonite,
-        Card::Dragapult, Card::GoodraVstar, Card::DialgaGX,
-        Card::Appletun, Card::Dipplin};
+    // Legal K1 fallback coverage remains separate from strategic route priority.
+    // Confirmed fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1253 https://github.com/FlareZ123/pokemon-sims/issues/1949
     return first_remaining_search_target_after_search_started(
-        targets, Card::RegidragoV);
+        SearchConnectorFallbackPolicy::mysterious_treasure_targets(),
+        Card::RegidragoV);
   }
 
   Card fallback_quick_ball_target_after_search_started() const {
-    // Quick Ball searches Basic Pokémon, and this K1 fallback preserves the
-    // established modeled target order after legal deck inspection:
-    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-    // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
     // Confirmed Pineco fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1958
-    static constexpr std::array<Card, 8> targets{
-        Card::RegidragoV, Card::LatiasEx, Card::Oricorio, Card::TapuLeleGX,
-        Card::CrobatV, Card::MawileGX, Card::DialgaGX, Card::Pineco};
     return first_remaining_search_target_after_search_started(
-        targets, Card::RegidragoV);
+        SearchConnectorFallbackPolicy::quick_ball_targets(), Card::RegidragoV);
   }
 
   Card fallback_ultra_ball_target_after_search_started() const {
-    // Ultra Ball searches any Pokémon, so the K1 fallback covers the complete
-    // modeled universe, including the Appletun and Pineco package:
-    // Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
-    // Pineco / Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
-    // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
     // Confirmed fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1254 https://github.com/FlareZ123/pokemon-sims/issues/1952
-    static constexpr std::array<Card, 15> targets{
-        Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
-        Card::TapuLeleGX, Card::CrobatV, Card::MegaDragonite, Card::Dragapult,
-        Card::GoodraVstar, Card::DialgaGX, Card::MawileGX, Card::Dipplin,
-        Card::Appletun, Card::Pineco, Card::ForretressEx};
     return first_remaining_search_target_after_search_started(
-        targets, Card::RegidragoV);
+        SearchConnectorFallbackPolicy::ultra_ball_targets(), Card::RegidragoV);
   }

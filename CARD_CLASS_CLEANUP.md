@@ -41,6 +41,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/rules/card_context.hpp` owns reusable printed-rules operations. Its optional intrinsic classifier callbacks share one null-safe dispatch seam. Card-specific strategic route policy stays outside that interface. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/rules/card_context.hpp
 - `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` owns the trace-engine bridge for reusable card effects. `src/trace_engine_v2/core/card_context_adapter.hpp` is a compatibility include until direct consumers move.
 - Engine strategy owns route admission, target preference, DCI/UDP/AMR, strict-JIT and matchup-flex timing, Supporter contention, connector domination, K0/K1 state, setup-axis value, lock schedules, readiness, and payload policy.
+- `src/trace_engine_v2/core/simulation_runtime.inc` owns the `LockMode` enum and its pure scenario-mode classification through `LockModePolicy`; Engine retains turn-dependent, board-dependent, and removal-dependent legality such as first-turn Supporter timing, persistent Item timing, and Path-removal state. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulation_runtime.inc
 - `src/trace_engine_v2/core/card_catalog.inc` owns unmigrated name and intrinsic-classification fallbacks. Registry lookup remains the first metadata path.
 - `src/trace_engine_v2/core/payload_hand_policy.inc` owns shared Dragon-payload zone and preference queries. `PayloadZonePolicy` and `PayloadPreferencePolicy` are explicit final stateless policy classes so traversal and preference order stay centralized without becoming extensible Engine subtypes.
 - `src/trace_engine_v2/core/board_state_policy.inc` owns reusable board traversal and board-index queries.
@@ -119,6 +120,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 
 - Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.
 - Board traversal and board indices: `src/trace_engine_v2/core/board_state_policy.inc`.
+- LockMode scenario classification: `src/trace_engine_v2/core/simulation_runtime.inc` via `LockModePolicy`; keep turn/state legality in Engine.
 - Garbodor scenario and Ability-lock composition: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
 - Setup lifecycle: `src/trace_engine_v2/core/setup_lifecycle.inc`.
 - Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
@@ -151,6 +153,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 13. Reuse generic `PayloadZonePolicy` range operations for fixed-size Card cost plans and physical route-zone queries only when the query is purely membership, count, or first-match traversal; keep route-specific DCI/JIT admission outside the utility class.
 14. Keep `composition/engine_body.inc` pointed directly at `core/routes/battle_compressor_vs_seeker_policy.inc`; the historical root compatibility include is retired and should not be recreated.
 15. Keep `core/mysterious_treasure_target_policy.inc` as the ordered target-priority owner and continue moving the remaining Mysterious Treasure member body out of `part_009a.inc` only when the full continuation can migrate atomically without changing declaration order. C++ textual-include semantics: https://eel.is/c++draft/cpp.include Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+16. Keep pure `LockMode` membership predicates in `LockModePolicy`; new lock behavior that depends on turn number, board state, a removed lock source, or per-Pokémon eligibility stays at the Engine strategy boundary. Canonical policy owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulation_runtime.inc
 
 ## One-card workflow
 

@@ -6,6 +6,26 @@
 
 enum class DciProfile : std::uint8_t { StrictJit, MatchupFlexJit, NoDiscardControl };
 enum class LockMode : std::uint8_t { None, TurnTwoItem, FullItem, FullRuleBoxAbility, FullCombined, FullSupporter };
+
+// Centralize pure LockMode classification beside the enum that defines the modeled
+// lock states. Engine keeps turn/state-dependent legality while this owner answers
+// only immutable scenario-mode questions. Existing Engine contract:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+class LockModePolicy final {
+ public:
+  static constexpr bool uses_full_supporter_lock(const LockMode locks) {
+    return locks == LockMode::FullSupporter;
+  }
+
+  static constexpr bool uses_turn_two_item_lock(const LockMode locks) {
+    return locks == LockMode::TurnTwoItem || locks == LockMode::FullCombined;
+  }
+
+  static constexpr bool uses_path_style_ability_lock(const LockMode locks) {
+    return locks == LockMode::FullRuleBoxAbility || locks == LockMode::FullCombined;
+  }
+};
+
 enum class Tool : std::uint8_t { None, ForestSealStone, WishfulBaton, Powerglass };
 enum class Stadium : std::uint8_t { None, ChaoticSwell, ForestOfVitality };
 enum class OpponentBenchState : std::uint8_t { Unknown, Unavailable, Available };

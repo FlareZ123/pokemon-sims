@@ -6,26 +6,6 @@
 // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
 // Advanced Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
-bool banked_tapu_paid_retreat_priority_open() {
-  // Preserve the cheaper free-Latias and Tate routes ahead of the paid retreat:
-  // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
-  // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
-  // Earliest deterministic route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-  return !can_free_retreat_with_latias() &&
-         !(supporter_allowed() && hand_count(Card::TateLiza) > 0);
-}
-
-bool banked_tapu_paid_retreat_available() {
-  // Tapu's printed one-Colorless Retreat Cost may be paid with its banked Basic
-  // Energy after higher-priority zero-cost and Supporter retreat routes are absent:
-  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-  // Official Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-  return !state_.retreat_used && state_.active &&
-         state_.active->card == Card::TapuLeleGX &&
-         state_.active->grass + state_.active->fire >= 1 &&
-         banked_tapu_paid_retreat_priority_open();
-}
-
 bool banked_tapu_regidrago_ready(const Pokemon* target) {
   if (target == nullptr || target->card != Card::RegidragoVstar) return false;
 
@@ -68,6 +48,67 @@ void pay_banked_tapu_retreat_cost() {
   state_.discard.push_back(payment);
 }
 
+bool banked_tapu_paid_retreat_preserves_burnet_finish() const {
+  if (!state_.active || state_.active->card != Card::TapuLeleGX ||
+      state_.active->grass + state_.active->fire < 1 || state_.retreat_used ||
+      !supporter_allowed() || state_.supporter_used ||
+      hand_count(Card::ProfessorBurnet) == 0) {
+    return false;
+  }
+
+  // Project only the current public/K1 state. A paid Retreat is a distinct
+  // once-per-turn action, so it leaves the one Supporter action available for
+  // Professor Burnet. Tate & Liza would consume that Supporter action instead:
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Advanced Retreat and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed route-selection bug: https://github.com/FlareZ123/pokemon-sims/issues/4157
+  // Same-turn Burnet projection precedent: https://github.com/FlareZ123/pokemon-sims/issues/2158
+  std::mt19937_64 shadow_rng = rng_;
+  Engine projected(scenario_, recipe_, shadow_rng);
+  projected.state_ = state_;
+  projected.deck_seen_ = deck_seen_;
+  projected.prizes_revealed_ = prizes_revealed_;
+  projected.trace_ = nullptr;
+
+  Pokemon* target = projected.target_regi();
+  if (!projected.banked_tapu_regidrago_ready(target)) return false;
+
+  projected.pay_banked_tapu_retreat_cost();
+  std::swap(*projected.state_.active, *target);
+  projected.state_.retreat_used = true;
+  return projected.professor_burnet_has_live_ready_turn_route();
+}
+
+bool banked_tapu_paid_retreat_priority_open() {
+  // Free Skyliner remains the dominant zero-cost route. Tate & Liza remains the
+  // preferred switch when spending the Supporter does not destroy a stronger
+  // same-turn Professor Burnet finish. Paid Retreat wins only in that exact
+  // supporter-contention state:
+  // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Advanced Retreat and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Earliest deterministic route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed route-selection bug: https://github.com/FlareZ123/pokemon-sims/issues/4157
+  if (can_free_retreat_with_latias()) return false;
+  if (!(supporter_allowed() && hand_count(Card::TateLiza) > 0)) return true;
+  return banked_tapu_paid_retreat_preserves_burnet_finish();
+}
+
+bool banked_tapu_paid_retreat_available() {
+  // Tapu's printed one-Colorless Retreat Cost may be paid with its banked Basic
+  // Energy after higher-priority zero-cost and route-superior options are absent:
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Official Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  return !state_.retreat_used && state_.active &&
+         state_.active->card == Card::TapuLeleGX &&
+         state_.active->grass + state_.active->fire >= 1 &&
+         banked_tapu_paid_retreat_priority_open();
+}
+
 bool retreat_banked_tapu_to_regidrago() {
   if (!banked_tapu_paid_retreat_available()) return false;
 
@@ -79,12 +120,14 @@ bool retreat_banked_tapu_to_regidrago() {
   state_.retreat_used = true;
 
   // Tapu's banked Basic Energy pays its printed one-Colorless Retreat Cost.
-  // Free Latias and Tate routes stay preferred by the guards above:
+  // Free Latias stays preferred; a live same-turn Burnet finish may supersede Tate:
   // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
   // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
   // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
-  // Official Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Official Retreat and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   // Confirmed DDE regression: https://github.com/FlareZ123/pokemon-sims/issues/3089
+  // Confirmed supporter-contention regression: https://github.com/FlareZ123/pokemon-sims/issues/4157
   trace("RETREAT", "R-GAME-RETREAT; R-TAPU-01; P-DCI-01",
         "Paid Tapu Lele-GX's banked one-Energy Retreat Cost and promoted Regidrago.");
   return true;

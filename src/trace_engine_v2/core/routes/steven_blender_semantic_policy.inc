@@ -42,8 +42,11 @@
     // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3222
-    return (grass_needed() == 1 && fire_needed() == 0 &&
-            hand_count(Card::Grass) > 0) ||
-        (grass_needed() == 0 && fire_needed() == 1 &&
-         hand_count(Card::Fire) > 0);
+    const int missing_grass = grass_needed();
+    const int missing_fire = fire_needed();
+    const bool held_grass_completion =
+        missing_grass == 1 && missing_fire == 0 && hand_count(Card::Grass) > 0;
+    const bool held_fire_completion =
+        missing_grass == 0 && missing_fire == 1 && hand_count(Card::Fire) > 0;
+    return held_grass_completion || held_fire_completion;
   }

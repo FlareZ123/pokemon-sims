@@ -83,6 +83,8 @@ The issue-1516/2164 Quick Ball, Tapu Lele-GX, Crispin route family remains owned
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner. Reuse `PayloadZonePolicy` only where physical-zone traversal, membership, and count semantics match exactly. Preserve physical order for observable first-match selection and preserve explicit strategic order for preference selection. DCI/JIT predicates and discard timing remain with strategy owners. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
 
+`PayloadZonePolicy` now accepts any Card range with `begin()` / `end()` semantics, so fixed-size route cost plans can reuse the same physical membership and count traversal without temporary vectors or duplicated STL scans. The issue-1673 Secret Box deadline cost plan is the first `std::array<Card, 3>` consumer. Canonical route: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1673_secret_box_payload_deadline_policy.inc Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+
 `PayloadZonePolicy` and `PayloadPreferencePolicy` are final utility classes with static operations only. Keep their responsibilities narrow: physical-zone mechanics belong to the zone policy, strategic payload ordering belongs to the preference policy, and route-specific DCI/JIT admission remains outside both classes.
 
 ## Setup lifecycle cleanup
@@ -121,7 +123,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 3. Continue retiring other composition-only `part_*steven*` forwarders when a complete function body or macro lifetime can move at the identical textual boundary.
 4. Migrate direct `CardContext` bridge consumers to `core/adapters/card_context_adapter.hpp`. Remove the old forwarding include only after references are proven gone. New bridge construction should use `CardContextAdapterCallbacks`.
 5. Migrate remaining `LegacyCardCatalog` and intrinsic compatibility rows one card at a time. Reuse `CardDefinitionPredicates` for intrinsic classification before adding new raw metadata checks; delete a row only after explicit `CardDefinition` registration, exact-print source, and focused metadata coverage exist.
-6. Reuse payload and board-state owners only when physical order, visibility, and strategic preference semantics match exactly.
+6. Reuse payload and board-state owners only when physical order, visibility, and strategic preference semantics match exactly. Fixed-size Card cost plans should use the generic `PayloadZonePolicy` range operations when their semantics are purely physical membership or count.
 7. Keep Forretress reusable scenario and runtime ownership under `core/forretress/`, with `core/forretress/package.inc` as the namespace-scope composition owner. Remove `part_forretress_ex_combo.inc` only after repository-wide and source-contract consumers are proven migrated.
 8. Prefer named pure-projection members over route-local anonymous projections when a projection is reused or has a distinct policy contract.
 9. Prefer named final stateless policy classes for reusable arithmetic or traversal seams. Do not move route admission, hidden-zone visibility decisions, DCI/JIT timing, or target preference into a utility class merely to reduce line count.

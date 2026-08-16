@@ -26,7 +26,7 @@
         std::none_of(state_.hand.begin(), state_.hand.end(), is_payload);
   }
 
-  std::vector<Card> search_celestial_roar_vessel_energy() {
+  std::vector<Card> search_earthen_vessel_energy_for_celestial_roar() {
     std::vector<Card> searched;
     // Search Fire after legal inspection when it exists. If every Fire is outside
     // the deck, selecting one Grass remains a legal up-to-one fallback without
@@ -66,7 +66,7 @@
     discard_from_hand(*cost, "Earthen Vessel cost", "R-EV-01");
     record_deck_search_knowledge("Earthen Vessel");
 
-    const auto searched = search_celestial_roar_vessel_energy();
+    const auto searched = search_earthen_vessel_energy_for_celestial_roar();
     trace("Earthen Vessel", "R-EV-01; R-GAME-ITEM; P-COMPRESS-01",
           "Searched up to 2 Basic Energy: " + join_cards(searched) + ".");
     return true;

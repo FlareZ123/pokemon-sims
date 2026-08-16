@@ -438,8 +438,18 @@
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2083
 
+    // Steven is a Supporter on the current turn, while held Mysterious Treasure is
+    // played only after Steven ends that turn. Project the Item lock to the actual
+    // Treasure turn instead of rejecting unrelated Rule Box Ability suppression.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced Supporter and Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Canonical projected Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4026
+    const bool next_turn_item_locked = item_locked_on_turn(state_.turn + 1);
     if (!prizes_known() || state_.turn < 2 || state_.turn >= scenario_.max_turn ||
-        scenario_.locks != LockMode::None || !supporter_allowed() || item_locked() ||
+        next_turn_item_locked || !supporter_allowed() ||
         !state_.active || state_.active->card != Card::RegidragoVstar ||
         !pays_apex_energy_cost(*state_.active) ||
         !need_payload() || hand_count(Card::StevensResolve) == 0 ||

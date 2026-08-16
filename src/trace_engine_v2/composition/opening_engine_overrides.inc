@@ -80,12 +80,11 @@
 #error "Tate legacy composition leaked a local alias"
 #endif
 
-// Keep post-evolution discard provenance, Tate handling, and the following Item
-// search wrapper family in the same ordered composition spine.
+// Keep post-evolution discard provenance and Tate handling behind one canonical
+// package while preserving the established member-fragment order exactly.
+// Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/package.inc
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
-#include "../part_discard_recovery_provenance_override.inc"
-#include "../part_tate_blender_attachment_override.inc"
-#include "../part_tate_blender_tate_override.inc"
+#include "../core/tate/package.inc"
 
 #if defined(play_mysterious_treasure) || defined(play_heavy_ball) || \
     defined(play_quick_ball) || defined(play_ultra_ball) || defined(in_play)

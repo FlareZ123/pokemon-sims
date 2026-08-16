@@ -54,7 +54,7 @@
     return selected_duplicate_crispin;
   }
 
-  bool issue_2164_quick_ball_latias_finish_available() const {
+  bool quick_ball_latias_finish_available() const {
     if ((scenario_.dci != DciProfile::StrictJit &&
          scenario_.dci != DciProfile::MatchupFlexJit) ||
         !scenario_.going_first || state_.turn != 4 ||
@@ -109,8 +109,8 @@
     return true;
   }
 
-  bool play_issue_2164_quick_ball_latias_finish() {
-    if (!issue_2164_quick_ball_latias_finish_available()) return false;
+  bool play_quick_ball_latias_finish() {
+    if (!quick_ball_latias_finish_available()) return false;
 
     remove_one(state_.hand, Card::QuickBall);
     state_.discard.push_back(Card::QuickBall);
@@ -133,7 +133,7 @@
   }
 
   bool play_quick_ball(const bool permit_payload) {
-    if (play_issue_2164_quick_ball_latias_finish()) return true;
+    if (play_quick_ball_latias_finish()) return true;
     if (quick_ball_tapu_duplicate_crispin_is_redundant(
             permit_payload)) {
       if (trace_ != nullptr) {

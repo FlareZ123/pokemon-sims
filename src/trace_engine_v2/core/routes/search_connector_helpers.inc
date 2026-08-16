@@ -7,6 +7,23 @@
            hand_count(Card::RegidragoVstar) == 0;
   }
 
+  bool has_search_surviving_copy(const Card card, const Card excluded) const {
+    // A connector may count only copies that survive playing the current search card.
+    // Search connector ownership cleanup: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+    return hand_count(card) > (card == excluded ? 1 : 0);
+  }
+
+  bool preserves_hand_discard_outlet_after_search_cost(
+      const Card outlet, const Card excluded) const {
+    // Mysterious Treasure, Quick Ball, and Earthen Vessel pay their discard before
+    // a searched card reaches hand: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/sv4-163
+    const auto cost = choose_discard(false, true);
+    if (!cost) return false;
+    const int played_copy = outlet == excluded ? 1 : 0;
+    const int cost_copy = *cost == outlet ? 1 : 0;
+    return hand_count(outlet) > played_copy + cost_copy;
+  }
+
   bool has_other_payload_outlet(const Card excluded) const {
     // A search connector can only fetch a future payload when a payload may still
     // be in deck. K1 derives this from legal deck or Prize inspection.
@@ -19,31 +36,36 @@
     // Evolution Incense has no discard effect, while Brilliant Blender and Professor Burnet
     // discard cards selected from deck, so none can dispose of this fetched hand payload:
     // https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    const auto present = [this, excluded](const Card card) {
-      return hand_count(card) > (card == excluded ? 1 : 0);
-    };
     // The current search Item and its mandatory discard resolve before the fetched
     // payload reaches hand. A claimed continuation must survive both operations;
     // Mysterious Treasure and Quick Ball both require that upfront discard:
     // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
-    const auto preserves_hand_discard_outlet = [this, excluded](const Card outlet) {
-      const auto cost = choose_discard(false, true);
-      if (!cost) return false;
-      const int played_copy = outlet == excluded ? 1 : 0;
-      const int cost_copy = *cost == outlet ? 1 : 0;
-      return hand_count(outlet) > played_copy + cost_copy;
-    };
     // The current Treasure or Quick Ball line spends its search card and one discard,
     // then adds the fetched payload. Ultra Ball still needs two other cards when played:
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     // Its post-search hand therefore needs Ultra Ball, the fetched payload, and one
     // further card, which requires at least four cards in the pre-search hand.
-    const bool payable_ultra_ball = present(Card::UltraBall) && state_.hand.size() >= 4U;
-    return preserves_hand_discard_outlet(Card::MysteriousTreasure) ||
-           preserves_hand_discard_outlet(Card::QuickBall) || payable_ultra_ball ||
-           preserves_hand_discard_outlet(Card::EarthenVessel) ||
-           (supporter_allowed() && present(Card::Serena));
+    const bool payable_ultra_ball =
+        has_search_surviving_copy(Card::UltraBall, excluded) &&
+        state_.hand.size() >= 4U;
+    return preserves_hand_discard_outlet_after_search_cost(
+               Card::MysteriousTreasure, excluded) ||
+           preserves_hand_discard_outlet_after_search_cost(
+               Card::QuickBall, excluded) ||
+           payable_ultra_ball ||
+           preserves_hand_discard_outlet_after_search_cost(
+               Card::EarthenVessel, excluded) ||
+           (supporter_allowed() &&
+            has_search_surviving_copy(Card::Serena, excluded));
   }
+
+  inline static constexpr std::array<Card, 11>
+      kMysteriousTreasureFallbackTargets{{
+          Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
+          Card::Oricorio, Card::TapuLeleGX, Card::MegaDragonite,
+          Card::Dragapult, Card::GoodraVstar, Card::DialgaGX,
+          Card::Appletun, Card::Dipplin,
+      }};
 
   Card fallback_mysterious_target_after_search_started() const {
     // Mysterious Treasure can search a Psychic or Dragon Pokémon: https://api.pokemontcg.io/v2/cards/sm6-113
@@ -55,11 +77,7 @@
     // https://api.pokemontcg.io/v2/cards/swsh3-104
     // https://github.com/FlareZ123/pokemon-sims/issues/1253
     // https://github.com/FlareZ123/pokemon-sims/issues/1949
-    for (const Card target : {Card::RegidragoV, Card::RegidragoVstar,
-                              Card::LatiasEx, Card::Oricorio,
-                              Card::TapuLeleGX, Card::MegaDragonite,
-                              Card::Dragapult, Card::GoodraVstar,
-                              Card::DialgaGX, Card::Appletun, Card::Dipplin}) {
+    for (const Card target : kMysteriousTreasureFallbackTargets) {
       if (deck_count_after_search_started(target) > 0) return target;
     }
     return Card::RegidragoV;

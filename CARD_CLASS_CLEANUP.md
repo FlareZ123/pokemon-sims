@@ -47,6 +47,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/setup_lifecycle.inc` owns opening-hand, mulligan, Prize-deal, and setup-trace mechanics.
 - `src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn action-state reset semantics.
 - `src/trace_engine_v2/core/deck_knowledge.inc` owns reusable copy arithmetic after visibility is resolved. `KnowledgeCopyPolicy` is an explicit final stateless policy class; hidden-zone visibility and route admission remain Engine concerns.
+- `src/trace_engine_v2/core/routes/earthen_vessel_vstar_window_policy.inc` owns the Earthen Vessel / Regidrago VSTAR strict-JIT window and K0/K1 preservation policy formerly stored in the historical root override.
 
 ## Active card migrations
 
@@ -69,7 +70,9 @@ The source-bounded Steven route package now has a canonical organized owner at `
 
 The late-Steven route body now has a canonical policy owner at `src/trace_engine_v2/core/routes/late_steven_route_policy.inc`, and the Steven/Blender composition includes that owner directly. The historical `src/trace_engine_v2/part_010_late_steven_override.inc` body remains temporarily as an exact source-contract mirror because existing audit and traceability anchors still reference its historical line numbers. It is no longer part of the composition path. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_route_policy.inc Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
 
-The namespace-scope Forretress composition now has a canonical package at `src/trace_engine_v2/core/forretress/package.inc`. The historical `src/trace_engine_v2/part_forretress_ex_combo.inc` path is a thin compatibility include. The package keeps the reusable runtime, public scenario forward declarations, shared scenario extension, and Garbodor scenario family at the same verified namespace boundary while preserving their textual order. Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/package.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+The namespace-scope Forretress composition now has a canonical package at `src/trace_engine_v2/core/forretress/package.inc`. The historical `src/trace_engine_v2/part_forretress_ex_combo.inc` path is a thin compatibility include. The package keeps the reusable runtime, public scenario forward declarations, shared scenario extension, and Garbodor scenario family at the same verified namespace boundary while preserving their textual order. Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/package.inc C++ textual include semantics: https://eel.is/c++draft/cpp.include
+
+The Earthen Vessel / Regidrago VSTAR window body now has a canonical route owner at `src/trace_engine_v2/core/routes/earthen_vessel_vstar_window_policy.inc`. The historical `src/trace_engine_v2/part_earthen_vessel_vstar_window_override.inc` path is a thin compatibility include at the same Engine member boundary. Keep K0/K1 visibility, strict-JIT preservation, Latias promotion, and payload-cost policy in this strategy owner while shared deck arithmetic remains in `core/deck_knowledge.inc`. Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/earthen_vessel_vstar_window_policy.inc
 
 The issue-3221 K0 Steven/Brilliant Blender route remains owned by `src/trace_engine_v2/core/routes/k0_steven_blender_semantic_policy.inc`. Its historical root compatibility seam remains until source-contract and composition consumers are proven migrated. Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164 Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
@@ -117,6 +120,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 7. Keep Forretress reusable scenario and runtime ownership under `core/forretress/`, with `core/forretress/package.inc` as the namespace-scope composition owner. Remove `part_forretress_ex_combo.inc` only after repository-wide and source-contract consumers are proven migrated.
 8. Prefer named pure-projection members over route-local anonymous projections when a projection is reused or has a distinct policy contract.
 9. Prefer named final stateless policy classes for reusable arithmetic or traversal seams. Do not move route admission, hidden-zone visibility decisions, DCI/JIT timing, or target preference into a utility class merely to reduce line count.
+10. Continue moving complete root `part_*` route bodies into `core/routes/` one owner at a time. Leave a forwarding seam at the historical path until source-contract references are migrated, and preserve the exact Engine member boundary plus all rule and issue provenance during each move.
 
 ## One-card workflow
 

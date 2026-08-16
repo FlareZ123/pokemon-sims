@@ -83,6 +83,8 @@ The issue-1516/2164 Quick Ball, Tapu Lele-GX, Crispin route family remains owned
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner. Reuse `PayloadZonePolicy` only where physical-zone traversal, membership, and count semantics match exactly. Preserve physical order for observable first-match selection and preserve explicit strategic order for preference selection. DCI/JIT predicates and discard timing remain with strategy owners. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
 
+`PayloadZonePolicy` now accepts any Card range with `begin()` / `end()` semantics, so fixed-size route cost plans can reuse the same physical membership and count traversal without temporary vectors or duplicated STL scans. The issue-1673 Secret Box deadline cost plan is the first `std::array<Card, 3>` consumer. Canonical route: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1673_secret_box_payload_deadline_policy.inc Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
+
 `PayloadZonePolicy` and `PayloadPreferencePolicy` are final utility classes with static operations only. Keep their responsibilities narrow: physical-zone mechanics belong to the zone policy, strategic payload ordering belongs to the preference policy, and route-specific DCI/JIT admission remains outside both classes.
 
 ## Setup lifecycle cleanup
@@ -127,6 +129,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 9. Prefer named final stateless policy classes for reusable arithmetic or traversal seams. Do not move route admission, hidden-zone visibility decisions, DCI/JIT timing, or target preference into a utility class merely to reduce line count.
 10. Keep route-local final policy classes limited to reusable pure projections. Engine callers continue to own state reads, DCI/JIT visibility, route admission, and physical actions unless a lower card/rules layer owns the printed transition.
 11. Route new optional intrinsic card classifiers through `CardContext`'s shared classifier dispatch seam rather than duplicating callback-null checks in each public operation.
+12. Reuse generic `PayloadZonePolicy` range operations for fixed-size Card cost plans only when the query is purely physical membership, count, or first-match traversal; keep route-specific DCI/JIT admission outside the utility class.
 
 ## One-card workflow
 

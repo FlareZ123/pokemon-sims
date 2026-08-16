@@ -13,7 +13,7 @@
 
     const bool can_jit_discard = can_play_payload_this_turn() &&
         blender_vstar_card_axis_can_finish_this_turn() &&
-        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+        payload_zone_contains(state_.hand);
     if (can_jit_discard) return false;
 
     // Quick Ball remains a live connector only when it can establish a missing

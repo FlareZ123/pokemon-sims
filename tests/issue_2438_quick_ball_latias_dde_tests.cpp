@@ -13,7 +13,7 @@ struct EngineTestAccess {
     engine.prizes_revealed_ = true;
   }
   static bool route(const Engine& engine) {
-    return engine.issue_2164_quick_ball_latias_finish_available();
+    return engine.quick_ball_latias_finish_available();
   }
 };
 }

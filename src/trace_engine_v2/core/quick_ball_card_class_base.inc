@@ -83,9 +83,9 @@
     auto& plan = *static_cast<QuickBallBaseSearchPlan*>(opaque);
     Engine& engine = *plan.engine;
 
-    const std::array<Card, 7> targets{
+    const std::array<Card, 6> targets{
         Card::RegidragoV, Card::LatiasEx, Card::TapuLeleGX,
-        Card::Oricorio, Card::CrobatV, Card::DialgaGX, Card::MawileGX};
+        Card::Oricorio, Card::CrobatV, Card::DialgaGX};
     for (const Card target : targets) {
       const bool desired =
           (target == Card::RegidragoV && plan.want_regi) ||

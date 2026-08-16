@@ -38,10 +38,12 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/cards/card_id.hpp` owns stable `sim::Card` identifiers. Exact external print identity belongs in `CardDefinition::canonical_id`.
 - `src/cards/card_definition.hpp` owns intrinsic exact-print facts such as name, print ID, Trainer subtype, stage/type, Retreat Cost, Rule Box/Pokemon V/ACE SPEC/Basic Energy flags, and direct source URL.
 - `src/cards/card_registry.hpp` owns explicit deterministic registration. `kRegisteredCardDefinitions` is the canonical inventory and `find_definition()` is the canonical lookup: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-- `src/rules/card_context.hpp` owns reusable printed-rules operations. Card-specific route policy stays outside that interface.
-- `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` owns the trace-engine construction bridge for reusable card effects. `src/trace_engine_v2/core/card_context_adapter.hpp` is a compatibility include until direct consumers migrate to the organized adapter owner.
+- `src/rules/card_context.hpp` owns reusable printed-rules operations. `CardContext::Classifiers` groups optional intrinsic classifier callbacks so migrated card modules do not grow another parallel callback list. Card-specific route policy stays outside that interface.
+- `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` owns the trace-engine construction bridge for reusable card effects. `CardContextAdapterCallbacks` is the named callback bundle for new bridge consumers, while the positional overload remains as a compatibility seam. `src/trace_engine_v2/core/card_context_adapter.hpp` is a compatibility include until direct consumers migrate to the organized adapter owner.
 - Engine strategy owns route admission, strategic target preference, DCI/UDP/AMR, strict-JIT and matchup-flex timing, Supporter contention, connector domination, K0/K1 state, setup-axis value, lock schedules, readiness, and payload policy.
 - `src/trace_engine_v2/core/card_catalog.inc` is the compatibility owner for unmigrated names and intrinsic classification fallbacks. Registry lookup remains the first metadata path.
+
+Next adapter step: migrate card-class `.inc` consumers from long positional `make_card_context_adapter()` calls to `CardContextAdapterCallbacks` as each seam is touched. Preserve callback behavior and card/strategy ownership while doing so, then remove the positional compatibility overload only after repository-wide consumers are gone.
 
 Next catalog step: migrate remaining `LegacyCardCatalog` and intrinsic compatibility entries one card at a time. Delete a compatibility row only after that card has an explicit `CardDefinition`, registration, exact-print source, and focused metadata test. Keep gameplay resolution and strategy at their current owners during metadata-only migrations.
 

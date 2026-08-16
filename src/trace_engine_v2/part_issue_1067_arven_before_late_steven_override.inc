@@ -65,8 +65,14 @@
     return forest_seal_stone_available && brilliant_blender_available;
   }
 
-  #include "part_issue_3222_steven_blender_semantic_override.inc"
-  #include "part_issue_3221_k0_steven_blender_semantic_override.inc"
+  // Canonical Steven / Brilliant Blender semantic route owners. The retired root
+  // forwarding seams carried no behavior; include these route bodies directly at
+  // the same Engine member boundary.
+  // C++ textual include semantics: https://eel.is/c++draft/cpp.include
+  // K1 owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_blender_semantic_policy.inc
+  // K0 owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/k0_steven_blender_semantic_policy.inc
+  #include "core/routes/steven_blender_semantic_policy.inc"
+  #include "core/routes/k0_steven_blender_semantic_policy.inc"
   // Canonical issue-3203 route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/active_vstar_steven_route_policy.inc
   #include "core/routes/active_vstar_steven_route_policy.inc"
 

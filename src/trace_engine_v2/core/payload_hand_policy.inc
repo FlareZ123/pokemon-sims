@@ -1,4 +1,5 @@
-  struct PayloadZonePolicy {
+  class PayloadZonePolicy final {
+   public:
     template <typename Predicate>
     [[nodiscard]] static auto first_iterator_matching(
         const std::vector<Card>& zone, Predicate predicate) {
@@ -53,7 +54,8 @@
     }
   };
 
-  struct PayloadPreferencePolicy {
+  class PayloadPreferencePolicy final {
+   public:
     inline static constexpr std::array<Card, 5> kOrder{{
         Card::Appletun,
         Card::MegaDragonite,

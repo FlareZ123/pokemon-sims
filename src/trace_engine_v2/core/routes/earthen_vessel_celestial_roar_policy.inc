@@ -26,7 +26,15 @@
         std::none_of(state_.hand.begin(), state_.hand.end(), is_payload);
   }
 
-  std::vector<Card> search_celestial_roar_vessel_energy() {
+  bool earthen_vessel_celestial_roar_action_available() const {
+    // Keep the canonical Item/search legality boundary in one route-owned query:
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Trainer-effect legality ruling: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    return !item_locked() && hand_count(Card::EarthenVessel) > 0 &&
+        deck_search_available() && earthen_vessel_has_legal_target();
+  }
+
+  std::vector<Card> search_earthen_vessel_energy_for_celestial_roar() {
     std::vector<Card> searched;
     // Search Fire after legal inspection when it exists. If every Fire is outside
     // the deck, selecting one Grass remains a legal up-to-one fallback without
@@ -54,10 +62,8 @@
     // Trainer-effect legality ruling: https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
     // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1368
-    if (item_locked() || hand_count(Card::EarthenVessel) == 0 ||
-        !deck_search_available() || !earthen_vessel_has_legal_target()) {
-      return false;
-    }
+    if (!earthen_vessel_celestial_roar_action_available()) return false;
+
     const auto cost = choose_discard(false, true, true, Card::EarthenVessel);
     if (!cost) return false;
 
@@ -66,7 +72,7 @@
     discard_from_hand(*cost, "Earthen Vessel cost", "R-EV-01");
     record_deck_search_knowledge("Earthen Vessel");
 
-    const auto searched = search_celestial_roar_vessel_energy();
+    const auto searched = search_earthen_vessel_energy_for_celestial_roar();
     trace("Earthen Vessel", "R-EV-01; R-GAME-ITEM; P-COMPRESS-01",
           "Searched up to 2 Basic Energy: " + join_cards(searched) + ".");
     return true;

@@ -2,8 +2,9 @@
 #define SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
 
 #ifndef SIM_TRACE_CARD_CATALOG_INCLUDED
-// Reuse the single legacy catalog shim instead of duplicating its include contract.
-#include "part_000.inc"
+// Compose the canonical catalog owner directly. The part_000 shim remains only for
+// external source-anchor compatibility while callers migrate away from legacy parts.
+#include "core/card_catalog.inc"
 #endif
 
 #endif  // SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
@@ -19,6 +20,14 @@ constexpr bool is_payload(const Card card) {
 }
 */
 // Historical links target line 137; preserve that anchor until those consumers migrate.
+
+
+
+
+
+
+
+
 
 
 

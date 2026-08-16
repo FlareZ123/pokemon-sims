@@ -721,7 +721,7 @@ bool play_arven() {
 #undef play_quick_ball
 
 #define play_quick_ball play_quick_ball_issue1595_original
-#include "../part_issue_1516_quick_ball_tapu_crispin_override.inc"
+#include "../core/routes/quick_ball_tapu_crispin_policy.inc" // Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/quick_ball_tapu_crispin_policy.inc
 #undef play_quick_ball
 
 #define play_quick_ball play_quick_ball_issue2272_original

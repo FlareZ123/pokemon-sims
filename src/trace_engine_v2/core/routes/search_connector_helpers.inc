@@ -64,3 +64,34 @@
     }
     return Card::RegidragoV;
   }
+
+  Card fallback_quick_ball_target_after_search_started() const {
+    // Quick Ball searches Basic Pokémon, and this K1 fallback preserves the
+    // established modeled target order after legal deck inspection:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+    // Confirmed Pineco fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1958
+    for (const Card target : {Card::RegidragoV, Card::LatiasEx, Card::Oricorio, Card::TapuLeleGX,
+                              Card::CrobatV, Card::MawileGX, Card::DialgaGX,
+                              Card::Pineco}) {
+      if (deck_count_after_search_started(target) > 0) return target;
+    }
+    return Card::RegidragoV;
+  }
+
+  Card fallback_ultra_ball_target_after_search_started() const {
+    // Ultra Ball searches any Pokémon, so the K1 fallback covers the complete
+    // modeled universe, including the Appletun and Pineco package:
+    // Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // Appletun: https://api.pokemontcg.io/v2/cards/sv8-140
+    // Pineco / Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
+    // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
+    // Confirmed fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1254 https://github.com/FlareZ123/pokemon-sims/issues/1952
+    for (const Card target : {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
+                              Card::TapuLeleGX, Card::CrobatV, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
+                              Card::DialgaGX, Card::MawileGX, Card::Dipplin, Card::Appletun,
+                              Card::Pineco, Card::ForretressEx}) {
+      if (deck_count_after_search_started(target) > 0) return target;
+    }
+    return Card::RegidragoV;
+  }

@@ -28,6 +28,26 @@
     return true;
   }
 
+  bool promote_best_same_turn_regidrago_for_celestial_roar() {
+    Pokemon* best = nullptr;
+    int best_score = -100000;
+    for (Pokemon& pokemon : state_.bench) {
+      if (pokemon.card != Card::RegidragoV ||
+          pokemon.entered_turn != state_.turn || total_energy_units(pokemon) < 1 ||
+          pays_apex_energy_cost(pokemon)) {
+        continue;
+      }
+      const int score = score_regi(pokemon, false);
+      if (score > best_score) {
+        best = &pokemon;
+        best_score = score;
+      }
+    }
+    if (best == nullptr) return false;
+    std::swap(*state_.active, *best);
+    return true;
+  }
+
   bool retreat_to_benched_vstar_with_latias() {
     if (!need_active_vstar() || !can_free_retreat_with_latias()) return false;
     // Latias ex removes the Basic Active's Retreat Cost. Promote the Benched
@@ -52,20 +72,47 @@
   }
 
   bool play_tate_switch() {
-    // Card text source: https://api.pokemontcg.io/v2/cards/sm7-148
-    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 ||
-        !need_active_vstar()) {
+    // Tate & Liza may switch the Active Pokemon with any Benched Pokemon:
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0) return false;
+
+    if (need_active_vstar() && promote_best_benched_vstar()) {
+      consume_tate_liza_supporter();
+      // Select the Regidrago VSTAR that best satisfies Apex Dragon's GGF cost
+      // before spending the Supporter:
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      trace("PLAY SUPPORTER", "R-TATE-01; R-GAME-SUPPORTER",
+            "Tate & Liza switch mode: promoted the best-powered Benched Regidrago "
+            "VSTAR.");
+      return true;
+    }
+
+    // A Basic Pokemon played this turn cannot evolve until the player's next turn.
+    // When that same-turn Regidrago V already has the [C] needed for Celestial Roar,
+    // Tate's printed switch mode can advance the board while preserving a held VSTAR
+    // for the next legal evolution. A prior-turn Regidrago V is deliberately excluded
+    // because immediate evolution dominates spending the Supporter on this setup route.
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Regidrago V / Celestial Roar [C]: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Evolution, switching, Supporter, and attack procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Connector-domination policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3961
+    const bool preserve_held_vstar_for_next_evolution =
+        hand_count(Card::RegidragoVstar) > 0 && !first_turn_going_first() &&
+        state_.active && state_.active->card != Card::RegidragoV &&
+        state_.active->card != Card::RegidragoVstar &&
+        !can_free_retreat_with_latias();
+    if (!preserve_held_vstar_for_next_evolution ||
+        !promote_best_same_turn_regidrago_for_celestial_roar()) {
       return false;
     }
-    if (!promote_best_benched_vstar()) return false;
+
     consume_tate_liza_supporter();
-    // Tate & Liza may switch any Benched Pokémon Active. Select the Regidrago
-    // VSTAR that best satisfies Apex Dragon's GGF cost before spending Supporter:
-    // https://api.pokemontcg.io/v2/cards/sm7-148
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    trace("PLAY SUPPORTER", "R-TATE-01; R-GAME-SUPPORTER",
-          "Tate & Liza switch mode: promoted the best-powered Benched Regidrago "
-          "VSTAR.");
+    trace("PLAY SUPPORTER", "R-TATE-01; R-GAME-SUPPORTER; P-COMPRESS-01",
+          "Tate & Liza switch mode preserved the held Regidrago VSTAR and promoted "
+          "an energized same-turn Regidrago V for Celestial Roar.");
     return true;
   }
 

@@ -80,7 +80,8 @@ const auto issue_1552_t1_vessel_route_available = [this] {
   // Earthen Vessel: https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/cards/en/sv4.json
   // Path to the Peak: https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/cards/en/swsh6.json
   // Field Blower / Tapu Lele-GX: https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/cards/en/sm2.json
-  // Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Crispin: https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/cards/en/sv7.json
+  // Item and Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   // Same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
   // Confirmed cross-profile bug: https://github.com/FlareZ123/pokemon-sims/issues/3039
   // Confirmed seat-symmetry bug: https://github.com/FlareZ123/pokemon-sims/issues/3862
@@ -89,6 +90,7 @@ const auto issue_1552_t1_vessel_route_available = [this] {
       !strict_payload_timing() ||
       state_.turn != 1 || scenario_.max_turn < 2 ||
       item_locked() || item_locked_on_turn(state_.turn + 1) ||
+      uses_full_supporter_lock(scenario_.locks) ||
       state_.manual_energy_used || !state_.active ||
       state_.active->card != Card::RegidragoV ||
       state_.active->grass != 0 || state_.active->fire != 0 ||

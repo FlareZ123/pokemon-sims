@@ -2,6 +2,8 @@
 
 This file is the live architecture and migration plan. Historical cleanup-wave notes belong in Git history. Keep this document limited to current ownership, remaining work, and validation requirements.
 
+Current cleanup state: `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` now exposes a named `CardContextAdapter` construction class while preserving the established free-function seam, and `src/trace_engine_v2/core/turn_lifecycle.inc` expresses its stateless reset owners as final policy classes. Both changes are ownership-only refactors with no gameplay-policy movement.
+
 ## Operating rule
 
 > **Strategy chooses. Card code validates and resolves. Rules primitives perform state transitions.**
@@ -39,7 +41,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/cards/card_definition.hpp` owns intrinsic exact-print facts such as name, print ID, Trainer subtype, stage/type, Retreat Cost, Rule Box/Pokemon V/ACE SPEC/Basic Energy flags, and direct source URL.
 - `src/cards/card_registry.hpp` owns explicit deterministic registration. `kRegisteredCardDefinitions` is the canonical inventory and `find_definition()` is the canonical lookup: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 - `src/rules/card_context.hpp` owns reusable printed-rules operations. `CardContext::Classifiers` groups optional intrinsic classifier callbacks so migrated card modules do not grow another parallel callback list. Card-specific route policy stays outside that interface.
-- `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` owns the trace-engine construction bridge for reusable card effects. `CardContextAdapterCallbacks` is the named callback bundle for bridge consumers, and the positional compatibility overload has been retired after the live Quick Ball caller migrated. `src/trace_engine_v2/core/card_context_adapter.hpp` remains a compatibility include until direct consumers migrate to the organized adapter owner.
+- `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` owns the trace-engine construction bridge for reusable card effects. `CardContextAdapterCallbacks` is the named callback bundle for bridge consumers, and the positional compatibility overload has been retired after the live Quick Ball caller migrated. `CardContextAdapter` is the named construction owner; the established `make_card_context_adapter()` free function delegates to it so callers can migrate independently. `src/trace_engine_v2/core/card_context_adapter.hpp` remains a compatibility include until direct consumers migrate to the organized adapter owner.
 - Engine strategy owns route admission, strategic target preference, DCI/UDP/AMR, strict-JIT and matchup-flex timing, Supporter contention, connector domination, K0/K1 state, setup-axis value, lock schedules, readiness, and payload policy.
 - `src/trace_engine_v2/core/card_catalog.inc` is the compatibility owner for unmigrated names and intrinsic classification fallbacks. Registry lookup remains the first metadata path.
 
@@ -174,7 +176,7 @@ Before adding a new loop or route-local helper, check these owners and reuse a n
 
 ## Turn lifecycle cleanup
 
-`src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn resets. `TurnActionStatePolicy::reset()` clears generic action flags and same-turn discard tracking. `TransientTurnLockPolicy::reset()` owns scenario-dependent one-turn Garbodor unlock reset. Established order remains: set turn, clear action state, restore transient lock pressure, then perform the mandatory start-of-turn draw. Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104 Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125 Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+`src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn resets. `TurnActionStatePolicy` and `TransientTurnLockPolicy` are final stateless policy classes. `TurnActionStatePolicy::reset()` clears generic action flags and same-turn discard tracking. `TransientTurnLockPolicy::reset()` owns scenario-dependent one-turn Garbodor unlock reset. Established order remains: set turn, clear action state, restore transient lock pressure, then perform the mandatory start-of-turn draw. Dark Asset: https://api.pokemontcg.io/v2/cards/swsh3-104 Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57 Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125 Advanced rules: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
 Next turn-lifecycle step: route exact duplicate action-flag/reset bundles through `TurnActionStatePolicy::reset()` and exact scenario-scoped transient lock resets through `TransientTurnLockPolicy::reset()`. Preserve ordering relative to the required turn draw, and keep persistent matchup state outside these per-turn owners.
 

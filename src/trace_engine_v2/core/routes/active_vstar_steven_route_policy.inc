@@ -32,8 +32,8 @@
 
     const int grass_in_deck = deck_count_after_search_started(Card::Grass);
     const int fire_in_deck = deck_count_after_search_started(Card::Fire);
-    const int treasure_targets = static_cast<int>(std::count_if(
-        state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic));
+    const int treasure_targets =
+        PayloadZonePolicy::count_matching(state_.deck, is_dragon_or_psychic);
     if (deck_count_after_search_started(Card::Crispin) == 0 ||
         grass_in_deck < 2 || fire_in_deck == 0 || treasure_targets == 0) {
       return false;

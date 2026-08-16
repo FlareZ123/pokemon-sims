@@ -130,9 +130,9 @@ Named Steven route policies live under `src/trace_engine_v2/core/routes/`. `core
 
 Projected Item-lock timing delegates to the canonical Engine `item_locked_on_turn()` seam instead of re-encoding lock-family identities inside route files. Shared timing owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
 
-The #1772 deterministic Steven continuation now evaluates `issue_1772_prepared_fire_regidrago()` once inside its pure completion predicate and reuses that witness for both existence and Double Dragon checks, removing a duplicate Bench traversal without changing route admission. Canonical route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1772_steven_t3_package_override.inc
+The #1772 deterministic Steven continuation now evaluates `issue_1772_prepared_fire_regidrago()` once inside its package-admission predicate and reuses that witness for both existence and Double Dragon checks, removing the remaining duplicate Bench traversal without changing route admission. Its two admission predicates also share `issue_1772_payload_held()`, which delegates exact hand-zone Dragon membership to the canonical payload policy instead of repeating the same query locally. Canonical route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1772_steven_t3_package_override.inc Shared payload owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
 
-Next Steven cleanup step: migrate duplicated Gladion Prize-exchange mutations to `resolve_gladion_prize_exchange()` only when reveal and target-selection semantics match exactly. Continue retiring composition-only `part_*steven*` forwarders whose canonical `core/routes/` owner can replace them at the identical textual boundary. Keep the new `composition/steven_blender_overrides.inc` boundary stable until those inner route seams can be retired without changing macro lifetime.
+Next Steven cleanup step: inventory other duplicated pure route witnesses and payload membership queries before introducing new helpers. Migrate duplicated Gladion Prize-exchange mutations to `resolve_gladion_prize_exchange()` only when reveal and target-selection semantics match exactly. Continue retiring composition-only `part_*steven*` forwarders whose canonical `core/routes/` owner can replace them at the identical textual boundary. Keep the new `composition/steven_blender_overrides.inc` boundary stable until those inner route seams can be retired without changing macro lifetime.
 
 ## Setup lifecycle cleanup
 
@@ -157,7 +157,6 @@ Next catalog/knowledge step: migrate legacy name and intrinsic metadata rows onl
 - Setup lifecycle labels, mulligans, Prize deal, and setup trace mechanics: `src/trace_engine_v2/core/setup_lifecycle.inc`.
 - Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
 - Turn action runtime: `src/trace_engine_v2/turn_action_policy_runtime.inc`.
-
 Before adding a new loop or route-local helper, check these owners and reuse a named seam when ordering and semantics match exactly.
 
 ## Turn lifecycle cleanup

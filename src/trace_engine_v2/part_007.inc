@@ -50,8 +50,26 @@
   }
 
   bool wonder_tag_future_gladion_treasure_route() const {
-    if (!strict_payload_timing() || scenario_.locks != LockMode::None ||
-        state_.turn + 2 > scenario_.max_turn || !state_.supporter_used ||
+    const int treasure_turn = state_.turn + 2;
+    // The route uses Wonder Tag now, Gladion on the following turn, and
+    // Mysterious Treasure on the ready turn. Check those action classes directly.
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced Ability, Supporter, Item, evolution, and attack procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Canonical lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Confirmed lock-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/4055
+    const bool current_wonder_tag_available =
+        ability_available_for_pokemon(Card::TapuLeleGX);
+    const bool future_gladion_allowed =
+        !uses_full_supporter_lock(scenario_.locks);
+    const bool future_treasure_allowed = !item_locked_on_turn(treasure_turn);
+
+    if (!strict_payload_timing() || !current_wonder_tag_available ||
+        !future_gladion_allowed || !future_treasure_allowed ||
+        treasure_turn > scenario_.max_turn || !state_.supporter_used ||
         !state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||

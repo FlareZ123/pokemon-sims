@@ -27,13 +27,13 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 | Matchup-flex JIT, going first | 17.152% ± 0.119 | 50.658% ± 0.158 | 68.089% ± 0.147 | 31.911% ± 0.147 |
 | No discard control, going first | 19.740% ± 0.126 | 56.829% ± 0.157 | 73.585% ± 0.139 | 26.415% ± 0.139 |
 | Strict JIT, turn-two Item lock, first | 4.583% ± 0.066 | 10.484% ± 0.097 | 18.587% ± 0.123 | 81.413% ± 0.123 |
-| Strict JIT, Rule Box Ability lock, first | 4.498% ± 0.066 | 27.698% ± 0.142 | 42.686% ± 0.156 | 57.314% ± 0.156 |
+| Strict JIT, Rule Box Ability lock, first | 4.526% ± 0.066 | 27.688% ± 0.141 | 42.668% ± 0.156 | 57.332% ± 0.156 |
 | Strict JIT, turn-two Item + Rule Box Ability lock, first | 0.779% ± 0.028 | 4.667% ± 0.067 | 9.645% ± 0.093 | 90.355% ± 0.093 |
 | Strict JIT, going second | 29.658% ± 0.144 | 55.591% ± 0.157 | 67.484% ± 0.148 | 32.516% ± 0.148 |
 | Matchup-flex JIT, going second | 37.296% ± 0.153 | 64.209% ± 0.152 | 75.840% ± 0.135 | 24.160% ± 0.135 |
 | No discard control, going second | 40.232% ± 0.155 | 68.436% ± 0.147 | 79.981% ± 0.127 | 20.019% ± 0.127 |
 | Strict JIT, turn-two Item lock, second | 14.203% ± 0.110 | 28.493% ± 0.143 | 37.272% ± 0.153 | 62.728% ± 0.153 |
-| Strict JIT, Rule Box Ability lock, second | 18.540% ± 0.123 | 37.154% ± 0.153 | 49.431% ± 0.158 | 50.569% ± 0.158 |
+| Strict JIT, Rule Box Ability lock, second | 18.631% ± 0.123 | 37.131% ± 0.153 | 49.394% ± 0.158 | 50.606% ± 0.158 |
 | Strict JIT, turn-two Item + Rule Box Ability lock, second | 3.924% ± 0.061 | 14.705% ± 0.112 | 20.389% ± 0.127 | 79.611% ± 0.127 |
 | Strict JIT, Supporter lock, first | 0.005% ± 0.002 | 16.426% ± 0.117 | 23.376% ± 0.134 | 76.624% ± 0.134 |
 | Strict JIT, Supporter lock, second | 7.850% ± 0.085 | 20.357% ± 0.127 | 26.735% ± 0.140 | 73.265% ± 0.140 |
@@ -162,6 +162,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `e7c3b77f2d66d1114da9b0c64182db20607f9990084e9497d1ef7c76db079155`.
+Simulator policy digest: `53ac2001fd8c100cf49996b033ff41dd57a200c119cc4fb3e0a235e1a623f1d4`.
 
-Comparison CSV SHA-256: `69183cea6c5680051be96003e391bf40851bde0988cc291922d31fbd3324128b`.
+Comparison CSV SHA-256: `4b8389c95f1f7cb5da2e6db812b503e14073dcd905458ce1950573b840db2c34`.

@@ -143,8 +143,10 @@ void test_remaining_route_families_are_semantic() {
   require_text(steven, "double_dragon == 0",
                "Steven zero-Energy staging no longer excludes DDE");
 
+  // Canonical Vessel route owner after cleanup migration:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/earthen_vessel_vstar_window_policy.inc
   const std::string vessel = read_source(
-      "src/trace_engine_v2/part_earthen_vessel_vstar_window_override.inc");
+      "src/trace_engine_v2/core/routes/earthen_vessel_vstar_window_policy.inc");
   require_text(vessel, "completing_basic_energy_for",
                "Vessel/Latias hold lost semantic one-Basic completion");
 

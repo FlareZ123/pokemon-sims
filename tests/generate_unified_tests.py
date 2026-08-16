@@ -151,8 +151,10 @@ def build_test_case(
 def collect_test_cases(
     source_root: Path, tests_root: Path
 ) -> tuple[list[tuple[str, str, str]], list[str], set[str]]:
+    # Preload the canonical catalog owner rather than the legacy part_000 source shim.
+    # Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#catalog-and-knowledge-cleanup
     source_headers = set(ANGLE_INCLUDE.findall(
-        (source_root / "src" / "trace_engine_v2" / "part_000.inc").read_text(encoding="utf-8")
+        (source_root / "src" / "trace_engine_v2" / "core" / "card_catalog.inc").read_text(encoding="utf-8")
     ))
     cases: list[tuple[str, str, str]] = []
     access_blocks: list[str] = []

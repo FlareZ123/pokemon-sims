@@ -70,7 +70,7 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 | Strict JIT, Supporter lock, first | 1.851% ± 0.043 | 8.681% ± 0.089 | 13.975% ± 0.110 | 86.025% ± 0.110 |
 | Strict JIT, Supporter lock, second | 6.430% ± 0.078 | 12.483% ± 0.105 | 17.879% ± 0.121 | 82.121% ± 0.121 |
 | Garbodor + Boost Shake Ability lock, first | 6.979% ± 0.081 | 21.091% ± 0.129 | 33.742% ± 0.150 | 66.258% ± 0.150 |
-| Garbodor + Boost Shake Ability lock, second | 12.960% ± 0.106 | 25.188% ± 0.137 | 35.258% ± 0.151 | 64.742% ± 0.151 |
+| Garbodor + Boost Shake Ability lock, second | 12.960% ± 0.106 | 25.188% ± 0.137 | 35.258% ± 0.152 | 64.742% ± 0.152 |
 
 ### First-ready-turn distribution
 
@@ -162,6 +162,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `617c722bd9425963e35bfe2eef68d495d0bef9812e20e34e304ce325d7e9d824`.
+Simulator policy digest: `6e16e32bea4fa96e35d6f4233a51f33da0045f0e34fc1c3305679ac6806bd367`.
 
 Comparison CSV SHA-256: `a3e4e273634f06a45e11e1a03f883f3100332d07e12bcbb9715b2bfc1a8c72ad`.

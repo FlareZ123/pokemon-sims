@@ -5,33 +5,16 @@
 namespace sim::trace_engine_v2 {
 
 using CardContext = rules::CardContext;
-
-struct CardContextAdapterCallbacks {
-  CardContext::HandCountFn hand_count;
-  CardContext::MoveHandToDiscardFn move_hand_to_discard;
-  CardContext::DiscardFromHandFn discard_from_hand;
-  CardContext::SearchDeckToHandFn search_deck_to_hand;
-  CardContext::ShuffleDeckFn shuffle_deck;
-  CardContext::IsBasicPokemonFn is_basic_pokemon;
-  CardContext::BeginDeckSearchFn begin_deck_search;
-  CardContext::Classifiers classifiers{};
-};
+using CardContextAdapterCallbacks = CardContext::Callbacks;
 
 // Canonical adapter between Engine internals and reusable card effects. Each
 // migrated resolver supplies callbacks that delegate to the Engine's existing zone,
 // knowledge, trace, and shuffle helpers. Keeping construction here prevents card
-// modules from depending on trace_engine_v2 implementation details.
+// modules from depending on trace_engine_v2 implementation details while the rules
+// layer remains the single owner of the callback bundle shape.
 [[nodiscard]] inline CardContext make_card_context_adapter(
     void* engine, const CardContextAdapterCallbacks& callbacks) {
-  return CardContext{engine,
-                     callbacks.hand_count,
-                     callbacks.move_hand_to_discard,
-                     callbacks.discard_from_hand,
-                     callbacks.search_deck_to_hand,
-                     callbacks.shuffle_deck,
-                     callbacks.is_basic_pokemon,
-                     callbacks.begin_deck_search,
-                     callbacks.classifiers};
+  return CardContext{engine, callbacks};
 }
 
 }  // namespace sim::trace_engine_v2

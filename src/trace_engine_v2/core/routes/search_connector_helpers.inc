@@ -1,3 +1,18 @@
+  class SearchFallbackPolicy final {
+   public:
+    template <typename Targets, typename Available>
+    [[nodiscard]] static Card first_available(
+        const Targets& targets, const Card fallback, Available available) {
+      // Keep the shared K1 fallback traversal in one stateless policy while each
+      // search card retains its exact legal candidate order below.
+      // Cleanup contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#shared-policy-owners
+      for (const Card target : targets) {
+        if (available(target)) return target;
+      }
+      return fallback;
+    }
+  };
+
   bool need_regi() const { return !has_any_regi(); }
 
   // The VSTAR card axis is complete once the card is in hand; evolve_best_regi
@@ -55,14 +70,15 @@
     // https://api.pokemontcg.io/v2/cards/swsh3-104
     // https://github.com/FlareZ123/pokemon-sims/issues/1253
     // https://github.com/FlareZ123/pokemon-sims/issues/1949
-    for (const Card target : {Card::RegidragoV, Card::RegidragoVstar,
-                              Card::LatiasEx, Card::Oricorio,
-                              Card::TapuLeleGX, Card::MegaDragonite,
-                              Card::Dragapult, Card::GoodraVstar,
-                              Card::DialgaGX, Card::Appletun, Card::Dipplin}) {
-      if (deck_count_after_search_started(target) > 0) return target;
-    }
-    return Card::RegidragoV;
+    return SearchFallbackPolicy::first_available(
+        std::array<Card, 11>{Card::RegidragoV, Card::RegidragoVstar,
+                             Card::LatiasEx, Card::Oricorio,
+                             Card::TapuLeleGX, Card::MegaDragonite,
+                             Card::Dragapult, Card::GoodraVstar,
+                             Card::DialgaGX, Card::Appletun, Card::Dipplin},
+        Card::RegidragoV, [this](const Card target) {
+          return deck_count_after_search_started(target) > 0;
+        });
   }
 
   Card fallback_quick_ball_target_after_search_started() const {
@@ -71,12 +87,13 @@
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
     // Confirmed Pineco fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1958
-    for (const Card target : {Card::RegidragoV, Card::LatiasEx, Card::Oricorio, Card::TapuLeleGX,
-                              Card::CrobatV, Card::MawileGX, Card::DialgaGX,
-                              Card::Pineco}) {
-      if (deck_count_after_search_started(target) > 0) return target;
-    }
-    return Card::RegidragoV;
+    return SearchFallbackPolicy::first_available(
+        std::array<Card, 8>{Card::RegidragoV, Card::LatiasEx, Card::Oricorio,
+                            Card::TapuLeleGX, Card::CrobatV, Card::MawileGX,
+                            Card::DialgaGX, Card::Pineco},
+        Card::RegidragoV, [this](const Card target) {
+          return deck_count_after_search_started(target) > 0;
+        });
   }
 
   Card fallback_ultra_ball_target_after_search_started() const {
@@ -87,11 +104,14 @@
     // Pineco / Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
     // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
     // Confirmed fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1254 https://github.com/FlareZ123/pokemon-sims/issues/1952
-    for (const Card target : {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
-                              Card::TapuLeleGX, Card::CrobatV, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
-                              Card::DialgaGX, Card::MawileGX, Card::Dipplin, Card::Appletun,
-                              Card::Pineco, Card::ForretressEx}) {
-      if (deck_count_after_search_started(target) > 0) return target;
-    }
-    return Card::RegidragoV;
+    return SearchFallbackPolicy::first_available(
+        std::array<Card, 15>{Card::RegidragoV, Card::RegidragoVstar,
+                             Card::LatiasEx, Card::Oricorio, Card::TapuLeleGX,
+                             Card::CrobatV, Card::MegaDragonite, Card::Dragapult,
+                             Card::GoodraVstar, Card::DialgaGX, Card::MawileGX,
+                             Card::Dipplin, Card::Appletun, Card::Pineco,
+                             Card::ForretressEx},
+        Card::RegidragoV, [this](const Card target) {
+          return deck_count_after_search_started(target) > 0;
+        });
   }

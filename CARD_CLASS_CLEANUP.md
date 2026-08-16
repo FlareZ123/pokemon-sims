@@ -89,6 +89,18 @@ Named semantic owners already exist under `core/routes/`, `core/forretress/`, an
 
 Next composition step: migrate a root compatibility seam only when its complete function body or macro lifetime can move intact to the canonical semantic owner. Keep tooling-only compatibility paths where source-contract or unified-test generation still reads them directly.
 
+## Payload policy cleanup
+
+`src/trace_engine_v2/core/payload_hand_policy.inc` remains the canonical Dragon-payload query owner. Reuse its physical-order and explicit-preference helpers only when the caller's selection semantics match exactly. Keep DCI/JIT predicates and discard timing at strategy owners. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+
+## Setup lifecycle cleanup
+
+`src/trace_engine_v2/core/setup_lifecycle.inc` owns opening-deck initialization, mulligans, Prize dealing, setup labels, and setup trace mechanics. Keep setup recipe predicates centralized without moving strategic route decisions into the lifecycle layer. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+## Catalog and knowledge cleanup
+
+`src/trace_engine_v2/core/card_catalog.inc` owns the shrinking legacy metadata/name compatibility bridge. `src/trace_engine_v2/core/deck_knowledge.inc` owns reusable public-copy arithmetic after Engine callers resolve K0/K1 visibility. Hidden-zone visibility, Prize deduction, route admission, and DCI/UDP/AMR remain strategy concerns. Registry owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+
 ## Shared policy owners
 
 Before adding another route-local loop or helper, check these owners and reuse them only when ordering and semantics match exactly:

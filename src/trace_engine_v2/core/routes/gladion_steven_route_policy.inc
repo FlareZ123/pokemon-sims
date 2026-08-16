@@ -62,6 +62,7 @@
         });
   }
 
+  // This historical function name is part of the surrounding macro composition chain.
   bool play_gladion_issue1204_original() {
     if (!known_t2_steven_crispin_latias_route_available()) {
       return play_gladion_issue1191_original();
@@ -87,7 +88,7 @@
     return false;
   }
 
-  bool issue_1204_blind_gladion_missing_regi_admitted() const {
+  bool blind_gladion_missing_regi_route_admitted() const {
     if (prizes_known() || !supporter_allowed() || hand_count(Card::Gladion) == 0 ||
         !need_regi() || bench_space() == 0 || hand_count(Card::RegidragoV) > 0) {
       return false;
@@ -109,8 +110,8 @@
         !held_arven_route;
   }
 
-  bool issue_1204_prized_treasure_route_after_legal_reveal() const {
-    if (!issue_1204_blind_gladion_missing_regi_admitted()) return false;
+  bool prized_treasure_regidrago_route_after_legal_reveal() const {
+    if (!blind_gladion_missing_regi_route_admitted()) return false;
 
     Engine projected = *this;
     if (!remove_one(projected.state_.hand, Card::Gladion)) return false;
@@ -137,8 +138,18 @@
                                     true, Card::MysteriousTreasure).has_value();
   }
 
+  // Unified tests intentionally call the historical helper names as a source-contract seam.
+  // Test owner: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/issue_1204_gladion_treasure_tests.cpp
+  bool issue_1204_blind_gladion_missing_regi_admitted() const {
+    return blind_gladion_missing_regi_route_admitted();
+  }
+
+  bool issue_1204_prized_treasure_route_after_legal_reveal() const {
+    return prized_treasure_regidrago_route_after_legal_reveal();
+  }
+
   bool play_gladion() {
-    if (!issue_1204_prized_treasure_route_after_legal_reveal()) {
+    if (!prized_treasure_regidrago_route_after_legal_reveal()) {
       return play_gladion_issue1204_original();
     }
 

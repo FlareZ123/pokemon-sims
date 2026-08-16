@@ -8,20 +8,20 @@
   };
 
   bool guzma_hala_has_regidrago_energy_holder() const {
-    const auto eligible = [](const Pokemon& pokemon) {
+    // Keep whole-board presence checks on the canonical Active-first traversal.
+    // Canonical board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+    // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    return board_has_pokemon_matching([](const Pokemon& pokemon) {
       return pokemon.card == Card::RegidragoV ||
              pokemon.card == Card::RegidragoVstar;
-    };
-    return (state_.active && eligible(*state_.active)) ||
-           std::any_of(state_.bench.begin(), state_.bench.end(), eligible);
+    });
   }
 
   bool guzma_hala_has_open_fss_holder() const {
-    const auto eligible = [](const Pokemon& pokemon) {
-      return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
-    };
-    return (state_.active && eligible(*state_.active)) ||
-           std::any_of(state_.bench.begin(), state_.bench.end(), eligible);
+    // Reuse the canonical Pokemon V Tool-slot query instead of repeating board traversal.
+    // Canonical board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    return board_has_open_pokemon_v_tool_slot();
   }
 
   bool guzma_hala_projected_dde_vstar_route() const {

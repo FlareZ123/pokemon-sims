@@ -46,6 +46,19 @@
     }
   };
 
+  struct KnownSearchCopyCounts {
+    int hand = 0;
+    int deck = 0;
+
+    [[nodiscard]] constexpr int total() const {
+      return KnowledgeCopyPolicy::combined(hand, deck);
+    }
+
+    [[nodiscard]] constexpr bool has_any() const {
+      return KnowledgeCopyPolicy::has_any(total());
+    }
+  };
+
   [[nodiscard]] bool deck_has_cards() const {
     return !state_.deck.empty();
   }
@@ -102,13 +115,23 @@
     return KnowledgeCopyPolicy::has_any(known_deck_copy_count(card));
   }
 
+  [[nodiscard]] KnownSearchCopyCounts known_search_copy_counts(
+      const Card card) const {
+    // Once K1 is established, hand plus known-deck copies form a common query
+    // boundary for route selectors. Keep hidden-deck access behind known_deck_copy_count():
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    return KnownSearchCopyCounts{
+        .hand = hand_count(card),
+        .deck = known_deck_copy_count(card),
+    };
+  }
+
   [[nodiscard]] int known_hand_or_deck_copy_count(const Card card) const {
-    return KnowledgeCopyPolicy::combined(hand_count(card),
-                                         known_deck_copy_count(card));
+    return known_search_copy_counts(card).total();
   }
 
   [[nodiscard]] bool has_known_hand_or_deck_copy(const Card card) const {
-    return KnowledgeCopyPolicy::has_any(known_hand_or_deck_copy_count(card));
+    return known_search_copy_counts(card).has_any();
   }
 
   [[nodiscard]] bool might_be_unseen(const Card card) const {

@@ -45,6 +45,18 @@
            (supporter_allowed() && present(Card::Serena));
   }
 
+  template <std::size_t N>
+  Card first_remaining_search_target_after_search_started(
+      const std::array<Card, N>& targets, const Card fallback) const {
+    // K1 search fallbacks all inspect the same resolved deck zone. Keep the physical
+    // lookup in one helper while each printed search effect owns its legal target order:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    for (const Card target : targets) {
+      if (deck_count_after_search_started(target) > 0) return target;
+    }
+    return fallback;
+  }
+
   Card fallback_mysterious_target_after_search_started() const {
     // Mysterious Treasure can search a Psychic or Dragon Pokémon: https://api.pokemontcg.io/v2/cards/sm6-113
     // Appletun sv8-140 and Dipplin TWM 127 are Dragon Pokémon and remain legal
@@ -55,14 +67,13 @@
     // https://api.pokemontcg.io/v2/cards/swsh3-104
     // https://github.com/FlareZ123/pokemon-sims/issues/1253
     // https://github.com/FlareZ123/pokemon-sims/issues/1949
-    for (const Card target : {Card::RegidragoV, Card::RegidragoVstar,
-                              Card::LatiasEx, Card::Oricorio,
-                              Card::TapuLeleGX, Card::MegaDragonite,
-                              Card::Dragapult, Card::GoodraVstar,
-                              Card::DialgaGX, Card::Appletun, Card::Dipplin}) {
-      if (deck_count_after_search_started(target) > 0) return target;
-    }
-    return Card::RegidragoV;
+    static constexpr std::array<Card, 11> targets{
+        Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
+        Card::Oricorio, Card::TapuLeleGX, Card::MegaDragonite,
+        Card::Dragapult, Card::GoodraVstar, Card::DialgaGX,
+        Card::Appletun, Card::Dipplin};
+    return first_remaining_search_target_after_search_started(
+        targets, Card::RegidragoV);
   }
 
   Card fallback_quick_ball_target_after_search_started() const {
@@ -71,12 +82,11 @@
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
     // Confirmed Pineco fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1958
-    for (const Card target : {Card::RegidragoV, Card::LatiasEx, Card::Oricorio, Card::TapuLeleGX,
-                              Card::CrobatV, Card::MawileGX, Card::DialgaGX,
-                              Card::Pineco}) {
-      if (deck_count_after_search_started(target) > 0) return target;
-    }
-    return Card::RegidragoV;
+    static constexpr std::array<Card, 8> targets{
+        Card::RegidragoV, Card::LatiasEx, Card::Oricorio, Card::TapuLeleGX,
+        Card::CrobatV, Card::MawileGX, Card::DialgaGX, Card::Pineco};
+    return first_remaining_search_target_after_search_started(
+        targets, Card::RegidragoV);
   }
 
   Card fallback_ultra_ball_target_after_search_started() const {
@@ -87,11 +97,11 @@
     // Pineco / Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-1 https://api.pokemontcg.io/v2/cards/sv4pt5-2
     // Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
     // Confirmed fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1254 https://github.com/FlareZ123/pokemon-sims/issues/1952
-    for (const Card target : {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
-                              Card::TapuLeleGX, Card::CrobatV, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
-                              Card::DialgaGX, Card::MawileGX, Card::Dipplin, Card::Appletun,
-                              Card::Pineco, Card::ForretressEx}) {
-      if (deck_count_after_search_started(target) > 0) return target;
-    }
-    return Card::RegidragoV;
+    static constexpr std::array<Card, 15> targets{
+        Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
+        Card::TapuLeleGX, Card::CrobatV, Card::MegaDragonite, Card::Dragapult,
+        Card::GoodraVstar, Card::DialgaGX, Card::MawileGX, Card::Dipplin,
+        Card::Appletun, Card::Pineco, Card::ForretressEx};
+    return first_remaining_search_target_after_search_started(
+        targets, Card::RegidragoV);
   }

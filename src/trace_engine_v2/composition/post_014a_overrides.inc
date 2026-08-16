@@ -671,7 +671,7 @@ bool play_arven() {
 #undef play_earthen_vessel
 
 #define play_earthen_vessel play_earthen_vessel_issue1412_original
-#include "../part_issue_1368_earthen_vessel_celestial_roar_override.inc"
+#include "../core/routes/earthen_vessel_celestial_roar_policy.inc" // Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/earthen_vessel_celestial_roar_policy.inc
 #undef play_earthen_vessel
 
 #include "../part_issue_1412_preserve_quick_balls.inc"

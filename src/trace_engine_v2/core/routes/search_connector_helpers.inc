@@ -64,3 +64,17 @@
     }
     return Card::RegidragoV;
   }
+
+  Card fallback_quick_ball_target_after_search_started() const {
+    // Quick Ball searches Basic Pokémon, and this K1 fallback preserves the
+    // established modeled target order after legal deck inspection:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Pineco: https://api.pokemontcg.io/v2/cards/sv4pt5-1
+    // Confirmed Pineco fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1958
+    for (const Card target : {Card::RegidragoV, Card::LatiasEx, Card::Oricorio, Card::TapuLeleGX,
+                              Card::CrobatV, Card::MawileGX, Card::DialgaGX,
+                              Card::Pineco}) {
+      if (deck_count_after_search_started(target) > 0) return target;
+    }
+    return Card::RegidragoV;
+  }

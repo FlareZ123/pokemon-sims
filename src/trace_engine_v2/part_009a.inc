@@ -1,6 +1,3 @@
-    return Card::RegidragoV;
-  }
-
   Card fallback_ultra_ball_target_after_search_started() const {
     // Ultra Ball searches any Pokémon, so the K1 fallback covers the complete
     // modeled universe, including the Appletun and Pineco package:

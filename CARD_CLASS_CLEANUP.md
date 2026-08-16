@@ -44,6 +44,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/card_catalog.inc` owns unmigrated name and intrinsic-classification fallbacks. Registry lookup remains the first metadata path.
 - `src/trace_engine_v2/core/payload_hand_policy.inc` owns shared Dragon-payload zone and preference queries. `PayloadZonePolicy` and `PayloadPreferencePolicy` are explicit final stateless policy classes so traversal and preference order stay centralized without becoming extensible Engine subtypes.
 - `src/trace_engine_v2/core/board_state_policy.inc` owns reusable board traversal and board-index queries.
+- `src/trace_engine_v2/core/apex_energy_policy.inc` owns DDE-aware Apex Dragon energy-unit accounting, payment checks, physical attachment projection, completion distance, and manual-energy preference helpers. `part_004.inc` composes the owner at the original Engine member boundary. DCI/AMR route decisions and Regidrago target ranking remain outside this owner. Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
 - `src/trace_engine_v2/core/setup_lifecycle.inc` owns opening-hand, mulligan, Prize-deal, and setup-trace mechanics.
 - `src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn action-state reset semantics.
 - `src/trace_engine_v2/core/deck_knowledge.inc` owns reusable copy arithmetic after visibility is resolved. `KnowledgeCopyPolicy` is an explicit final stateless policy class; hidden-zone visibility and route admission remain Engine concerns.
@@ -116,6 +117,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 
 - Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.
 - Board traversal and board indices: `src/trace_engine_v2/core/board_state_policy.inc`.
+- Apex Dragon energy accounting and attachment projection: `src/trace_engine_v2/core/apex_energy_policy.inc`. Keep route admission, DCI/AMR decisions, and Regidrago target selection in their strategy owners.
 - Garbodor scenario and Ability-lock composition: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
 - Setup lifecycle: `src/trace_engine_v2/core/setup_lifecycle.inc`.
 - Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
@@ -147,6 +149,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 13. Reuse generic `PayloadZonePolicy` range operations for fixed-size Card cost plans only when the query is purely physical membership, count, or first-match traversal; keep route-specific DCI/JIT admission outside the utility class.
 14. Keep `composition/engine_body.inc` pointed directly at `core/routes/battle_compressor_vs_seeker_policy.inc`; the historical root compatibility include is retired and should not be recreated.
 15. Continue moving complete route-specific member bodies out of numbered `part_*.inc` fragments into named `core/routes/` owners only when the exact textual member boundary can be preserved. The next search-connector boundary is the Mysterious Treasure route beginning in `part_009a.inc`; move its continuation only when the full member can migrate atomically without changing declaration order. C++ textual-include semantics: https://eel.is/c++draft/cpp.include Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+16. Keep `core/apex_energy_policy.inc` as the canonical DDE-aware Apex energy projection owner. A later cleanup may separate Regidrago target ranking from `part_004.inc` only at a complete member boundary; keep Supporter contention, route admission, K0/K1 visibility, and target choice outside the energy owner.
 
 ## One-card workflow
 

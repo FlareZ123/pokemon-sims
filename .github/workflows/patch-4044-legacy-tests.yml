@@ -1,0 +1,78 @@
+name: Patch 4044 legacy tests
+
+on:
+  push:
+    branches:
+      - bug-4044-held-burnet-locks
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: bug-4044-held-burnet-locks
+          fetch-depth: 0
+
+      - name: Align legacy Full Item expectations with confirmed issue 4044
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import tempfile
+          from pathlib import Path
+
+          paths = [
+              Path('tests/issue_1112_late_steven_burnet_tests.cpp'),
+              Path('tests/issue_2086_prize_k1_issue_1112_late_steven_burnet_tests.cpp'),
+          ]
+          old = '\n'.join([
+              '    // The confirmed route is restricted to the repository no-lock scenario:',
+              '    // https://api.pokemontcg.io/v2/cards/sm7-145',
+              '    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26',
+              '    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment',
+              '    expect(!sim::EngineTestAccess::late_steven_burnet_route(engine),',
+              '           "Full Item lock must reject the route.");',
+          ])
+          new = '\n'.join([
+              '    // This continuation uses Steven, a manual Grass attachment, normal',
+              '    // evolution, and held Burnet. It has no Item action, so Full Item lock',
+              '    // leaves every required step legal.',
+              "    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145",
+              '    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26',
+              '    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136',
+              '    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md',
+              '    // Lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment',
+              '    // Confirmed correction: https://github.com/FlareZ123/pokemon-sims/issues/4044',
+              '    expect(sim::EngineTestAccess::late_steven_burnet_route(engine),',
+              '           "Full Item lock must preserve the Trainer/evolution route.");',
+          ])
+          for path in paths:
+              text = path.read_text(encoding='utf-8')
+              if text.count(old) != 1:
+                  raise SystemExit(f'{path}: expected one stale #1112 lock block, found {text.count(old)}')
+              updated = text.replace(old, new, 1)
+              fd, temp_name = tempfile.mkstemp(dir=path.parent, prefix=path.name + '.', text=True)
+              try:
+                  with os.fdopen(fd, 'w', encoding='utf-8', newline='') as handle:
+                      handle.write(updated)
+                      handle.flush()
+                      os.fsync(handle.fileno())
+                  os.replace(temp_name, path)
+              finally:
+                  if os.path.exists(temp_name):
+                      os.unlink(temp_name)
+          PY
+          rm .github/workflows/patch-4044-legacy-tests.yml
+
+      - name: Commit aligned legacy regressions and retire helper workflow
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add tests/issue_1112_late_steven_burnet_tests.cpp tests/issue_2086_prize_k1_issue_1112_late_steven_burnet_tests.cpp .github/workflows/patch-4044-legacy-tests.yml
+          git commit -m "Fix #4044: align legacy lock regressions"
+          git push origin HEAD:bug-4044-held-burnet-locks

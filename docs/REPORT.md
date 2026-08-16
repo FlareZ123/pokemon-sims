@@ -28,10 +28,10 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
 | Strict JIT, turn-two Item lock, first | 4.583% | 10.484% | 18.587% |
-| Strict JIT, Rule Box Ability lock, first | 4.524% | 27.794% | 42.757% |
+| Strict JIT, Rule Box Ability lock, first | 4.539% | 27.748% | 42.696% |
 | Strict JIT, turn-two Item + Rule Box Ability lock, first | 0.779% | 4.667% | 9.645% |
 | Strict JIT, turn-two Item lock, second | 14.203% | 28.493% | 37.272% |
-| Strict JIT, Rule Box Ability lock, second | 18.426% | 37.117% | 49.31% |
+| Strict JIT, Rule Box Ability lock, second | 18.561% | 37.171% | 49.433% |
 | Strict JIT, turn-two Item + Rule Box Ability lock, second | 3.924% | 14.705% | 20.389% |
 | Strict JIT, Supporter lock, first | 0.005% | 16.426% | 23.376% |
 | Strict JIT, Supporter lock, second | 7.85% | 20.357% | 26.735% |

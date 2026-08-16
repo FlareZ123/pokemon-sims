@@ -59,11 +59,15 @@
          scenario_.dci != DciProfile::MatchupFlexJit) ||
         state_.turn <= 1 ||  // First-turn evolution prohibition: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
         state_.turn > scenario_.max_turn || !prizes_known() ||
-        item_locked() || rule_box_abilities_locked() ||
+        item_locked() ||
         state_.manual_energy_used || state_.retreat_used ||
         !state_.active || !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV ||  // Semantic #2164 Active boundary: https://github.com/FlareZ123/pokemon-sims/issues/4109
         bench_space() == 0 ||
+        // Latias ex is a Rule Box Pokemon, so this per-Pokemon predicate is the
+        // single owner for Path-style Ability suppression in this route:
+        // https://api.pokemontcg.io/v2/cards/sv8-76
+        // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
         !ability_available_for_pokemon(Card::LatiasEx) ||
         in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
         deck_count_after_search_started(Card::LatiasEx) == 0 ||
@@ -73,8 +77,8 @@
       return false;
     }
 
-    const bool prior_turn_regidrago_one_basic_from_apex = std::any_of(
-        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+    const bool prior_turn_regidrago_one_basic_from_apex =
+        bench_has_pokemon_matching([this](const Pokemon& pokemon) {  // Canonical Bench traversal: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
           if (pokemon.card != Card::RegidragoV ||
               pokemon.entered_turn >= state_.turn) return false;  // Entry-age evolution rule: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
           for (const Card basic : {Card::Grass, Card::Fire}) {

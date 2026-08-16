@@ -608,9 +608,18 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2086
 
+    // This continuation uses Supporters, normal evolution, and a manual attachment.
+    // Item-only and Rule Box Ability-only locks leave those actions legal; the
+    // persistent Supporter lock remains rejected by supporter_allowed().
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4044
     if (!prizes_known() || state_.turn >= scenario_.max_turn ||
         scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::None || !supporter_allowed() ||
+        !supporter_allowed() ||
         !state_.active || state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
         state_.active->grass != 1 || state_.active->fire < 1 ||

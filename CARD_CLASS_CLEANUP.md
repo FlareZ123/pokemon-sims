@@ -49,6 +49,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/deck_knowledge.inc` owns reusable copy arithmetic after visibility is resolved. `KnowledgeCopyPolicy` is an explicit final stateless policy class; hidden-zone visibility and route admission remain Engine concerns.
 - `src/trace_engine_v2/core/routes/oricorio_connector_policy.inc` owns the Oricorio connector's pure energy-need and connector-admission projections through `OricorioConnectorPolicy`; Engine retains Ability availability, K0/K1 visibility, Bench-space, and action execution. Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
 - `src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc` owns the Legacy Star/Quick Ball pure connector and inertness projections through `LegacyStarQuickBallPolicy`; Engine retains DCI/JIT state queries and the temporary projection-only hand mutation around Legacy Star. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+- `src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc` is the canonical Battle Compressor / VS Seeker route owner. The historical `src/trace_engine_v2/core/battle_compressor_vs_seeker_policy.inc` path is a thin compatibility include while composition and source-contract references migrate. Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92 VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
 ## Active card migrations
 
@@ -115,6 +116,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Optional card-effect classifier dispatch: `src/rules/card_context.hpp` via `CardContext::classify`.
 - Oricorio connector decision projection: `src/trace_engine_v2/core/routes/oricorio_connector_policy.inc` via `OricorioConnectorPolicy`.
 - Legacy Star/Quick Ball decision projection: `src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc` via `LegacyStarQuickBallPolicy`.
+- Battle Compressor / VS Seeker route policy: `src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc`.
 
 ## Next cleanup steps
 
@@ -130,6 +132,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 10. Keep route-local final policy classes limited to reusable pure projections. Engine callers continue to own state reads, DCI/JIT visibility, route admission, and physical actions unless a lower card/rules layer owns the printed transition.
 11. Route new optional intrinsic card classifiers through `CardContext`'s shared classifier dispatch seam rather than duplicating callback-null checks in each public operation.
 12. Reuse generic `PayloadZonePolicy` range operations for fixed-size Card cost plans only when the query is purely physical membership, count, or first-match traversal; keep route-specific DCI/JIT admission outside the utility class.
+13. Migrate `composition/engine_body.inc` and any source-contract references to `core/routes/battle_compressor_vs_seeker_policy.inc`, then remove the historical `core/battle_compressor_vs_seeker_policy.inc` compatibility include after repository-wide references are proven gone.
 
 ## One-card workflow
 

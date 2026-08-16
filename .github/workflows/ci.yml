@@ -4,12 +4,23 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  digest:
+  regenerate:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Print simulator policy digest
-        run: python -c "from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; print('DIGEST=' + simulator_policy_source_digest(Path('.')))"
+        with:
+          ref: cleanup-1786908861701
+          fetch-depth: 0
+      - name: Regenerate multi-deck report
+        run: python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Commit generated report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/MULTI_DECK_REPORT.md
+          git diff --cached --quiet && exit 0
+          git commit -m "Cleanup: regenerate rebased multi-deck report"
+          git push origin HEAD:cleanup-1786908861701

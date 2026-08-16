@@ -2,8 +2,8 @@
 #define SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
 
 #ifndef SIM_TRACE_CARD_CATALOG_INCLUDED
-#define SIM_TRACE_CARD_CATALOG_INCLUDED
-#include "core/card_catalog.inc"
+// Reuse the single legacy catalog shim instead of duplicating its include contract.
+#include "part_000.inc"
 #endif
 
 #endif  // SIM_TRACE_CARD_CLASSIFICATION_INCLUDED

@@ -59,6 +59,14 @@
             has_search_surviving_copy(Card::Serena, excluded));
   }
 
+  inline static constexpr std::array<Card, 11>
+      kMysteriousTreasureFallbackTargets{{
+          Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
+          Card::Oricorio, Card::TapuLeleGX, Card::MegaDragonite,
+          Card::Dragapult, Card::GoodraVstar, Card::DialgaGX,
+          Card::Appletun, Card::Dipplin,
+      }};
+
   Card fallback_mysterious_target_after_search_started() const {
     // Mysterious Treasure can search a Psychic or Dragon Pokémon: https://api.pokemontcg.io/v2/cards/sm6-113
     // Appletun sv8-140 and Dipplin TWM 127 are Dragon Pokémon and remain legal
@@ -69,11 +77,7 @@
     // https://api.pokemontcg.io/v2/cards/swsh3-104
     // https://github.com/FlareZ123/pokemon-sims/issues/1253
     // https://github.com/FlareZ123/pokemon-sims/issues/1949
-    for (const Card target : {Card::RegidragoV, Card::RegidragoVstar,
-                              Card::LatiasEx, Card::Oricorio,
-                              Card::TapuLeleGX, Card::MegaDragonite,
-                              Card::Dragapult, Card::GoodraVstar,
-                              Card::DialgaGX, Card::Appletun, Card::Dipplin}) {
+    for (const Card target : kMysteriousTreasureFallbackTargets) {
       if (deck_count_after_search_started(target) > 0) return target;
     }
     return Card::RegidragoV;

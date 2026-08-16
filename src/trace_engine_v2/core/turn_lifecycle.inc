@@ -25,10 +25,22 @@
     }
   };
 
+  struct TurnLifecycleResetPolicy {
+    static void reset(State& state, const int turn,
+                      const bool garbodor_shake_active) {
+      // Keep the turn-number transition and both reset families behind one ordered
+      // lifecycle seam. The mandatory draw remains outside this helper and therefore
+      // still occurs only after every per-turn flag has been reset:
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#turn-lifecycle-cleanup
+      state.turn = turn;
+      TurnActionStatePolicy::reset(state);
+      TransientTurnLockPolicy::reset(state, garbodor_shake_active);
+    }
+  };
+
   void reset_per_turn_state(const int turn) {
-    state_.turn = turn;
-    TurnActionStatePolicy::reset(state_);
-    TransientTurnLockPolicy::reset(state_, garbodor_shake_scenario());
+    TurnLifecycleResetPolicy::reset(state_, turn, garbodor_shake_scenario());
   }
 
   bool draw_start_of_turn_card() {

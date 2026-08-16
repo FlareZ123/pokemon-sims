@@ -81,11 +81,27 @@ For each migration, move metadata and classification first. Move printed resolut
 
 If a migration exposes incorrect gameplay behavior, use the bug-confirmation workflow and keep the cleanup PR behavior-preserving.
 
-## Catalog cleanup
+## Catalog and knowledge cleanup
 
-Migrate `LegacyCardCatalog` and intrinsic fallback entries one card at a time. Delete a compatibility row after that card has an explicit `CardDefinition`, deterministic registration, exact-print source, and focused metadata test.
+Migrate `LegacyCardCatalog`, deck-knowledge compatibility logic, and intrinsic fallback entries one card at a time. Delete a compatibility row after that card has an explicit `CardDefinition`, deterministic registration, exact-print source, and focused metadata test. Preserve the K0/K1 search-information boundary while moving catalog ownership.
 
 Regidrago V and Regidrago VSTAR are the reference Pokemon metadata migration. Exact prints: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+Catalog owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
+Knowledge owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/deck_knowledge.inc
+
+## Shared policy owners
+
+Keep reusable state queries and rules-model predicates behind one owner instead of repeating them across route `.inc` files. Existing canonical owners include the Garbodor lock policy, payload-zone policy, and setup lifecycle policy. Route-specific decision priority stays in `core/routes/`.
+
+Garbodor lock owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/garbodor_lock_policy.inc
+Payload owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+
+## Setup lifecycle cleanup
+
+`src/trace_engine_v2/core/setup_lifecycle.inc` is the canonical setup-lifecycle owner. Reuse its lifecycle queries and `SetupRecipePolicy` instead of adding route-local setup-state reconstructions. `part_005.inc` remains a composition consumer while behavior is moved behind the canonical policy seam.
+
+Setup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/setup_lifecycle.inc
+Composition consumer: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc
 
 ## Composition cleanup
 

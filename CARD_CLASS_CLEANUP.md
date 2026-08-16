@@ -36,9 +36,9 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 ## Current ownership
 
 - `src/cards/card_id.hpp` owns stable `sim::Card` identifiers. Exact external print identity belongs in `CardDefinition::canonical_id`.
-- `src/cards/card_definition.hpp` owns intrinsic exact-print facts such as name, print ID, Trainer subtype, stage/type, Retreat Cost, Rule Box, Pokémon V, ACE SPEC, Basic Energy flags, and direct source URL.
+- `src/cards/card_definition.hpp` owns intrinsic exact-print facts and reusable intrinsic classification. `CardDefinitionPredicates` centralizes kind, Trainer-subtype, and Pokémon-type tests while the established free functions remain compatibility seams. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_definition.hpp
 - `src/cards/card_registry.hpp` owns explicit deterministic registration and canonical lookup: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-- `src/rules/card_context.hpp` owns reusable printed-rules operations. Card-specific strategic route policy stays outside that interface.
+- `src/rules/card_context.hpp` owns reusable printed-rules operations. Its optional intrinsic classifier callbacks share one null-safe dispatch seam. Card-specific strategic route policy stays outside that interface. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/rules/card_context.hpp
 - `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` owns the trace-engine bridge for reusable card effects. `src/trace_engine_v2/core/card_context_adapter.hpp` is a compatibility include until direct consumers move.
 - Engine strategy owns route admission, target preference, DCI/UDP/AMR, strict-JIT and matchup-flex timing, Supporter contention, connector domination, K0/K1 state, setup-axis value, lock schedules, readiness, and payload policy.
 - `src/trace_engine_v2/core/card_catalog.inc` owns unmigrated name and intrinsic-classification fallbacks. Registry lookup remains the first metadata path.
@@ -93,6 +93,8 @@ The issue-1516/2164 Quick Ball, Tapu Lele-GX, Crispin route family remains owned
 
 `src/trace_engine_v2/core/card_catalog.inc` owns the shrinking legacy name bridge and intrinsic-classification compatibility seam. Registered `CardDefinition` lookup remains canonical for migrated metadata: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
+Reusable exact-print classification should flow through `CardDefinitionPredicates` before adding another raw `definition.kind`, `definition.trainer_kind`, or `definition.pokemon_types` comparison. Compatibility free functions may delegate to that owner until direct consumers migrate. Canonical definition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_definition.hpp
+
 `src/trace_engine_v2/core/deck_knowledge.inc` owns reusable copy arithmetic after the Engine caller resolves visibility. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns. K0/K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 
 Keep `KnowledgeCopyPolicy` as a final arithmetic utility class with no Engine or State ownership. New copy-count helpers should compose its arithmetic only after the caller has decided which zones are legally visible in K0 or K1.
@@ -107,6 +109,8 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Setup lifecycle: `src/trace_engine_v2/core/setup_lifecycle.inc`.
 - Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
 - Turn action runtime: `src/trace_engine_v2/turn_action_policy_runtime.inc`.
+- Intrinsic exact-print predicates: `src/cards/card_definition.hpp` via `CardDefinitionPredicates`.
+- Optional card-effect classifier dispatch: `src/rules/card_context.hpp` via `CardContext::classify`.
 - Oricorio connector decision projection: `src/trace_engine_v2/core/routes/oricorio_connector_policy.inc` via `OricorioConnectorPolicy`.
 - Legacy Star/Quick Ball decision projection: `src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc` via `LegacyStarQuickBallPolicy`.
 
@@ -116,12 +120,13 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 2. Keep `core/routes/late_steven_route_policy.inc` as the canonical late-Steven policy body. Migrate audit and traceability anchors to the canonical path, then delete the historical `part_010_late_steven_override.inc` source-contract mirror.
 3. Continue retiring other composition-only `part_*steven*` forwarders when a complete function body or macro lifetime can move at the identical textual boundary.
 4. Migrate direct `CardContext` bridge consumers to `core/adapters/card_context_adapter.hpp`. Remove the old forwarding include only after references are proven gone. New bridge construction should use `CardContextAdapterCallbacks`.
-5. Migrate remaining `LegacyCardCatalog` and intrinsic compatibility rows one card at a time. Delete a row only after explicit `CardDefinition` registration, exact-print source, and focused metadata coverage exist.
+5. Migrate remaining `LegacyCardCatalog` and intrinsic compatibility rows one card at a time. Reuse `CardDefinitionPredicates` for intrinsic classification before adding new raw metadata checks; delete a row only after explicit `CardDefinition` registration, exact-print source, and focused metadata coverage exist.
 6. Reuse payload and board-state owners only when physical order, visibility, and strategic preference semantics match exactly.
 7. Keep Forretress reusable scenario and runtime ownership under `core/forretress/`, with `core/forretress/package.inc` as the namespace-scope composition owner. Remove `part_forretress_ex_combo.inc` only after repository-wide and source-contract consumers are proven migrated.
 8. Prefer named pure-projection members over route-local anonymous projections when a projection is reused or has a distinct policy contract.
 9. Prefer named final stateless policy classes for reusable arithmetic or traversal seams. Do not move route admission, hidden-zone visibility decisions, DCI/JIT timing, or target preference into a utility class merely to reduce line count.
 10. Keep route-local final policy classes limited to reusable pure projections. Engine callers continue to own state reads, DCI/JIT visibility, route admission, and physical actions unless a lower card/rules layer owns the printed transition.
+11. Route new optional intrinsic card classifiers through `CardContext`'s shared classifier dispatch seam rather than duplicating callback-null checks in each public operation.
 
 ## One-card workflow
 

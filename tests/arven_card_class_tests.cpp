@@ -1,5 +1,6 @@
 #define REGIDRAGO_SIM_NO_MAIN
 #include "../src/regidrago_sim.cpp"
+#include "support/card_registry_test_utils.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -16,30 +17,26 @@ struct EngineTestAccess {};
 
 namespace {
 
-void require(const bool condition, const std::string_view message) {
-  if (!condition) throw std::runtime_error(std::string(message));
-}
-
 void test_registry_metadata_and_supporter_classification() {
-  const auto* definition = sim::cards::find_definition(sim::Card::Arven);
-  require(definition != nullptr,
-          "Arven must be explicitly registered.");
-  require(definition->id == sim::Card::Arven,
-          "Arven registry id must remain stable.");
-  require(definition->canonical_id == "sv1-166",
-          "Arven canonical print changed."); // Card data: https://api.pokemontcg.io/v2/cards/sv1-166
-  require(definition->name == "Arven",
-          "Arven name changed.");
-  require(definition->kind == sim::cards::CardKind::Trainer,
-          "Arven must remain a Trainer."); // Exact Trainer identity: https://api.pokemontcg.io/v2/cards/sv1-166
-  require(definition->trainer_kind == sim::cards::TrainerKind::Supporter,
-          "Arven must remain a Supporter."); // Printed Supporter subtype: https://api.pokemontcg.io/v2/cards/sv1-166
-  require(sim::is_supporter(sim::Card::Arven),
-          "Compatibility classification must source Arven as a Supporter."); // Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-  require(!sim::is_item(sim::Card::Arven),
-          "Arven must not be classified as an Item.");
-  require(sim::name(sim::Card::Arven) == "Arven",
-          "Compatibility name must source the registered definition.");
+  const auto& definition = test_support::require_card_definition(
+      sim::Card::Arven, "Arven must be explicitly registered.");
+  test_support::require(definition.id == sim::Card::Arven,
+                        "Arven registry id must remain stable.");
+  test_support::require(definition.canonical_id == "sv1-166",
+                        "Arven canonical print changed."); // Card data: https://api.pokemontcg.io/v2/cards/sv1-166
+  test_support::require(definition.name == "Arven",
+                        "Arven name changed.");
+  test_support::require(definition.kind == sim::cards::CardKind::Trainer,
+                        "Arven must remain a Trainer."); // Exact Trainer identity: https://api.pokemontcg.io/v2/cards/sv1-166
+  test_support::require(definition.trainer_kind == sim::cards::TrainerKind::Supporter,
+                        "Arven must remain a Supporter."); // Printed Supporter subtype: https://api.pokemontcg.io/v2/cards/sv1-166
+  test_support::require(
+      sim::is_supporter(sim::Card::Arven),
+      "Compatibility classification must source Arven as a Supporter."); // Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  test_support::require(!sim::is_item(sim::Card::Arven),
+                        "Arven must not be classified as an Item.");
+  test_support::require(sim::name(sim::Card::Arven) == "Arven",
+                        "Compatibility name must source the registered definition.");
 }
 
 }  // namespace

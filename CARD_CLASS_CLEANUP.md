@@ -66,6 +66,8 @@ The Steven/Brilliant Blender macro-composition block now has an organized canoni
 
 The source-bounded Steven route package now has a canonical organized owner at `src/trace_engine_v2/core/routes/steven/package.inc`. The historical `src/trace_engine_v2/core/routes/steven_package_policy.inc` path is a thin compatibility include. The package preserves the established #1745 -> #1771 -> #1772 -> #2622 textual route order while rule-sensitive function bodies remain in their existing route owners. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven/package.inc
 
+The late-Steven route body now has a canonical policy owner at `src/trace_engine_v2/core/routes/late_steven_route_policy.inc`. The historical `src/trace_engine_v2/part_010_late_steven_override.inc` path is a thin compatibility include at the same Engine member boundary, so #869/#3601 route admission and continuation stay textually ordered while the implementation lives with other route policies. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_route_policy.inc Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+
 The namespace-scope Forretress composition now has a canonical package at `src/trace_engine_v2/core/forretress/package.inc`. The historical `src/trace_engine_v2/part_forretress_ex_combo.inc` path is a thin compatibility include. The package keeps the reusable runtime, public scenario forward declarations, shared scenario extension, and Garbodor scenario family at the same verified namespace boundary while preserving their textual order. Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/package.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 The issue-3221 K0 Steven/Brilliant Blender route remains owned by `src/trace_engine_v2/core/routes/k0_steven_blender_semantic_policy.inc`. Its historical root compatibility seam remains until source-contract and composition consumers are proven migrated. Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164 Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
@@ -102,12 +104,13 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 ## Next cleanup steps
 
 1. Keep `composition/steven/blender_overrides.inc` and `core/routes/steven/package.inc` as the canonical Steven organization boundaries. Remove their forwarding paths only after repository-wide and source-contract references are proven gone.
-2. Continue retiring composition-only `part_*steven*` forwarders when a complete function body or macro lifetime can move at the identical textual boundary.
-3. Migrate direct `CardContext` bridge consumers to `core/adapters/card_context_adapter.hpp`. Remove the old forwarding include only after references are proven gone. New bridge construction should use `CardContextAdapterCallbacks`.
-4. Migrate remaining `LegacyCardCatalog` and intrinsic compatibility rows one card at a time. Delete a row only after explicit `CardDefinition` registration, exact-print source, and focused metadata coverage exist.
-5. Reuse payload and board-state owners only when physical order, visibility, and strategic preference semantics match exactly.
-6. Keep Forretress reusable scenario and runtime ownership under `core/forretress/`, with `core/forretress/package.inc` as the namespace-scope composition owner. Remove `part_forretress_ex_combo.inc` only after repository-wide and source-contract consumers are proven migrated.
-7. Prefer named pure-projection members over route-local anonymous projections when a projection is reused or has a distinct policy contract.
+2. Keep `core/routes/late_steven_route_policy.inc` as the canonical late-Steven policy body. Retire `part_010_late_steven_override.inc` only after composition and source-contract consumers no longer depend on the historical include seam.
+3. Continue retiring other composition-only `part_*steven*` forwarders when a complete function body or macro lifetime can move at the identical textual boundary.
+4. Migrate direct `CardContext` bridge consumers to `core/adapters/card_context_adapter.hpp`. Remove the old forwarding include only after references are proven gone. New bridge construction should use `CardContextAdapterCallbacks`.
+5. Migrate remaining `LegacyCardCatalog` and intrinsic compatibility rows one card at a time. Delete a row only after explicit `CardDefinition` registration, exact-print source, and focused metadata coverage exist.
+6. Reuse payload and board-state owners only when physical order, visibility, and strategic preference semantics match exactly.
+7. Keep Forretress reusable scenario and runtime ownership under `core/forretress/`, with `core/forretress/package.inc` as the namespace-scope composition owner. Remove `part_forretress_ex_combo.inc` only after repository-wide and source-contract consumers are proven migrated.
+8. Prefer named pure-projection members over route-local anonymous projections when a projection is reused or has a distinct policy contract.
 
 ## One-card workflow
 

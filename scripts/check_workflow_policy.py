@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from baseline_provenance import simulator_policy_source_digest
+
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW_DIR = ROOT / ".github" / "workflows"
@@ -81,6 +83,7 @@ def main() -> int:
     errors = workflow_policy_errors()
     if not errors:
         print("Workflow policy satisfied.")
+        print(f"Simulator policy source digest: {simulator_policy_source_digest(ROOT)}")
         return 0
 
     for error in errors:

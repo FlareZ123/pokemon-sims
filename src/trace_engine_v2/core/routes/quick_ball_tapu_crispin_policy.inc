@@ -14,14 +14,13 @@
       return false;
     }
 
-    constexpr std::array<Card, 5> kAcceptedPayloads{
-        Card::Dragapult, Card::MegaDragonite, Card::DialgaGX,
-        Card::GoodraVstar, Card::Appletun};
-    const bool known_prized_payload = std::any_of(
-        kAcceptedPayloads.begin(), kAcceptedPayloads.end(),
-        [this](const Card card) {
-          return prize_count_after_reveal(card) > 0;
-        });
+    const bool known_prized_payload =
+        PayloadPreferencePolicy::any_preferred_with_positive_count(
+            [this](const Card card) { return prize_count_after_reveal(card); });
+    // Keep the route's Prize membership check on the canonical payload set instead
+    // of maintaining a second local Dragon list:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     if (!known_prized_payload) return false;
 
     std::mt19937_64 projected_rng = rng_;

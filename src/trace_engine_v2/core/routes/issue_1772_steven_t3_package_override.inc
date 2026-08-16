@@ -43,7 +43,7 @@
         state_.turn + 1 > scenario_.max_turn ||
         !state_.active || !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV || state_.retreat_used ||
-        bench_space() == 0 || issue_1772_prepared_fire_regidrago() == nullptr ||
+        bench_space() == 0 || prepared_regi == nullptr ||
         !need_energy() || !need_payload() || state_.manual_energy_used ||
         hand_count(Card::StevensResolve) == 0 || hand_count(Card::Gladion) == 0 ||
         (!dde_one_basic_finish && hand_count(Card::Crispin) == 0) ||

@@ -117,6 +117,19 @@
         state_.deck.begin(), state_.deck.end(), is_payload);
     const bool route_cost_paid = count_of(state_.discard, Card::TateLiza) > 0 ||
         count_of(state_.discard, Card::Lusamine) > 0;
+    // Quick Ball is the route's already-paid T1 Item, Steven's Resolve and Crispin
+    // consume future Supporter plays, and Earthen Vessel is the required T3 Item.
+    // Evaluate each action class at the turn where the route uses it:
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sm7-145
+    // https://api.pokemontcg.io/v2/cards/sv7-133
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-interpretation
+    const bool t1_quick_ball_allowed = !item_locked_on_turn(1);
+    const bool future_supporters_allowed =
+        !uses_full_supporter_lock(scenario_.locks);
+    const bool t3_earthen_vessel_allowed = !item_locked_on_turn(3);
 
     // Wonder Tag resolves on T1 after K1 Quick Ball. It may search Steven's Resolve
     // even though the going-first rule prevents playing that Supporter until T2:
@@ -128,8 +141,10 @@
     // Same-ready-turn JIT profile equivalence: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed original route: https://github.com/FlareZ123/pokemon-sims/issues/1797
     // Confirmed selector regression: https://github.com/FlareZ123/pokemon-sims/issues/3165
+    // Recovered-Path lock regression: https://github.com/FlareZ123/pokemon-sims/issues/4093
     return strict_payload_timing() && scenario_.going_first &&
-        scenario_.locks == LockMode::None && state_.turn == 1 &&
+        t1_quick_ball_allowed && future_supporters_allowed &&
+        t3_earthen_vessel_allowed && state_.turn == 1 &&
         scenario_.max_turn >= 3 && prizes_known() && !state_.supporter_used &&
         state_.active && state_.active->card == Card::RegidragoV &&
         state_.active->grass == 0 && state_.active->fire == 0 &&
@@ -197,7 +212,6 @@
         deck_count_after_search_started(Card::Grass) > 0 &&
         deck_count_after_search_started(Card::Fire) > 0;
   }
-
   bool issue_2343_burnet_quick_ball_latias_route_available() const {
     const bool burnet_available = hand_count(Card::ProfessorBurnet) > 0 ||
         deck_count_after_search_started(Card::ProfessorBurnet) > 0;

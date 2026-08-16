@@ -43,7 +43,7 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 ### First-ready-turn distribution
 
 | Scenario | Ready on T2 | Ready on T3 | Ready on T4 | Ready on T5 diagnostic |
-|---|---:|---:|---:|---:|
+|---|---:|---:|---:|---:|---:|
 | Strict JIT, going first | 12.242% | 29.601% | 17.530% | 10.894% |
 | Matchup-flex JIT, going first | 17.152% | 33.506% | 17.431% | 10.099% |
 | No discard control, going first | 19.740% | 37.089% | 16.756% | 9.045% |
@@ -75,7 +75,7 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 ### First-ready-turn distribution
 
 | Scenario | Ready on T2 | Ready on T3 | Ready on T4 | Ready on T5 diagnostic |
-|---|---:|---:|---:|---:|
+|---|---:|---:|---:|---:|---:|
 | Strict JIT, going first | 19.554% | 29.416% | 17.792% | 10.534% |
 | Matchup-flex JIT, going first | 21.321% | 29.882% | 18.005% | 10.121% |
 | No discard control, going first | 25.271% | 35.005% | 15.439% | 7.223% |
@@ -162,6 +162,6 @@ These percentages estimate setup readiness under the documented goldfish policy.
 
 ## Provenance
 
-Simulator policy digest: `37a1a21a47839a35803563d5d0078531505051aff4b4728520626629fdf3f2bb`.
+Simulator policy digest: `dba157d2b018982023fd8532c00e862409431045ead360297eb2f201a737d869`.
 
 Comparison CSV SHA-256: `b7cf2e78cc48917aa33cad04d20111fc4721dfdde18609d66e40acb2f460f789`.

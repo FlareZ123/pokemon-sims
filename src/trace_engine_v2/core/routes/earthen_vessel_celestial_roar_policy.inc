@@ -1,5 +1,5 @@
 // Canonical Earthen Vessel / Celestial Roar route owner.
-// Historical composition boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_issue_1368_earthen_vessel_celestial_roar_override.inc
+// Live composition boundary: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/post_014a_overrides.inc
 // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
 
   bool earthen_vessel_preserves_grass_for_immediate_celestial_roar() const {

@@ -12,12 +12,18 @@
     return found == state_.bench.end() ? nullptr : &*found;
   }
 
+  bool issue_1772_payload_held() const {
+    // Keep #1772's repeated hand-zone payload membership on the shared payload owner:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+    // Regidrago VSTAR / Apex Dragon payload semantics: https://api.pokemontcg.io/v2/cards/swsh12-136
+    return payload_zone_contains(state_.hand);
+  }
+
   bool issue_1772_steven_t3_package_available() const {
     const bool payload_in_known_deck = payload_zone_contains(state_.deck);
     // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
     // Apex Dragon payload semantics: https://api.pokemontcg.io/v2/cards/swsh12-136
-    const bool payload_held = payload_zone_contains(state_.hand);
-    // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+    const bool payload_held = issue_1772_payload_held();
 
     // Full Prize inspection establishes the same fixed-list K1 as a resolved
     // deck search, so this route must use the repository-wide knowledge predicate:
@@ -43,7 +49,7 @@
         state_.turn + 1 > scenario_.max_turn ||
         !state_.active || !is_basic(state_.active->card) ||
         state_.active->card == Card::RegidragoV || state_.retreat_used ||
-        bench_space() == 0 || issue_1772_prepared_fire_regidrago() == nullptr ||
+        bench_space() == 0 || prepared_regi == nullptr ||
         !need_energy() || !need_payload() || state_.manual_energy_used ||
         hand_count(Card::StevensResolve) == 0 || hand_count(Card::Gladion) == 0 ||
         (!dde_one_basic_finish && hand_count(Card::Crispin) == 0) ||
@@ -118,9 +124,7 @@
   }
 
   bool issue_1772_t3_crispin_completion_available() const {
-    const bool payload_held = payload_zone_contains(state_.hand);
-    // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
-    // Apex Dragon payload semantics: https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool payload_held = issue_1772_payload_held();
     const Pokemon* prepared_regi = issue_1772_prepared_fire_regidrago();
     // Reuse the same prepared-bench witness throughout this pure predicate: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1772_steven_t3_package_override.inc
 

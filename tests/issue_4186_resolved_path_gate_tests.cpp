@@ -49,7 +49,7 @@ void test_resolved_path_uses_live_ability_legality() {
   // whether T2 Tapu Lele-GX -> Wonder Tag is legal.
   // Path to the Peak: https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/cards/en/swsh6.json
   // Field Blower / Tapu Lele-GX: https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/cards/en/sm2.json
-  // Stadium procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#b-04-stadiums
+  // Stadium procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4186
   std::mt19937_64 rng(4186);
   sim::Engine engine = make_engine(sim::LockMode::FullRuleBoxAbility, rng);
@@ -72,7 +72,7 @@ void test_full_combined_remains_blocked_by_future_item_lock() {
   // when the continuation still depends on Item access. FullCombined retains
   // that T2 Item lock even after its Path-style Ability lock is removed.
   // Earthen Vessel: https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/cards/en/sv4.json
-  // Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#b-01-items
+  // Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   // Confirmed bug scope: https://github.com/FlareZ123/pokemon-sims/issues/4186
   std::mt19937_64 rng(4187);
   sim::Engine engine = make_engine(sim::LockMode::FullCombined, rng);

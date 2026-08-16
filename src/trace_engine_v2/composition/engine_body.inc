@@ -8,7 +8,7 @@
 // Runtime state + metrics + trace: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/simulation_runtime.inc
 // Banked-Tapu replacement policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/banked_tapu_retreat_policy.inc
 // Lock-removal policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forest_field_blower_policy.inc
-// Battle Compressor / VS Seeker policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/battle_compressor_vs_seeker_policy.inc
+// Battle Compressor / VS Seeker policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc
 // Late execution fragment: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
 
@@ -132,7 +132,7 @@ std::string pokemon_summary(const Pokemon& p) {
 // policy stack but before part_014c binds the final Item fixed point.
 // Exact Items: https://api.pokemontcg.io/v2/cards/xy4-92 https://api.pokemontcg.io/v2/cards/xy4-109
 // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
-#include "../core/battle_compressor_vs_seeker_policy.inc"
+#include "../core/routes/battle_compressor_vs_seeker_policy.inc"
 
 // Late stage: own the complete historical late boundary at the canonical Engine
 // composition point. The aliases created for part_014c deliberately remain live
@@ -141,7 +141,7 @@ std::string pokemon_summary(const Pokemon& p) {
 // Historical execution fragment: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_014c.inc
 // Historical registry continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_015.inc
 // Translation-unit closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_016.inc
-// Battle Compressor / VS Seeker policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/battle_compressor_vs_seeker_policy.inc
+// Battle Compressor / VS Seeker policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc
 // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
 // Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
 // Model specification: https://github.com/FlareZ123/pokemon-sims/issues/2808

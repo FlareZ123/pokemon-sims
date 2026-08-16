@@ -68,6 +68,31 @@ void test_exact_k1_state_admits_route() {
          "The exact K1 VSTAR-plus-Grass route with held Burnet must admit Steven.");
 }
 
+void test_non_supporter_locks_admit_supporter_only_route() {
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  for (const sim::LockMode lock : {sim::LockMode::FullItem,
+                                   sim::LockMode::TurnTwoItem,
+                                   sim::LockMode::FullRuleBoxAbility,
+                                   sim::LockMode::FullCombined}) {
+    const sim::Scenario scenario = issue_1112_scenario(lock);
+    std::mt19937_64 rng{4028 + static_cast<unsigned>(lock)};
+    sim::Engine engine(scenario, recipe, rng);
+    sim::EngineTestAccess::set_k1_state(engine, issue_1112_state());
+
+    // Steven's Resolve is the current Supporter and Professor Burnet is the next-turn
+    // Supporter. The continuation uses no Item and no Rule Box Pokémon Ability.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced Supporter, evolution, and attack procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Combined-lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#combined-lock
+    // Canonical lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/4028
+    expect(sim::EngineTestAccess::late_steven_burnet_route(engine),
+           "An unrelated Item or Rule Box Ability lock rejected the Steven-Burnet route.");
+  }
+}
+
 void test_required_components_gate_route() {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
 
@@ -96,16 +121,18 @@ void test_required_components_gate_route() {
 
   {
     const sim::Scenario scenario =
-        issue_1112_scenario(sim::LockMode::FullItem);
+        issue_1112_scenario(sim::LockMode::FullSupporter);
     std::mt19937_64 rng{1115};
     sim::Engine engine(scenario, recipe, rng);
     sim::EngineTestAccess::set_k1_state(engine, issue_1112_state());
-    // The confirmed route is restricted to the repository no-lock scenario:
-    // https://api.pokemontcg.io/v2/cards/sm7-145
-    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Both required Trainer actions are Supporters, so Supporter lock blocks Steven
+    // on the current turn and would also block Burnet on the continuation turn.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Canonical Supporter predicate: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/4028
     expect(!sim::EngineTestAccess::late_steven_burnet_route(engine),
-           "Full Item lock must reject the route.");
+           "Full Supporter lock must reject the route.");
   }
 }
 
@@ -140,6 +167,7 @@ void test_seed_493_uses_steven_and_reaches_turn_four() {
 
 int main() {
   test_exact_k1_state_admits_route();
+  test_non_supporter_locks_admit_supporter_only_route();
   test_required_components_gate_route();
   test_seed_493_uses_steven_and_reaches_turn_four();
   return 0;

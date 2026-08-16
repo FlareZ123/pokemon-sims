@@ -6,9 +6,14 @@
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Official Prize, search, evolution, attachment, Bench, Ability, Retreat, and Supporter procedure: https://assets.pokemon.com/assets/cms2-en-uk/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Item locks do not block this route because it uses Steven's Resolve, Bench,
+    // evolution, manual attachment, Skyliner, Retreat, and an attack with no Item play.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Canonical lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Confirmed lock-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/4101
     // Confirmed coordinate bug: https://github.com/FlareZ123/pokemon-sims/issues/3276
     if (!prizes_known() || scenario_.dci != DciProfile::NoDiscardControl ||
-        scenario_.locks != LockMode::None ||
         state_.turn + 1 > scenario_.max_turn || !supporter_allowed() ||
         !state_.manual_energy_used || !state_.active ||
         !is_basic(state_.active->card) ||

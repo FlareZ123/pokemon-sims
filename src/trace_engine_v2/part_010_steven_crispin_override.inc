@@ -618,9 +618,18 @@ if (wonder_tag_can_bank_steven_for_known_t3_active_regi_route()) {
     // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2086
 
+    // The continuation uses Steven's Resolve now and Professor Burnet next turn.
+    // Both are Supporters; it uses no Item and no Rule Box Pokémon Ability. The
+    // canonical Supporter predicate is therefore the only modeled lock gate needed.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced Supporter, evolution, and attack procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Combined-lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#combined-lock
+    // Canonical Supporter/lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Confirmed refined bug: https://github.com/FlareZ123/pokemon-sims/issues/4028
     if (!prizes_known() || state_.turn >= scenario_.max_turn ||
-        scenario_.dci != DciProfile::StrictJit ||
-        scenario_.locks != LockMode::None || !supporter_allowed() ||
+        scenario_.dci != DciProfile::StrictJit || !supporter_allowed() ||
         !state_.active || state_.active->card != Card::RegidragoV ||
         state_.active->entered_turn >= state_.turn ||
         state_.active->grass != 1 || state_.active->fire < 1 ||

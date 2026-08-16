@@ -79,22 +79,27 @@
     bool want_payload;
   };
 
+  static bool quick_ball_base_target_is_preferred(
+      const QuickBallBaseSearchPlan& plan, const Card target) {
+    // Strategy preference only; cards::QuickBall enforces the printed Basic target
+    // filter during resolution. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    return (target == Card::RegidragoV && plan.want_regi) ||
+           (target == Card::LatiasEx && plan.want_latias) ||
+           (target == Card::TapuLeleGX && plan.want_tapu) ||
+           (target == Card::Oricorio && plan.want_oricorio) ||
+           (target == Card::CrobatV && plan.want_crobat) ||
+           (target == Card::DialgaGX && plan.want_payload);
+  }
+
   static std::optional<Card> select_quick_ball_base_target(void* opaque) {
     auto& plan = *static_cast<QuickBallBaseSearchPlan*>(opaque);
     Engine& engine = *plan.engine;
 
-    const std::array<Card, 7> targets{
+    const std::array<Card, 6> targets{
         Card::RegidragoV, Card::LatiasEx, Card::TapuLeleGX,
-        Card::Oricorio, Card::CrobatV, Card::DialgaGX, Card::MawileGX};
+        Card::Oricorio, Card::CrobatV, Card::DialgaGX};
     for (const Card target : targets) {
-      const bool desired =
-          (target == Card::RegidragoV && plan.want_regi) ||
-          (target == Card::LatiasEx && plan.want_latias) ||
-          (target == Card::TapuLeleGX && plan.want_tapu) ||
-          (target == Card::Oricorio && plan.want_oricorio) ||
-          (target == Card::CrobatV && plan.want_crobat) ||
-          (target == Card::DialgaGX && plan.want_payload);
-      if (desired &&
+      if (quick_ball_base_target_is_preferred(plan, target) &&
           std::find(engine.state_.deck.begin(), engine.state_.deck.end(), target) !=
               engine.state_.deck.end()) {
         return target;
@@ -125,16 +130,6 @@
                    engine.state_.deck.end()
         ? std::optional<Card>{fallback}
         : std::nullopt;
-  }
-
-  static bool quick_ball_base_target_was_preferred(
-      const QuickBallBaseSearchPlan& plan, const Card target) {
-    return (target == Card::RegidragoV && plan.want_regi) ||
-           (target == Card::LatiasEx && plan.want_latias) ||
-           (target == Card::TapuLeleGX && plan.want_tapu) ||
-           (target == Card::Oricorio && plan.want_oricorio) ||
-           (target == Card::CrobatV && plan.want_crobat) ||
-           (target == Card::DialgaGX && plan.want_payload);
   }
 
   bool play_quick_ball_empty_deck_original(const bool permit_payload) {
@@ -276,7 +271,7 @@
 
     if (resolution.found_target && resolution.search_target) {
       const bool preferred =
-          quick_ball_base_target_was_preferred(plan, *resolution.search_target);
+          quick_ball_base_target_is_preferred(plan, *resolution.search_target);
       trace("PLAY ITEM", "R-QB-01; R-GAME-ITEM",
             preferred
                 ? "Searched a Basic Pokémon: " +

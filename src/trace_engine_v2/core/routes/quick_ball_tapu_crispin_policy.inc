@@ -73,8 +73,8 @@
       return false;
     }
 
-    const bool prior_turn_regidrago_one_basic_from_apex = std::any_of(
-        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+    const bool prior_turn_regidrago_one_basic_from_apex =
+        bench_has_pokemon_matching([this](const Pokemon& pokemon) {  // Canonical Bench traversal: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
           if (pokemon.card != Card::RegidragoV ||
               pokemon.entered_turn >= state_.turn) return false;  // Entry-age evolution rule: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
           for (const Card basic : {Card::Grass, Card::Fire}) {

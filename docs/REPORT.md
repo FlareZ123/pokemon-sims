@@ -14,11 +14,11 @@ Seed: `20260705`.
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, going first | 12.158% | 41.807% | 59.222% |
-| Matchup-flex JIT, going first | 17.172% | 50.772% | 68.179% |
+| Strict JIT, going first | 12.242% | 41.843% | 59.373% |
+| Matchup-flex JIT, going first | 17.152% | 50.658% | 68.089% |
 | No discard control, going first | 19.74% | 56.829% | 73.585% |
-| Strict JIT, going second | 29.667% | 55.561% | 67.523% |
-| Matchup-flex JIT, going second | 37.321% | 64.185% | 75.793% |
+| Strict JIT, going second | 29.658% | 55.591% | 67.484% |
+| Matchup-flex JIT, going second | 37.296% | 64.209% | 75.84% |
 | No discard control, going second | 40.232% | 68.436% | 79.981% |
 
 ## Lock stress tests
@@ -28,15 +28,15 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
 | Strict JIT, turn-two Item lock, first | 4.583% | 10.484% | 18.587% |
-| Strict JIT, Rule Box Ability lock, first | 4.539% | 27.748% | 42.696% |
+| Strict JIT, Rule Box Ability lock, first | 4.528% | 27.723% | 42.645% |
 | Strict JIT, turn-two Item + Rule Box Ability lock, first | 0.779% | 4.667% | 9.645% |
 | Strict JIT, turn-two Item lock, second | 14.203% | 28.493% | 37.272% |
-| Strict JIT, Rule Box Ability lock, second | 18.561% | 37.171% | 49.433% |
+| Strict JIT, Rule Box Ability lock, second | 18.557% | 37.137% | 49.435% |
 | Strict JIT, turn-two Item + Rule Box Ability lock, second | 3.924% | 14.705% | 20.389% |
 | Strict JIT, Supporter lock, first | 0.005% | 16.426% | 23.376% |
 | Strict JIT, Supporter lock, second | 7.85% | 20.357% | 26.735% |
 | Garbodor + Boost Shake Ability lock, first | 5.604% | 25.133% | 37.799% |
-| Garbodor + Boost Shake Ability lock, second | 15.389% | 30.67% | 42.053% |
+| Garbodor + Boost Shake Ability lock, second | 15.375% | 30.647% | 42.033% |
 
 ## Interpretation boundary
 

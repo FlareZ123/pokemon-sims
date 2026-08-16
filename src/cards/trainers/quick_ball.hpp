@@ -61,14 +61,7 @@ class QuickBall final {
 
     context.begin_deck_search(action.search_reason);
 
-    std::optional<Card> target;
-    if (action.choose_search_target != nullptr) {
-      target = action.choose_search_target(action.search_context);
-    }
-    if (target && !context.is_basic_pokemon(*target)) {
-      target.reset();
-    }
-
+    const std::optional<Card> target = legal_search_target(context, action);
     const bool found = target && context.search_deck_to_hand(*target);
     context.shuffle_deck();
     return Resolution{.played = true,
@@ -81,6 +74,18 @@ class QuickBall final {
     // Quick Ball requires "another" card, so the played copy cannot pay its own cost.
     // Exact printed effect: https://api.pokemontcg.io/v2/cards/swsh1-179
     return discard == Card::QuickBall ? 2 : 1;
+  }
+
+  static std::optional<Card> legal_search_target(
+      const rules::CardContext& context, const Action& action) {
+    if (action.choose_search_target == nullptr) return std::nullopt;
+
+    const std::optional<Card> target =
+        action.choose_search_target(action.search_context);
+    // Quick Ball may search only for a Basic Pokemon. Strategy supplies a preference;
+    // this card class owns the printed target filter before deck movement.
+    // Exact printed effect: https://api.pokemontcg.io/v2/cards/swsh1-179
+    return target && context.is_basic_pokemon(*target) ? target : std::nullopt;
   }
 };
 

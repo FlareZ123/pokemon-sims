@@ -75,7 +75,7 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 ### First-ready-turn distribution
 
 | Scenario | Ready on T2 | Ready on T3 | Ready on T4 | Ready on T5 diagnostic |
-|---|---:|---:|---:|---:|---:|
+|---|---:|---:|---:|---:|
 | Strict JIT, going first | 19.554% | 29.416% | 17.792% | 10.534% |
 | Matchup-flex JIT, going first | 21.321% | 29.882% | 18.005% | 10.121% |
 | No discard control, going first | 25.271% | 35.005% | 15.439% | 7.223% |

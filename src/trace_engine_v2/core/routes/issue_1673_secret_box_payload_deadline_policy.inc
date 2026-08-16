@@ -9,12 +9,15 @@
     auto costs = secret_box_cost_plan();
     if (!costs ||
         !std::any_of(costs->begin(), costs->end(), is_payload)) {
-      const auto payload = std::find_if(
-          state_.hand.begin(), state_.hand.end(), is_payload);
+      // Preserve the historical first physical Dragon in hand through the canonical
+      // payload-zone selector instead of repeating a route-local find_if scan:
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+      // https://api.pokemontcg.io/v2/cards/swsh12-136
+      const auto payload = first_payload_card_in_zone(state_.hand);
       const Card surplus_energy =
           hand_count(Card::Fire) > 0 ? Card::Fire : Card::Grass;
-      if (payload == state_.hand.end() ||
-          hand_count(Card::WishfulBaton) == 0 ||
+      if (!payload || hand_count(Card::WishfulBaton) == 0 ||
           hand_count(surplus_energy) == 0) {
         return false;
       }

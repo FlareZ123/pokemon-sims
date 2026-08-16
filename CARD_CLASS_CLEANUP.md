@@ -47,6 +47,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/setup_lifecycle.inc` owns opening-hand, mulligan, Prize-deal, and setup-trace mechanics.
 - `src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn action-state reset semantics.
 - `src/trace_engine_v2/core/deck_knowledge.inc` owns reusable copy arithmetic after visibility is resolved. `KnowledgeCopyPolicy` is an explicit final stateless policy class; hidden-zone visibility and route admission remain Engine concerns.
+- `src/trace_engine_v2/core/opening/package.inc` owns the ordered early Engine foundation composition of deck knowledge, turn lifecycle, Tapu connector policy, and Dragon-payload policy. It preserves the historical `begin_turn` alias release between knowledge and turn lifecycle so these adjacent canonical owners have one explicit member-boundary package. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/opening/package.inc
 - `src/trace_engine_v2/core/routes/oricorio_connector_policy.inc` owns the Oricorio connector's pure energy-need and connector-admission projections through `OricorioConnectorPolicy`; Engine retains Ability availability, K0/K1 visibility, Bench-space, and action execution. Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
 - `src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc` owns the Legacy Star/Quick Ball pure connector and inertness projections through `LegacyStarQuickBallPolicy`; Engine retains DCI/JIT state queries and the temporary projection-only hand mutation around Legacy Star. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
 - `src/trace_engine_v2/core/tate/package.inc` owns the established discard-provenance, Tate attachment, and Tate action override sequence as one composition package. The historical member fragments remain the rule-sensitive implementation owners while this package centralizes their textual order: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/package.inc
@@ -67,6 +68,8 @@ For each migration, move intrinsic metadata and classification before printed re
 ## Composition ownership
 
 `src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered Engine composition owner. Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+
+The early Engine foundation is now composed through `src/trace_engine_v2/core/opening/package.inc` from `composition/opening_engine_overrides.inc`. The package preserves deck knowledge -> `#undef begin_turn` -> turn lifecycle -> Tapu connector -> payload policy order and keeps all four implementation owners unchanged. This is a textual ownership cleanup only. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/opening/package.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 The Steven/Brilliant Blender macro-composition block is now directly owned by `src/trace_engine_v2/composition/steven_blender_overrides.inc` at the identical post-`part_009b2.inc` boundary. The redundant nested `src/trace_engine_v2/composition/steven/blender_overrides.inc` forwarding layer has been retired. The canonical owner receives the intentionally live `play_ultra_ball` alias and releases the same search, Steven, and Blender aliases before later composition continues. This remains a textual ownership cleanup. Route admission remains with `core/routes/`. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/steven_blender_overrides.inc
 
@@ -116,6 +119,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Board traversal and board indices: `src/trace_engine_v2/core/board_state_policy.inc`.
 - Garbodor scenario and Ability-lock composition: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
 - Setup lifecycle: `src/trace_engine_v2/core/setup_lifecycle.inc`.
+- Early Engine foundation composition: `src/trace_engine_v2/core/opening/package.inc`; preserve deck knowledge, `begin_turn` alias release, turn lifecycle, Tapu connector, and payload policy order.
 - Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
 - Turn action runtime: `src/trace_engine_v2/turn_action_policy_runtime.inc`.
 - Intrinsic exact-print predicates: `src/cards/card_definition.hpp` via `CardDefinitionPredicates`.
@@ -144,6 +148,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 13. Reuse generic `PayloadZonePolicy` range operations for fixed-size Card cost plans only when the query is purely physical membership, count, or first-match traversal; keep route-specific DCI/JIT admission outside the utility class.
 14. Keep `composition/engine_body.inc` pointed directly at `core/routes/battle_compressor_vs_seeker_policy.inc`; the historical root compatibility include is retired and should not be recreated.
 15. Continue moving complete route-specific member bodies out of numbered `part_*.inc` fragments into named `core/routes/` owners only when the exact textual member boundary can be preserved. The next search-connector boundary is the Mysterious Treasure route beginning in `part_009a.inc`; move its continuation only when the full member can migrate atomically without changing declaration order. C++ textual-include semantics: https://eel.is/c++draft/cpp.include Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+16. Keep `core/opening/package.inc` as the sole composition point for the early foundation owners. Future cleanup may migrate an individual implementation owner behind that package, but must preserve the package order and the `begin_turn` alias-release boundary exactly.
 
 ## One-card workflow
 

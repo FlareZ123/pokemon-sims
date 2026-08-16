@@ -26,7 +26,7 @@
         hand_count(Card::MysteriousTreasure) == 0 ||
         hand_count(Card::Grass) > 0 || hand_count(Card::Crispin) > 0 ||
         !need_energy() || !need_payload() ||
-        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+        !payload_zone_contains(state_.hand)) { // Canonical payload membership: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
       return false;
     }
 

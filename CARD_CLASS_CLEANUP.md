@@ -86,7 +86,7 @@ Next composition step: retire the Quick Ball/Tapu/Crispin compatibility seam onc
 
 ## Payload policy cleanup
 
-`src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner.
+`src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner. `PayloadZonePolicy::matches_payload()` now owns the shared Dragon-payload identity predicate used by physical-zone membership, first-match, and cardinality helpers.
 
 - `PayloadZonePolicy::first_iterator_matching()` owns shared physical-zone first-match traversal.
 - `PayloadZonePolicy::contains_matching()` owns generic predicate-based zone membership.
@@ -122,7 +122,7 @@ Next Steven cleanup step: migrate duplicated Gladion Prize-exchange mutations to
 
 `src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing deck/scenario labels, opening-deck initialization, opening-hand and mulligan mechanics, Prize dealing, and setup-trace output. `src/trace_engine_v2/part_005.inc` composes that owner at the established Engine member boundary. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
 
-`SetupRecipePolicy` owns setup recipe-presence and exact-count predicates. Opening-deck and mulligan transitions remain directly owned by their lifecycle procedures rather than one-use forwarding helpers.
+`SetupRecipePolicy::has_any_copy()` and `SetupRecipePolicy::has_exact_copies()` own setup recipe-presence and exact-count predicates. Opening-deck and mulligan transitions remain directly owned by their lifecycle procedures rather than one-use forwarding helpers.
 
 Next setup step: route future setup recipe classification through `SetupRecipePolicy`. Move state-transition helpers from opening Active/Bench setup only once exact source-contract coverage exists for hand removal, `started_regi`, Bench insertion, and declaration ordering. Keep strategic route predicates in Engine.
 
@@ -130,9 +130,9 @@ Next setup step: route future setup recipe classification through `SetupRecipePo
 
 `src/trace_engine_v2/core/card_catalog.inc` owns the shrinking legacy name bridge and intrinsic classification compatibility seam. Registered `CardDefinition` lookup remains canonical for migrated names and intrinsic metadata: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
-`src/trace_engine_v2/core/deck_knowledge.inc` keeps copy arithmetic behind `KnowledgeCopyPolicy`. K0/K1 visibility rules remain at Engine callers: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+`src/trace_engine_v2/core/deck_knowledge.inc` keeps copy arithmetic behind `KnowledgeCopyPolicy`. `KnowledgeCopyPolicy::combined_public_zones()` now owns the exact two-zone and three-zone public-copy aggregation after callers have resolved visibility. K0/K1 visibility rules remain at Engine callers: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 
-Next catalog/knowledge step: migrate legacy name and intrinsic metadata rows only after explicit `CardDefinition` registration and coverage. Move repeated copy-count arithmetic into `KnowledgeCopyPolicy` only after visibility has been resolved by the Engine caller. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns.
+Next catalog/knowledge step: migrate legacy name and intrinsic metadata rows only after explicit `CardDefinition` registration and coverage. Continue moving repeated copy-count arithmetic into `KnowledgeCopyPolicy` only after visibility has been resolved by the Engine caller. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns.
 
 ## Shared policy owners
 

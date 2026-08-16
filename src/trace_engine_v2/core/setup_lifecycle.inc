@@ -2,14 +2,14 @@
 #define SIM_TRACE_SETUP_LIFECYCLE_INCLUDED
 
   struct SetupRecipePolicy {
-    [[nodiscard]] static constexpr bool contains_count(const int copies) {
+    [[nodiscard]] static constexpr bool has_any_copy(const int copies) {
       // Keep setup recipe-presence classification behind one seam rather than
       // duplicating raw copy-count comparisons at deck/scenario label callers.
       // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#setup-lifecycle-cleanup
       return copies > 0;
     }
 
-    [[nodiscard]] static constexpr bool has_exact_count(
+    [[nodiscard]] static constexpr bool has_exact_copies(
         const int copies, const int expected) {
       // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#setup-lifecycle-cleanup
       return copies == expected;
@@ -17,11 +17,11 @@
   };
 
   [[nodiscard]] bool setup_recipe_contains(const Card card) const {
-    return SetupRecipePolicy::contains_count(total_copies(card));
+    return SetupRecipePolicy::has_any_copy(total_copies(card));
   }
 
   [[nodiscard]] bool setup_recipe_has_exactly(const Card card, const int copies) const {
-    return SetupRecipePolicy::has_exact_count(total_copies(card), copies);
+    return SetupRecipePolicy::has_exact_copies(total_copies(card), copies);
   }
 
   [[nodiscard]] std::string current_deck_id() const {

@@ -8,12 +8,22 @@
       return first_count + second_count;
     }
 
+    [[nodiscard]] static constexpr int combined_unattached_public_zones(
+        const int hand_count, const int discard_count) {
+      // Hand and discard are the shared public-zone base used by both unattached
+      // K0 accounting and the hand/discard/attached aggregate below.
+      // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#catalog-and-knowledge-cleanup
+      return combined(hand_count, discard_count);
+    }
+
     [[nodiscard]] static constexpr int combined_public_zones(
         const int hand_count, const int discard_count, const int attached_count) {
       // Keep public hand/discard/attached aggregation behind one named arithmetic
       // seam after Engine callers have already resolved zone visibility.
       // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#catalog-and-knowledge-cleanup
-      return combined(combined(hand_count, discard_count), attached_count);
+      return combined(
+          combined_unattached_public_zones(hand_count, discard_count),
+          attached_count);
     }
 
     [[nodiscard]] static int unresolved(const int total_copies,
@@ -30,8 +40,8 @@
     // Public-copy aggregation remains source-bounded to zones the player may
     // actually know before K1:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
-    return KnowledgeCopyPolicy::combined(hand_count(card),
-                                         count_of(state_.discard, card));
+    return KnowledgeCopyPolicy::combined_unattached_public_zones(
+        hand_count(card), count_of(state_.discard, card));
   }
 
   [[nodiscard]] int publicly_known_copy_count(const Card card) const {

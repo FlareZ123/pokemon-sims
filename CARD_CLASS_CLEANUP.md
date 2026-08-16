@@ -72,13 +72,38 @@ The issue-1368 Earthen Vessel / Celestial Roar route remains owned by `src/trace
 
 The issue-1516/2164 Quick Ball, Tapu Lele-GX, Crispin route family remains owned by `src/trace_engine_v2/core/routes/quick_ball_tapu_crispin_policy.inc`. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60 Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
 
+## Payload policy cleanup
+
+`src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner. Reuse `PayloadZonePolicy` only where physical-zone traversal, membership, and count semantics match exactly. Preserve physical order for observable first-match selection and preserve explicit strategic order for preference selection. DCI/JIT predicates and discard timing remain with strategy owners. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+
+## Setup lifecycle cleanup
+
+`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing labels, opening-deck initialization, opening-hand and mulligan mechanics, Prize dealing, and setup-trace output. `src/trace_engine_v2/part_005.inc` composes that owner at the established Engine member boundary. Preserve setup declaration order and hand, Active, Bench, and Prize transitions. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
+
+## Catalog and knowledge cleanup
+
+`src/trace_engine_v2/core/card_catalog.inc` owns the shrinking legacy name bridge and intrinsic-classification compatibility seam. Registered `CardDefinition` lookup remains canonical for migrated metadata: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+
+`src/trace_engine_v2/core/deck_knowledge.inc` owns reusable copy arithmetic after the Engine caller resolves visibility. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns. K0/K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+
+## Shared policy owners
+
+Before adding a route-local loop or helper, reuse an existing owner when ordering and semantics match exactly:
+
+- Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.
+- Board traversal and board indices: `src/trace_engine_v2/core/board_state_policy.inc`.
+- Garbodor scenario and Ability-lock composition: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
+- Setup lifecycle: `src/trace_engine_v2/core/setup_lifecycle.inc`.
+- Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
+- Turn action runtime: `src/trace_engine_v2/turn_action_policy_runtime.inc`.
+
 ## Next cleanup steps
 
 1. Keep `composition/steven/blender_overrides.inc` and `core/routes/steven/package.inc` as the canonical Steven organization boundaries. Remove their forwarding paths only after repository-wide and source-contract references are proven gone.
 2. Continue retiring composition-only `part_*steven*` forwarders when a complete function body or macro lifetime can move at the identical textual boundary.
 3. Migrate direct `CardContext` bridge consumers to `core/adapters/card_context_adapter.hpp`. Remove the old forwarding include only after references are proven gone. New bridge construction should use `CardContextAdapterCallbacks`.
 4. Migrate remaining `LegacyCardCatalog` and intrinsic compatibility rows one card at a time. Delete a row only after explicit `CardDefinition` registration, exact-print source, and focused metadata coverage exist.
-5. Reuse `PayloadZonePolicy` and board-state owners only when physical order, visibility, and strategic preference semantics match exactly.
+5. Reuse payload and board-state owners only when physical order, visibility, and strategic preference semantics match exactly.
 6. Keep Forretress reusable scenario and runtime ownership under `core/forretress/`. Move another boundary only when its complete state-transition or orchestration semantics can be preserved.
 7. Prefer named pure-projection members over route-local anonymous projections when a projection is reused or has a distinct policy contract.
 

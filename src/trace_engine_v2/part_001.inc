@@ -134,13 +134,4 @@ constexpr bool is_payload(const Card card) {
 
 
 
-
-
-
-
-
-
-
-
-
 // Legacy line-137 anchor; canonical implementation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc

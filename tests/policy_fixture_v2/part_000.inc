@@ -22,6 +22,9 @@ struct EngineTestAccess {
   static bool play_earthen_vessel(Engine& engine, bool permit_payload) { return engine.play_earthen_vessel(permit_payload); }
   static bool play_mysterious_treasure(Engine& engine, bool permit_payload) { return engine.play_mysterious_treasure(permit_payload); }
   static bool play_quick_ball(Engine& engine, bool permit_payload) { return engine.play_quick_ball(permit_payload); }
+  static std::optional<Card> quick_ball_crispin_replaced_energy_cost(const Engine& engine) {
+    return engine.quick_ball_crispin_replaced_energy_cost();
+  }
   static bool play_heavy_ball(Engine& engine) { return engine.play_heavy_ball(); }
   static bool bench_oricorio_if_useful(Engine& engine) { return engine.bench_oricorio_if_useful(); }
   static bool bench_tapu_if_useful(Engine& engine) { return engine.bench_tapu_if_useful(); }

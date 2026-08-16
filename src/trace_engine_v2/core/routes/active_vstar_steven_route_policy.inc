@@ -1,5 +1,6 @@
   bool issue_3203_active_vstar_steven_crispin_treasure_route_available() const {
-    const bool next_turn_items_locked = item_locked_on_turn(state_.turn + 1);
+    const int treasure_turn = state_.turn + 1;
+    const bool treasure_turn_items_locked = item_locked_on_turn(treasure_turn);
     // Shared projected Item-lock timing: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
 
     // Steven ends the current turn after reserving Crispin plus one Grass. On the
@@ -17,8 +18,8 @@
     // Persistent T2 Item-lock specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
     // K1/JIT/lock/priority policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3203
-    if (!prizes_known() || !strict_payload_timing() || next_turn_items_locked ||
-        state_.turn >= scenario_.max_turn || !supporter_allowed() ||
+    if (!prizes_known() || !strict_payload_timing() || treasure_turn_items_locked ||
+        treasure_turn > scenario_.max_turn || !supporter_allowed() ||
         state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoVstar ||
         state_.active->grass != 0 || state_.active->fire < 1 ||

@@ -167,3 +167,9 @@ If migration exposes gameplay behavior that is wrong, use the normal bug-confirm
 A cleanup PR is mergeable only when strict Release compilation succeeds, focused tests and the full regression suite show no new failure, sanitizer and structural checks show no new failure, representative `--simulate-this` traces preserve legal action ordering and readiness, the paired T2/T3 matrix has no unexplained drift, and the PR contains no gameplay behavior change.
 
 Known baseline failures must be tied to an existing issue and remain unchanged. Any newly discovered gameplay defect uses the separate bug-confirmation workflow.
+
+## Tate base action cleanup
+
+`src/trace_engine_v2/core/tate/base_action_policy.inc` is now the canonical owner for the base Tate & Liza Supporter consumption, switch resolver, and draw resolver at the historical `part_008a.inc` Engine member boundary. Preserve those member names and their order so the later Tate override package can keep its current macro contract. Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148 Advanced Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md C++ textual include semantics: https://eel.is/c++draft/cpp.include
+
+The next Tate cleanup remains the strategy-specific action override rooted at `part_tate_blender_tate_override.inc`. Move that complete body only at its identical member boundary, then migrate source-contract anchors before retiring the historical root mirror.

@@ -33,6 +33,8 @@ tests/quick_ball_card_class_tests.cpp
 
 Quick Ball remains the reference for explicit registration, exact-print metadata, intrinsic cost validation, K0 to K1 search timing, strategy-owned target choice, printed target filtering, source-card movement, failed-search behavior, shuffle, and trace compatibility. Exact print: https://api.pokemontcg.io/v2/cards/swsh1-179
 
+The Quick Ball reference resolver now names its two exact-print validation boundaries in `src/cards/trainers/quick_ball.hpp`: `required_discard_copies()` owns the mandatory "another card" payment count and `legal_search_target()` owns the Basic-Pokemon target filter. Engine remains the owner of DCI-aware discard choice and strategic target preference. Quick Ball exact print: https://api.pokemontcg.io/v2/cards/swsh1-179
+
 ## Current ownership
 
 - `src/cards/card_id.hpp` owns stable `sim::Card` identifiers. Exact external print identity belongs in `CardDefinition::canonical_id`.

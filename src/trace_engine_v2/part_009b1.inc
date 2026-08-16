@@ -38,14 +38,18 @@
     // Advanced turn/evolution/Trainer procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Confirmed turn-relative regression: https://github.com/FlareZ123/pokemon-sims/issues/3576
     // Lock legality here follows the actions that remain in the route. Quick Ball's
-    // caller rejects Item lock, supporter_allowed() rejects Supporter lock, and
-    // can_free_retreat_with_latias() checks live Skyliner Ability availability.
+    // caller rejects current Item lock, supporter_allowed() rejects Supporter lock,
+    // item_locked_on_turn() protects the projected Brilliant Blender Item action,
+    // and can_free_retreat_with_latias() checks live Skyliner Ability availability.
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
     // Repository lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-interpretation
+    // Scheduled Item lock: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Confirmed recovered-Path bug: https://github.com/FlareZ123/pokemon-sims/issues/4108
     const int projected_ready_turn = state_.turn + 1;
     if (!strict_payload_timing() || scenario_.max_turn < projected_ready_turn ||
-        !supporter_allowed() || state_.manual_energy_used || state_.supporter_used ||
+        !supporter_allowed() || item_locked_on_turn(projected_ready_turn) ||
+        state_.manual_energy_used || state_.supporter_used ||
         hand_count(Card::Crispin) == 0 || hand_count(Card::Grass) < 2 ||
         hand_count(Card::Arven) == 0 || hand_count(Card::BrilliantBlender) == 0 ||
         state_.vstar_power_used || !can_free_retreat_with_latias()) {

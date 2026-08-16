@@ -34,24 +34,4 @@ struct CardContextAdapterCallbacks {
                      callbacks.classifiers};
 }
 
-[[nodiscard]] inline CardContext make_card_context_adapter(
-    void* engine,
-    const CardContext::HandCountFn hand_count,
-    const CardContext::MoveHandToDiscardFn move_hand_to_discard,
-    const CardContext::DiscardFromHandFn discard_from_hand,
-    const CardContext::SearchDeckToHandFn search_deck_to_hand,
-    const CardContext::ShuffleDeckFn shuffle_deck,
-    const CardContext::IsBasicPokemonFn is_basic_pokemon,
-    const CardContext::BeginDeckSearchFn begin_deck_search) {
-  return make_card_context_adapter(
-      engine,
-      CardContextAdapterCallbacks{.hand_count = hand_count,
-                                  .move_hand_to_discard = move_hand_to_discard,
-                                  .discard_from_hand = discard_from_hand,
-                                  .search_deck_to_hand = search_deck_to_hand,
-                                  .shuffle_deck = shuffle_deck,
-                                  .is_basic_pokemon = is_basic_pokemon,
-                                  .begin_deck_search = begin_deck_search});
-}
-
 }  // namespace sim::trace_engine_v2

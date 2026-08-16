@@ -503,10 +503,27 @@
 
   Card choose_supporter_after_search_started() {
 
+    // The #1597 line finishes its Item and Wonder Tag work on T1. A
+    // scheduled T2 Item lock is therefore irrelevant after this point;
+    // admission depends on the actions the route still needs: future
+    // Supporters, a currently available Wonder Tag, and the existing T1
+    // Item legality gate below.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // TurnTwoItem schedule: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+    // Lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4050
     const bool issue_1597_banked_steven_turo_route =
         scenario_.dci == DciProfile::NoDiscardControl &&
         scenario_.going_first && state_.turn == 1 &&
-        scenario_.locks == LockMode::None && scenario_.max_turn >= 4 &&
+        scenario_.max_turn >= 4 &&
+        !uses_full_supporter_lock(scenario_.locks) &&
+        ability_available_for_pokemon(Card::TapuLeleGX) &&
         !supporter_allowed() && deck_seen_ && state_.active &&
         state_.active->card == Card::Oricorio &&
         in_play_count(Card::RegidragoV) > 0 &&

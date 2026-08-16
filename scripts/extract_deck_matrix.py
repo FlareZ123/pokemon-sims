@@ -125,6 +125,7 @@ def main() -> int:
     # Confirmed reporting-boundary defect:
     # https://github.com/FlareZ123/pokemon-sims/issues/3764
     summarize_matrix(args.input, args.summary_output)
+    print(args.output.read_text(encoding="utf-8"), end="")
     return 0
 
 

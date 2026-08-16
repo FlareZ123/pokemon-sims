@@ -39,6 +39,19 @@
               Card::DialgaGX, Card::MawileGX, Card::Dipplin,
               Card::Appletun, Card::Pineco, Card::ForretressEx};
     }
+
+    template <std::size_t N, typename DeckCount>
+    [[nodiscard]] static Card first_available(
+        const std::array<Card, N>& targets, const Card fallback,
+        const DeckCount& deck_count) {
+      // K1 fallback callers have already started a legal deck search, so they can
+      // traverse the resolved deck zone in printed-effect-specific order:
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+      for (const Card target : targets) {
+        if (deck_count(target) > 0) return target;
+      }
+      return fallback;
+    }
   };
 
   bool has_other_payload_outlet(const Card excluded) const {
@@ -79,34 +92,25 @@
            (supporter_allowed() && present(Card::Serena));
   }
 
-  template <std::size_t N>
-  Card first_remaining_search_target_after_search_started(
-      const std::array<Card, N>& targets, const Card fallback) const {
-    // K1 search fallbacks all inspect the same resolved deck zone. Keep the physical
-    // lookup in one helper while each printed search effect owns its legal target order:
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    for (const Card target : targets) {
-      if (deck_count_after_search_started(target) > 0) return target;
-    }
-    return fallback;
-  }
-
   Card fallback_mysterious_target_after_search_started() const {
     // Legal K1 fallback coverage remains separate from strategic route priority.
     // Confirmed fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1253 https://github.com/FlareZ123/pokemon-sims/issues/1949
-    return first_remaining_search_target_after_search_started(
+    return SearchConnectorFallbackPolicy::first_available(
         SearchConnectorFallbackPolicy::mysterious_treasure_targets(),
-        Card::RegidragoV);
+        Card::RegidragoV,
+        [this](const Card card) { return deck_count_after_search_started(card); });
   }
 
   Card fallback_quick_ball_target_after_search_started() const {
     // Confirmed Pineco fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1958
-    return first_remaining_search_target_after_search_started(
-        SearchConnectorFallbackPolicy::quick_ball_targets(), Card::RegidragoV);
+    return SearchConnectorFallbackPolicy::first_available(
+        SearchConnectorFallbackPolicy::quick_ball_targets(), Card::RegidragoV,
+        [this](const Card card) { return deck_count_after_search_started(card); });
   }
 
   Card fallback_ultra_ball_target_after_search_started() const {
     // Confirmed fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1254 https://github.com/FlareZ123/pokemon-sims/issues/1952
-    return first_remaining_search_target_after_search_started(
-        SearchConnectorFallbackPolicy::ultra_ball_targets(), Card::RegidragoV);
+    return SearchConnectorFallbackPolicy::first_available(
+        SearchConnectorFallbackPolicy::ultra_ball_targets(), Card::RegidragoV,
+        [this](const Card card) { return deck_count_after_search_started(card); });
   }

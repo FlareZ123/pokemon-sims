@@ -5,15 +5,10 @@
 // they saw when these directives lived in src/regidrago_sim.cpp.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 
-// K0/K1 deck visibility and deck-knowledge policy live in the canonical core unit:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/deck_knowledge.inc
-#include "../core/deck_knowledge.inc"
-#undef begin_turn
-// Turn lifecycle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/turn_lifecycle.inc
-#include "../core/turn_lifecycle.inc"
-// Tapu connector policy now owns its adjacent historical aliases as one core unit.
-#include "../core/tapu_connector_policy.inc"
-#include "../core/payload_hand_policy.inc"
+// Keep the reusable knowledge, lifecycle, Tapu connector, and Dragon-payload
+// owners behind one ordered foundation package at this Engine member boundary.
+// Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/opening/package.inc
+#include "../core/opening/package.inc"
 
 // Preserve the legacy opening Bench, connector, recovery, discard, and Tate aliases
 // in one composition spine. choose_discard flows from part_006 through the

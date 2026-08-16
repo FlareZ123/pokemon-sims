@@ -53,7 +53,7 @@ void test_resolved_path_uses_live_ability_legality() {
   // whether T2 Tapu Lele-GX -> Wonder Tag is legal.
   // Path to the Peak: https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/cards/en/swsh6.json
   // Field Blower / Tapu Lele-GX: https://raw.githubusercontent.com/PokemonTCG/pokemon-tcg-data/master/cards/en/sm2.json
-  // Stadium procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Stadium and Ability procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4186
   std::mt19937_64 rng(4186);
   sim::Engine engine = make_engine(sim::LockMode::FullRuleBoxAbility, rng);
@@ -63,6 +63,8 @@ void test_resolved_path_uses_live_ability_legality() {
          "Rule Box Ability lock unexpectedly blocked T1 Items.");
   expect(!sim::EngineTestAccess::item_locked_on_turn(engine, 2),
          "Rule Box Ability lock unexpectedly became a T2 Item lock.");
+  expect(!sim::EngineTestAccess::uses_full_supporter_lock(engine),
+         "Rule Box Ability lock unexpectedly became a Supporter lock.");
   expect(!sim::EngineTestAccess::tapu_ability_available(engine),
          "Unresolved Path unexpectedly allowed Tapu Lele-GX Wonder Tag.");
 

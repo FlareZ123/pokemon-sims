@@ -9,12 +9,11 @@
 // Confirmed composition defect: https://github.com/FlareZ123/pokemon-sims/issues/3341
 
   rules::CardContext make_runtime_card_context() {
-    return trace_engine_v2::make_card_context_adapter(
-        this,
-        [](const void* opaque, const Card card) {
+    const trace_engine_v2::CardContextAdapterCallbacks callbacks{
+        .hand_count = [](const void* opaque, const Card card) {
           return static_cast<const Engine*>(opaque)->hand_count(card);
         },
-        [](void* opaque, const Card card) {
+        .move_hand_to_discard = [](void* opaque, const Card card) {
           auto* engine = static_cast<Engine*>(opaque);
           const auto it = std::find(engine->state_.hand.begin(),
                                     engine->state_.hand.end(), card);
@@ -23,22 +22,26 @@
           engine->state_.hand.erase(it);
           return true;
         },
-        [](void* opaque, const Card card, const std::string_view reason,
-           const std::string_view rules_reference) {
+        .discard_from_hand = [](void* opaque, const Card card,
+                                const std::string_view reason,
+                                const std::string_view rules_reference) {
           return static_cast<Engine*>(opaque)->discard_from_hand(
               card, reason, rules_reference);
         },
-        [](void* opaque, const Card card) {
+        .search_deck_to_hand = [](void* opaque, const Card card) {
           return static_cast<Engine*>(opaque)->move_deck_to_hand(card);
         },
-        [](void* opaque) {
+        .shuffle_deck = [](void* opaque) {
           auto* engine = static_cast<Engine*>(opaque);
           engine->shuffle(engine->state_.deck);
         },
-        [](const void*, const Card card) { return is_basic(card); },
-        [](void* opaque, const std::string_view reason) {
+        .is_basic_pokemon = [](const void*, const Card card) {
+          return is_basic(card);
+        },
+        .begin_deck_search = [](void* opaque, const std::string_view reason) {
           static_cast<Engine*>(opaque)->record_deck_search_knowledge(reason);
-        });
+        }};
+    return trace_engine_v2::make_card_context_adapter(this, callbacks);
   }
 
   cards::QuickBall::Resolution resolve_quick_ball_card_action(

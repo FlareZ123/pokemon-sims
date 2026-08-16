@@ -1,4 +1,4 @@
-#include "part_issue_1393_crispin_route_helper.inc"
+#include "core/routes/crispin_supported_route_policy.inc"
 
   bool issue_1672_fss_vessel_latias_route_available() const {
     const auto live_fss_holder = [](const Pokemon& pokemon) {

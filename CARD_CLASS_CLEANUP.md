@@ -88,6 +88,8 @@ The complete search-connector preparation and post-search fallback helpers have 
 
 The Tate package now composes discard/recovery provenance and proactive attachment from `core/tate/discard_recovery_provenance.inc` and `core/tate/attachment_policy.inc` at the same member positions. The two historical root bodies are retained only as source-contract mirrors while references are migrated. The remaining Tate action body is still rooted at `part_tate_blender_tate_override.inc` and is the next Tate member-boundary migration. Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/package.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
+The Roseanne's Backup multimode route body now has a canonical owner at `src/trace_engine_v2/core/routes/roseanne_multimode_policy.inc`. The historical `src/trace_engine_v2/part_roseanne_multimode_override.inc` path is a thin compatibility include, preserving the existing post-search member boundary while source-contract references migrate. The canonical body retains the direct Roseanne, Pokémon Communication, Evolution Incense, Earthen Vessel, Regidrago VSTAR, and rules URLs beside the affected logic. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/roseanne_multimode_policy.inc Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148
+
 ## Payload policy cleanup
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner. Reuse `PayloadZonePolicy` only where physical-zone traversal, membership, and count semantics match exactly. Preserve physical order for observable first-match selection and preserve explicit strategic order for preference selection. DCI/JIT predicates and discard timing remain with strategy owners. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
@@ -128,6 +130,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Battle Compressor / VS Seeker route policy: `src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc`.
 - Hisuian Heavy Ball route policy: `src/trace_engine_v2/core/routes/hisuian_heavy_ball_policy.inc`.
 - Shared search-connector preparation and K1 fallback mechanics: `src/trace_engine_v2/core/routes/search_connector_helpers.inc`.
+- Roseanne's Backup multimode route policy: `src/trace_engine_v2/core/routes/roseanne_multimode_policy.inc`.
 - Forretress namespace registry contract: `src/trace_engine_v2/core/forretress/scenario_contract.inc`; runtime mechanics remain in `core/forretress/runtime.inc`.
 
 ## Next cleanup steps
@@ -147,6 +150,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 13. Reuse generic `PayloadZonePolicy` range operations for fixed-size Card cost plans only when the query is purely physical membership, count, or first-match traversal; keep route-specific DCI/JIT admission outside the utility class.
 14. Keep `composition/engine_body.inc` pointed directly at `core/routes/battle_compressor_vs_seeker_policy.inc`; the historical root compatibility include is retired and should not be recreated.
 15. Continue moving complete route-specific member bodies out of numbered `part_*.inc` fragments into named `core/routes/` owners only when the exact textual member boundary can be preserved. The next search-connector boundary is the Mysterious Treasure route beginning in `part_009a.inc`; move its continuation only when the full member can migrate atomically without changing declaration order. C++ textual-include semantics: https://eel.is/c++draft/cpp.include Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+16. Keep `core/routes/roseanne_multimode_policy.inc` as the canonical Roseanne multimode route body. Retire `part_roseanne_multimode_override.inc` after repository-wide source-contract references have moved to the canonical path. Roseanne's Backup: https://api.pokemontcg.io/v2/cards/swsh9-148
 
 ## One-card workflow
 

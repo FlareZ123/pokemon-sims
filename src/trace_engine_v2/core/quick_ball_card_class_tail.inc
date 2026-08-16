@@ -4,18 +4,29 @@
 // cards::QuickBall and CardContext.
 
   bool play_quick_ball(const bool permit_payload) {
+    const auto resolve_required_fixed_target =
+        [this](const Card discard, const Card target_card,
+               const std::string_view cost_reason,
+               const std::string_view rules_reference,
+               const std::string_view search_reason,
+               const char* missing_target_message) {
+          QuickBallFixedSearchTarget target{target_card};
+          const auto resolution = resolve_quick_ball_card_action(
+              discard, &target, &Engine::select_quick_ball_fixed_target,
+              cost_reason, rules_reference, search_reason);
+          if (!resolution.played || !resolution.found_target) {
+            throw std::logic_error(missing_target_message);
+          }
+        };
+
     if (issue_2199_quick_ball_latias_payload_route_available()) {
       const Card payload = *issue_2199_quick_ball_latias_payload_cost();
-      QuickBallFixedSearchTarget target{Card::LatiasEx};
-      const auto resolution = resolve_quick_ball_card_action(
-          payload, &target, &Engine::select_quick_ball_fixed_target,
+      resolve_required_fixed_target(
+          payload, Card::LatiasEx,
           "Quick Ball issue-2199 current-turn payload cost",
           "R-QB-01; P-DCI-01; P-JIT-01; P-CONNECTOR-01",
-          "Quick Ball issue-2199 Latias route");
-      if (!resolution.played || !resolution.found_target) {
-        throw std::logic_error(
-            "issue-2199 Quick Ball card-class resolution lost its Latias target");
-      }
+          "Quick Ball issue-2199 Latias route",
+          "issue-2199 Quick Ball card-class resolution lost its Latias target");
       trace("QUICK BALL", "R-QB-01; R-LATIAS-01; P-JIT-01; P-CONNECTOR-01",
             "Discarded " + std::string(name(payload)) +
                 " as the current-turn payload and searched Latias ex for promotion.");
@@ -24,16 +35,12 @@
 
     if (issue_2289_quick_ball_tapu_arven_route_available()) {
       const Card payload = *issue_2289_quick_ball_tapu_arven_payload_cost();
-      QuickBallFixedSearchTarget target{Card::TapuLeleGX};
-      const auto resolution = resolve_quick_ball_card_action(
-          payload, &target, &Engine::select_quick_ball_fixed_target,
+      resolve_required_fixed_target(
+          payload, Card::TapuLeleGX,
           "Quick Ball issue-2289 current-turn payload cost",
           "R-QB-01; P-DCI-01; P-JIT-01; P-CONNECTOR-01",
-          "Quick Ball issue-2289 Tapu-Arven route");
-      if (!resolution.played || !resolution.found_target) {
-        throw std::logic_error(
-            "issue-2289 Quick Ball card-class resolution lost its Tapu target");
-      }
+          "Quick Ball issue-2289 Tapu-Arven route",
+          "issue-2289 Quick Ball card-class resolution lost its Tapu target");
       trace("PLAY ITEM", "R-QB-01; R-TAPU-01; P-JIT-01; P-CONNECTOR-01",
             "Discarded the current-turn Dragon payload and searched Tapu Lele-GX for the current-turn Arven completion route.");
 
@@ -83,15 +90,10 @@
     }
 
     if (issue_2272_route_replaced_arven_quick_ball_available()) {
-      QuickBallFixedSearchTarget target{Card::LatiasEx};
-      const auto resolution = resolve_quick_ball_card_action(
-          Card::Arven, &target, &Engine::select_quick_ball_fixed_target,
-          "route-replaced Quick Ball cost", "R-QB-01; P-DCI-01",
-          "Quick Ball issue-2272 route");
-      if (!resolution.played || !resolution.found_target) {
-        throw std::logic_error(
-            "issue-2272 Quick Ball card-class resolution lost its Latias target");
-      }
+      resolve_required_fixed_target(
+          Card::Arven, Card::LatiasEx, "route-replaced Quick Ball cost",
+          "R-QB-01; P-DCI-01", "Quick Ball issue-2272 route",
+          "issue-2272 Quick Ball card-class resolution lost its Latias target");
       trace("QUICK BALL", "R-QB-01; R-GAME-ITEM; P-DCI-01; P-CONNECTOR-01",
             "Discarded route-replaced Arven; searched Latias ex for the Blender-backed Skyliner finish.");
       return true;

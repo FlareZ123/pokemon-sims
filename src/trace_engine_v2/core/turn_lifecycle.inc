@@ -1,6 +1,7 @@
 #pragma once
 
-  struct TurnActionStatePolicy {
+  class TurnActionStatePolicy final {
+   public:
     static void reset(State& state) {
       state.supporter_used = false;
       state.manual_energy_used = false;
@@ -12,7 +13,8 @@
     }
   };
 
-  struct TransientTurnLockPolicy {
+  class TransientTurnLockPolicy final {
+   public:
     static void reset(State& state, const bool garbodor_shake_active) {
       // In the Garbodor pressure scenario path_lock_removed is the current-turn
       // "opponent Tool removed" flag. The maximum-pressure opponent reattaches a

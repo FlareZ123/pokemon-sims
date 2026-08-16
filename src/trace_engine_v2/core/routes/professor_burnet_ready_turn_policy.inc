@@ -145,13 +145,19 @@
     }
 
     // Celestial Roar processes the top 3 cards and attaches every Basic Energy found.
-    // In no-discard-control, remove one no-lock setup-dead card when Burnet's second
-    // legal selection strictly improves that immediate random route:
-    // https://api.pokemontcg.io/v2/cards/swsh12-135
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // In no-discard-control, remove one setup-dead card when Burnet's second legal
+    // selection strictly improves that immediate random route. Item locks do not
+    // prohibit either Burnet or Celestial Roar, while a live Path-style Rule Box
+    // suppression can keep its removal cards strategically live:
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+    // Item, Supporter, Ability, and attack procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Canonical lock model: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4098
     const bool active_can_use_celestial_roar =
         scenario_.dci == DciProfile::NoDiscardControl &&
-        scenario_.locks == LockMode::None && !first_turn_going_first() &&
+        !rule_box_abilities_locked() && !first_turn_going_first() &&
         !state_.turn_ended && state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->grass + state_.active->fire >= 1 &&

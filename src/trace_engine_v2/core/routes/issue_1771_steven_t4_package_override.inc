@@ -1,11 +1,12 @@
   bool issue_1771_steven_t4_package_available() const {
-    const bool prepared_benched_regidrago = std::any_of(
-        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+    const bool prepared_benched_regidrago = find_benched_pokemon_matching(
+        [this](const Pokemon& pokemon) {
           return pokemon.card == Card::RegidragoV &&
               pokemon.entered_turn < state_.turn &&
               pays_apex_energy_cost(pokemon);
               // https://github.com/FlareZ123/pokemon-sims/issues/2424
-        });
+        }) != nullptr;
+    // Canonical Bench query: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
     const bool payload_in_known_deck = payload_zone_contains(state_.deck);
     // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
     // Apex Dragon payload semantics: https://api.pokemontcg.io/v2/cards/swsh12-136

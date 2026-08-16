@@ -100,5 +100,5 @@
   }
 
   // Keep exact source-bounded Supporter packages together before the final dispatcher.
-  // Canonical Steven package owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_package_policy.inc
-  #include "core/routes/steven_package_policy.inc"
+  // Canonical Steven package owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven/package.inc
+  #include "core/routes/steven/package.inc"

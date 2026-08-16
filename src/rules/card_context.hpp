@@ -19,9 +19,10 @@ class CardContext final {
   using ShuffleDeckFn = void (*)(void*);
   using IsBasicPokemonFn = bool (*)(const void*, Card);
   using BeginDeckSearchFn = void (*)(void*, std::string_view);
-  using IsStadiumFn = bool (*)(const void*, Card);
-  using IsPokemonToolFn = bool (*)(const void*, Card);
-  using IsSpecialEnergyFn = bool (*)(const void*, Card);
+  using CardClassifierFn = bool (*)(const void*, Card);
+  using IsStadiumFn = CardClassifierFn;
+  using IsPokemonToolFn = CardClassifierFn;
+  using IsSpecialEnergyFn = CardClassifierFn;
 
   struct Classifiers {
     IsStadiumFn is_stadium = nullptr;
@@ -114,21 +115,26 @@ class CardContext final {
   }
 
   bool is_stadium(const Card card) const {
-    return classifiers_.is_stadium != nullptr &&
-           classifiers_.is_stadium(static_cast<const void*>(opaque_), card);
+    return classify(classifiers_.is_stadium, card);
   }
 
   bool is_pokemon_tool(const Card card) const {
-    return classifiers_.is_pokemon_tool != nullptr &&
-           classifiers_.is_pokemon_tool(static_cast<const void*>(opaque_), card);
+    return classify(classifiers_.is_pokemon_tool, card);
   }
 
   bool is_special_energy(const Card card) const {
-    return classifiers_.is_special_energy != nullptr &&
-           classifiers_.is_special_energy(static_cast<const void*>(opaque_), card);
+    return classify(classifiers_.is_special_energy, card);
   }
 
  private:
+  // Optional intrinsic classifiers share one null-safe dispatch seam.
+  // Cleanup architecture: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+  [[nodiscard]] bool classify(const CardClassifierFn classifier,
+                              const Card card) const {
+    return classifier != nullptr &&
+           classifier(static_cast<const void*>(opaque_), card);
+  }
+
   void* opaque_;
   HandCountFn hand_count_;
   MoveHandToDiscardFn move_hand_to_discard_;

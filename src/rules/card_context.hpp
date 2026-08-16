@@ -29,6 +29,28 @@ class CardContext final {
     IsSpecialEnergyFn is_special_energy = nullptr;
   };
 
+  struct Callbacks {
+    HandCountFn hand_count;
+    MoveHandToDiscardFn move_hand_to_discard;
+    DiscardFromHandFn discard_from_hand;
+    SearchDeckToHandFn search_deck_to_hand;
+    ShuffleDeckFn shuffle_deck;
+    IsBasicPokemonFn is_basic_pokemon;
+    BeginDeckSearchFn begin_deck_search;
+    Classifiers classifiers{};
+  };
+
+  constexpr CardContext(void* opaque, const Callbacks& callbacks)
+      : opaque_(opaque),
+        hand_count_(callbacks.hand_count),
+        move_hand_to_discard_(callbacks.move_hand_to_discard),
+        discard_from_hand_(callbacks.discard_from_hand),
+        search_deck_to_hand_(callbacks.search_deck_to_hand),
+        shuffle_deck_(callbacks.shuffle_deck),
+        is_basic_pokemon_(callbacks.is_basic_pokemon),
+        begin_deck_search_(callbacks.begin_deck_search),
+        classifiers_(callbacks.classifiers) {}
+
   constexpr CardContext(void* opaque, HandCountFn hand_count_fn,
                         MoveHandToDiscardFn move_hand_to_discard_fn,
                         DiscardFromHandFn discard_from_hand_fn,
@@ -37,15 +59,15 @@ class CardContext final {
                         IsBasicPokemonFn is_basic_pokemon_fn,
                         BeginDeckSearchFn begin_deck_search_fn,
                         Classifiers classifiers)
-      : opaque_(opaque),
-        hand_count_(hand_count_fn),
-        move_hand_to_discard_(move_hand_to_discard_fn),
-        discard_from_hand_(discard_from_hand_fn),
-        search_deck_to_hand_(search_deck_to_hand_fn),
-        shuffle_deck_(shuffle_deck_fn),
-        is_basic_pokemon_(is_basic_pokemon_fn),
-        begin_deck_search_(begin_deck_search_fn),
-        classifiers_(classifiers) {}
+      : CardContext(opaque,
+                    Callbacks{.hand_count = hand_count_fn,
+                              .move_hand_to_discard = move_hand_to_discard_fn,
+                              .discard_from_hand = discard_from_hand_fn,
+                              .search_deck_to_hand = search_deck_to_hand_fn,
+                              .shuffle_deck = shuffle_deck_fn,
+                              .is_basic_pokemon = is_basic_pokemon_fn,
+                              .begin_deck_search = begin_deck_search_fn,
+                              .classifiers = classifiers}) {}
 
   constexpr CardContext(void* opaque, HandCountFn hand_count_fn,
                         MoveHandToDiscardFn move_hand_to_discard_fn,

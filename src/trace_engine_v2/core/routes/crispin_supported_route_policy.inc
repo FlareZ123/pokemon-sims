@@ -4,8 +4,15 @@
     // semantic predicate centralized instead of duplicating profile names here:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // https://github.com/FlareZ123/pokemon-sims/issues/2768
-    if (!strict_payload_timing() ||
-        scenario_.locks != LockMode::None || state_.turn != 2 ||
+    // Crispin consumes the Supporter action checked by supporter_allowed(), while
+    // every modeled payload outlet for this route is an Item. Gate those action
+    // classes directly so Rule Box Ability suppression does not block Trainers:
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Advanced Item/Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Lock semantics: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-interpretation
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4035
+    if (!strict_payload_timing() || item_locked() || state_.turn != 2 ||
         !prizes_known() || !supporter_allowed() ||
         state_.manual_energy_used || !state_.active ||
         state_.active->card != Card::RegidragoV ||

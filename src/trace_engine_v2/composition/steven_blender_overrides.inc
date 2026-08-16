@@ -25,19 +25,7 @@
 
 #include "../part_010_late_steven_override.inc"
 
-  Card choose_supporter_after_search_started_issue3202_const_fallback() const {
-    return choose_supporter_after_search_started();
-  }
-#define late_steven_vstar_vessel_route_available late_steven_vstar_vessel_route_available_issue3202_original
-#define choose_supporter_after_search_started choose_supporter_after_search_started_issue3202_original
-#define should_play_steven should_play_steven_issue3202_original
-#include "../part_010_steven_crispin_override.inc"
-#undef should_play_steven
-#undef choose_supporter_after_search_started
-#undef late_steven_vstar_vessel_route_available
-// Canonical issue-3202 route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_vstar_vessel_route_policy.inc
-#include "../core/routes/steven_vstar_vessel_route_policy.inc"
-#undef play_brilliant_blender
+#include "steven_vstar_vessel_overrides.inc"
 
 // The thinning policy remains the implementation wrapped by the later empty-deck
 // guard, while the legacy part_010 implementation stays dormant:

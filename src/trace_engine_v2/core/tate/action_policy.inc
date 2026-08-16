@@ -257,4 +257,4 @@
 
 #undef choose_discard
 #define choose_discard choose_discard_issue1740
-#include "part_issue_1876_treasure_payload_cost_override.inc"
+#include "../../part_issue_1876_treasure_payload_cost_override.inc" // C++ textual include semantics: https://eel.is/c++draft/cpp.include

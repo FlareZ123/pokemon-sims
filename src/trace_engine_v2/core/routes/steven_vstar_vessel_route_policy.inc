@@ -24,7 +24,8 @@
         deck_count_after_search_started(Card::RegidragoVstar) == 0 ||
         (hand_count(Card::EarthenVessel) == 0 &&
          deck_count_after_search_started(Card::EarthenVessel) == 0) ||
-        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+        !payload_zone_contains(state_.hand)) {
+      // Canonical Dragon-payload membership: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
       return false;
     }
 

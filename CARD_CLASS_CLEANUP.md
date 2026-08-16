@@ -24,6 +24,7 @@ src/cards/card_definition.hpp
 src/cards/card_registry.hpp
 src/cards/trainers/quick_ball.hpp
 src/rules/card_context.hpp
+src/trace_engine_v2/core/adapters/card_context_adapter.hpp
 src/trace_engine_v2/core/card_context_adapter.hpp
 src/trace_engine_v2/core/quick_ball_card_class_base.inc
 src/trace_engine_v2/core/quick_ball_card_class_tail.inc
@@ -38,6 +39,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/cards/card_definition.hpp` owns intrinsic exact-print facts such as name, print ID, Trainer subtype, stage/type, Retreat Cost, Rule Box/Pokemon V/ACE SPEC/Basic Energy flags, and direct source URL.
 - `src/cards/card_registry.hpp` owns explicit deterministic registration. `kRegisteredCardDefinitions` is the canonical inventory and `find_definition()` is the canonical lookup: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 - `src/rules/card_context.hpp` owns reusable printed-rules operations. Card-specific route policy stays outside that interface.
+- `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` owns the trace-engine construction bridge for reusable card effects. `src/trace_engine_v2/core/card_context_adapter.hpp` is a compatibility include until direct consumers migrate to the organized adapter owner.
 - Engine strategy owns route admission, strategic target preference, DCI/UDP/AMR, strict-JIT and matchup-flex timing, Supporter contention, connector domination, K0/K1 state, setup-axis value, lock schedules, readiness, and payload policy.
 - `src/trace_engine_v2/core/card_catalog.inc` is the compatibility owner for unmigrated names and intrinsic classification fallbacks. Registry lookup remains the first metadata path.
 
@@ -76,13 +78,13 @@ If migration exposes gameplay behavior that is wrong, use the normal bug-confirm
 
 Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. Route admission, projection, and decision policy stays under `src/trace_engine_v2/core/routes/`. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
-The root `part_000.inc` and `part_001.inc` compatibility paths remain because unified-test/source-contract tooling reads them directly. `part_000.inc` exposes the catalog include needed by unified-test header discovery, while `part_001.inc` preserves the non-executable payload predicate mirror expected by raw-source contracts. Catalog owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc Unified-test generator: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/generate_unified_tests.py
+The root `part_000.inc` and `part_001.inc` compatibility paths remain because unified-test/source-contract tooling reads them directly. `part_000.inc` is now the single legacy catalog include shim, and `part_001.inc` delegates catalog inclusion through it while preserving the non-executable payload predicate mirror expected by raw-source contracts. Catalog owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc Unified-test generator: https://github.com/FlareZ123/pokemon-sims/blob/main/tests/generate_unified_tests.py
 
 The issue-1393 held-Crispin completion helper has a canonical semantic owner at `src/trace_engine_v2/core/routes/crispin_supported_route_policy.inc`. The historical root `part_issue_1393_crispin_route_helper.inc` seam is retired after the live `part_issue_1356_fss_energy_override.inc` composition boundary was rewired directly to the canonical owner and no source-contract or generator consumer remained. Route code, DDE-aware projection, K1/JIT policy, and direct sources remain together under `core/routes/`. Crispin: https://api.pokemontcg.io/v2/cards/sv7-133 Double Dragon Energy: https://api.pokemontcg.io/v2/cards/xy6-97 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/crispin_supported_route_policy.inc
 
 The issue-1516/2164 Quick Ball, Tapu Lele-GX, Crispin route family now has a canonical semantic owner at `src/trace_engine_v2/core/routes/quick_ball_tapu_crispin_policy.inc`. Its internal route helpers are named for the behavior they implement rather than historical issue numbers; issue IDs remain only where trace/provenance text or source links intentionally preserve debugging history. The historical `part_issue_1516_quick_ball_tapu_crispin_override.inc` path remains a minimal compatibility composition seam that includes the canonical owner at the existing Quick Ball wrapper boundary. Route admission, copied-Engine projection, K1 checks, lock checks, trace text, and direct source URLs remain unchanged. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60 Crispin: https://api.pokemontcg.io/v2/cards/sv7-133 Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/quick_ball_tapu_crispin_policy.inc
 
-Next composition step: retire the Quick Ball/Tapu/Crispin compatibility seam once its live composition consumer can include the canonical owner directly at the identical wrapper boundary. Inspect another root `part_*` seam only when its complete macro lifetime or function body can move intact. Keep tooling-only compatibility paths minimal, preserve declaration order and route semantics, and retain direct source URLs beside rule-sensitive logic.
+Next composition step: retire the Quick Ball/Tapu/Crispin compatibility seam once its live composition consumer can include the canonical owner directly at the identical wrapper boundary. Migrate direct `CardContext` bridge consumers to `core/adapters/card_context_adapter.hpp`, then remove the old forwarding include once repository-wide references are gone. Inspect another root `part_*` seam only when its complete macro lifetime or function body can move intact. Keep tooling-only compatibility paths minimal, preserve declaration order and route semantics, and retain direct source URLs beside rule-sensitive logic.
 
 ## Payload policy cleanup
 

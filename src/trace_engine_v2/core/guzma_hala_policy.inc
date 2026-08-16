@@ -55,7 +55,8 @@
     if (state_.retreat_used || !state_.active || !can_free_retreat_with_latias()) {
       return false;
     }
-    return std::any_of(state_.bench.begin(), state_.bench.end(), dde_finishes);
+    // Canonical Bench traversal: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+    return bench_has_pokemon_matching(dde_finishes);
   }
 
   bool guzma_hala_dde_axis_available() const {

@@ -51,7 +51,6 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc` owns the Legacy Star/Quick Ball pure connector and inertness projections through `LegacyStarQuickBallPolicy`; Engine retains DCI/JIT state queries and the temporary projection-only hand mutation around Legacy Star. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
 - `src/trace_engine_v2/core/tate/package.inc` owns the established discard-provenance, Tate attachment, and Tate action override sequence as one composition package. The historical member fragments remain the rule-sensitive implementation owners while this package centralizes their textual order: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/package.inc
 - `src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc` is the canonical Battle Compressor / VS Seeker route owner. The historical `src/trace_engine_v2/core/battle_compressor_vs_seeker_policy.inc` path is a thin compatibility include while composition and source-contract references migrate. Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92 VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-- `src/trace_engine_v2/core/routes/arven_crobat_state_policy.inc` is the canonical state-based Arven -> one-discard search -> Regidrago V -> Forest Seal Stone -> Crobat V route owner. The historical `src/trace_engine_v2/part_issue_2645_arven_crobat_state_override.inc` path is a thin compatibility include while composition references migrate. Route admission remains state-based so turn/order identity cannot reintroduce the prior overfit. Arven: https://api.pokemontcg.io/v2/cards/sv1-166 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104 Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156 Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
 
 ## Active card migrations
 
@@ -81,6 +80,8 @@ The Steven/Brilliant Blender semantic route owners are `src/trace_engine_v2/core
 The issue-1368 Earthen Vessel / Celestial Roar route remains owned by `src/trace_engine_v2/core/routes/earthen_vessel_celestial_roar_policy.inc`, which keeps route-specific target preference separate from shared Item and search legality. Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163 Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
 
 The issue-1516/2164 Quick Ball, Tapu Lele-GX, Crispin route family remains owned by `src/trace_engine_v2/core/routes/quick_ball_tapu_crispin_policy.inc`. Its Latias completion projection delegates Bench traversal to `core/board_state_policy.inc` and Rule Box Ability admission to the canonical per-Pokémon Ability predicate, while route-specific JIT, evolution, connector, and action decisions remain in the route owner. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60 Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76 Canonical board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc Canonical Ability-lock owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+
+The Hisuian Heavy Ball route body is now owned by `src/trace_engine_v2/core/routes/hisuian_heavy_ball_policy.inc`. `src/trace_engine_v2/part_008b.inc` composes that complete member body at its existing Engine boundary before continuing into the shared search-connector helpers, so K0/K1 inspection timing, Prize recovery preference, Supporter-contention projections, and trace behavior remain in the same strategy layer. Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 ## Payload policy cleanup
 
@@ -120,7 +121,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Legacy Star/Quick Ball decision projection: `src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc` via `LegacyStarQuickBallPolicy`.
 - Tate/provenance composition: `src/trace_engine_v2/core/tate/package.inc`; preserve its three included member fragments in their current order until each fragment has its own canonical lower-level owner.
 - Battle Compressor / VS Seeker route policy: `src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc`.
-- Arven/Crobat state route policy: `src/trace_engine_v2/core/routes/arven_crobat_state_policy.inc`; keep observable state, K0/K1, DCI/JIT, and route-resource admission together while the historical root include remains a compatibility seam.
+- Hisuian Heavy Ball route policy: `src/trace_engine_v2/core/routes/hisuian_heavy_ball_policy.inc`.
 
 ## Next cleanup steps
 
@@ -138,7 +139,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 12. Route new optional intrinsic card classifiers through `CardContext`'s shared classifier dispatch seam rather than duplicating callback-null checks in each public operation.
 13. Reuse generic `PayloadZonePolicy` range operations for fixed-size Card cost plans only when the query is purely physical membership, count, or first-match traversal; keep route-specific DCI/JIT admission outside the utility class.
 14. Migrate `composition/engine_body.inc` and any source-contract references to `core/routes/battle_compressor_vs_seeker_policy.inc`, then remove the historical `core/battle_compressor_vs_seeker_policy.inc` compatibility include after repository-wide references are proven gone.
-15. Migrate composition references from `part_issue_2645_arven_crobat_state_override.inc` to `core/routes/arven_crobat_state_policy.inc`, then remove the historical compatibility include after source-contract references are proven gone. Preserve the state-based admission predicates that repaired the earlier turn/order overfit: https://github.com/FlareZ123/pokemon-sims/issues/2645
+15. Continue moving complete route-specific member bodies out of numbered `part_*.inc` fragments into named `core/routes/` owners only when the exact textual member boundary can be preserved. Keep cross-file continuations in place until both sides can move together safely.
 
 ## One-card workflow
 

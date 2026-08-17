@@ -1,3 +1,5 @@
+#include "professor_burnet/selection_policy.inc" // Canonical Burnet selection constants: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+
   bool professor_burnet_has_live_ready_turn_route() {
     // Professor Burnet may search for and discard up to 2 deck cards:
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
@@ -18,18 +20,16 @@
     const bool vstar_search_route = hand_count(Card::RegidragoVstar) > 0 ||
         held_item_can_find_pending_vstar() ||
         issue_1221_burnet_then_treasure_route_available();
-    const auto bench_has = [this](const auto predicate) {
-      return std::any_of(state_.bench.begin(), state_.bench.end(), predicate);
-    };
     const bool active_regi_can_evolve = vstar_search_route && state_.active &&
         pokemon_can_evolve_into_regidrago_vstar(*state_.active, state_.turn);
-    const bool benched_vstar_exists = bench_has([](const Pokemon& pokemon) {
-      return pokemon.card == Card::RegidragoVstar;
-    });
-    const bool benched_regi_can_evolve = vstar_search_route && bench_has(
-        [this](const Pokemon& pokemon) {
+    const bool benched_vstar_exists = bench_has_pokemon_matching(
+        [](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoVstar;
+        }); // Canonical Bench traversal: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+    const bool benched_regi_can_evolve = vstar_search_route &&
+        bench_has_pokemon_matching([this](const Pokemon& pokemon) {
           return pokemon_can_evolve_into_regidrago_vstar(pokemon, state_.turn);
-        });
+        }); // Evolution timing: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     const bool vstar_exists_or_evolvable =
         has_vstar() || active_regi_can_evolve || benched_regi_can_evolve;
     // Strict JIT accepts Burnet only when the searched payload can belong to a
@@ -115,7 +115,6 @@
     std::vector<Card> discarded;
     // Professor Burnet searches and discards up to two deck cards:
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    static constexpr std::size_t kBurnetSelectionLimit = 2U;
     const auto discard_from_deck = [this, &discarded](const Card card) {
       if (!move_deck_to_discard(card)) return false;
       discarded.push_back(card);
@@ -133,14 +132,11 @@
     // https://api.pokemontcg.io/v2/cards/sv8-140
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/issues/1257
-    static constexpr Card kBurnetPayloadPriority[] = {
-        Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
-        Card::DialgaGX, Card::Appletun};
-    for (const Card card : kBurnetPayloadPriority) {
-      if (discarded.size() >= kBurnetSelectionLimit) break;
+    for (const Card card : ProfessorBurnetSelectionPolicy::kPayloadPriority) {
+      if (discarded.size() >= ProfessorBurnetSelectionPolicy::kSelectionLimit) break;
       discard_from_deck(card);
     }
-    if (discarded.size() < kBurnetSelectionLimit) {
+    if (discarded.size() < ProfessorBurnetSelectionPolicy::kSelectionLimit) {
       discard_from_deck(Card::Dipplin);
     }
 
@@ -166,8 +162,9 @@
         state_.active &&
         ((state_.active->grass < 2 && might_be_unseen(Card::Grass)) ||
          (state_.active->fire < 1 && might_be_unseen(Card::Fire)));
-    if (discarded.size() < kBurnetSelectionLimit && active_can_use_celestial_roar &&
-        needed_energy_remains && state_.deck.size() > 3U) {
+    if (discarded.size() < ProfessorBurnetSelectionPolicy::kSelectionLimit &&
+        active_can_use_celestial_roar && needed_energy_remains &&
+        state_.deck.size() > 3U) {
       // Burnet may discard up to two cards. After the Dragon payload, remove the
       // modeled inert Erika singleton to improve Celestial Roar's top-three Energy
       // hit without consuming a live connector:
@@ -175,10 +172,7 @@
       // https://api.pokemontcg.io/v2/cards/swsh12-135
       // https://api.pokemontcg.io/v2/cards/sv3pt5-160
       // https://github.com/FlareZ123/pokemon-sims/issues/881
-      static constexpr Card kBurnetDeadThinningPriority[] = {
-          Card::PathToPeak, Card::ErikasInvitation, Card::Guzma,
-          Card::Channeler, Card::FieldBlower, Card::ChaoticSwell};
-      for (const Card card : kBurnetDeadThinningPriority) {
+      for (const Card card : ProfessorBurnetSelectionPolicy::kDeadThinningPriority) {
         if (discard_from_deck(card)) break;
       }
     }

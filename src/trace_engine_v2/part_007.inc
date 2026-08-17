@@ -194,7 +194,7 @@
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Official Supporter, Item, search, attachment, evolution, Bench, Ability, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
     // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-    // K1, same-turn JIT, lock, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // K1, same-ready-turn JIT, lock, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed remaining selector bug: https://github.com/FlareZ123/pokemon-sims/issues/3173
     return strict_payload_timing() && finish_turn <= scenario_.max_turn &&
         prizes_known() && supporter_allowed() && !state_.manual_energy_used &&
@@ -277,6 +277,18 @@
       return false;
     }
 
+    // A-05 forbids evolution during either player's first turn, and a Pokémon
+    // put into play this turn cannot evolve. Share one predicate across both
+    // route witnesses so an opening Regidrago V (entered_turn == 0) cannot be
+    // projected into Regidrago VSTAR on turn 1 going second.
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/issues/4112
+    const auto regidrago_v_can_evolve_now = [this](const Pokemon& pokemon) {
+      return state_.turn > 1 && pokemon.card == Card::RegidragoV &&
+          pokemon.entered_turn < state_.turn;
+    };
+
     // Project the selected Benched attacker through only actions that remain legal
     // after Wonder Tag spends the Supporter axis. Existing VSTARs are accepted, or
     // a prior-turn Regidrago V may use a directly held VSTAR card. One unused
@@ -290,7 +302,7 @@
     for (const Pokemon& pokemon : state_.bench) {
       Pokemon projected = pokemon;
       if (projected.card == Card::RegidragoV) {
-        if (projected.entered_turn >= state_.turn ||
+        if (!regidrago_v_can_evolve_now(projected) ||
             hand_count(Card::RegidragoVstar) == 0) {
           continue;
         }
@@ -316,10 +328,7 @@
     // Regidrago V/VSTAR and Latias ex: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136 https://api.pokemontcg.io/v2/cards/sv8-76
     // K1 and shortest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     const bool prior_turn_regi = std::any_of(
-        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
-          return pokemon.card == Card::RegidragoV &&
-              pokemon.entered_turn < state_.turn;
-        });
+        state_.bench.begin(), state_.bench.end(), regidrago_v_can_evolve_now);
     if (!prior_turn_regi || hand_count(Card::RegidragoVstar) == 0 ||
         prize_count_after_reveal(Card::HisuianHeavyBall) == 0 ||
         hand_count(Card::QuickBall) == 0 ||

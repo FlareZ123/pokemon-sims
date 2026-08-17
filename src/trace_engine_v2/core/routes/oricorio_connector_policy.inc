@@ -4,10 +4,26 @@
 // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
 // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
 
-  [[nodiscard]] bool oricorio_needed_basic_energy_might_be_in_deck(
-      const Card energy, const int amount_needed) const {
-    return amount_needed > 0 && might_be_unseen(energy);
-  }
+  class OricorioConnectorPolicy final {
+   public:
+    [[nodiscard]] static bool needed_basic_energy_can_advance(
+        const int amount_needed, const bool card_might_be_unseen) {
+      // Vital Dance searches Basic Energy, so a type advances this connector only
+      // while Apex still needs that type and the fixed-list knowledge state permits
+      // a remaining deck copy: https://api.pokemontcg.io/v2/cards/sm2-55
+      // Apex Dragon energy requirement: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // K0/K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+      return amount_needed > 0 && card_might_be_unseen;
+    }
+
+    [[nodiscard]] static bool connector_route_live(
+        const bool needed_energy_might_be_in_deck,
+        const bool original_connector_route,
+        const bool burnet_preserving_route) {
+      return needed_energy_might_be_in_deck &&
+             (original_connector_route || burnet_preserving_route);
+    }
+  };
 
   [[nodiscard]] bool needed_oricorio_energy_might_be_in_deck() const {
     // Vital Dance can search Basic Energy, while Apex Dragon specifically requires
@@ -17,10 +33,10 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    return oricorio_needed_basic_energy_might_be_in_deck(
-               Card::Grass, grass_needed()) ||
-           oricorio_needed_basic_energy_might_be_in_deck(
-               Card::Fire, fire_needed());
+    return OricorioConnectorPolicy::needed_basic_energy_can_advance(
+               grass_needed(), might_be_unseen(Card::Grass)) ||
+           OricorioConnectorPolicy::needed_basic_energy_can_advance(
+               fire_needed(), might_be_unseen(Card::Fire));
   }
 
   [[nodiscard]] bool needs_oricorio_connector() const {
@@ -40,8 +56,13 @@
     // https://github.com/FlareZ123/pokemon-sims/issues/616
     const bool burnet_preserving_route =
         oricorio_preserves_burnet_with_current_hand();
-    return needed_oricorio_energy_might_be_in_deck() &&
-           (needs_oricorio_connector_original() || burnet_preserving_route);
+    const bool needed_energy_might_be_in_deck =
+        needed_oricorio_energy_might_be_in_deck();
+    if (!needed_energy_might_be_in_deck) return false;
+    const bool original_connector_route = needs_oricorio_connector_original();
+    return OricorioConnectorPolicy::connector_route_live(
+        needed_energy_might_be_in_deck, original_connector_route,
+        burnet_preserving_route);
   }
 
   bool bench_oricorio_if_useful() {

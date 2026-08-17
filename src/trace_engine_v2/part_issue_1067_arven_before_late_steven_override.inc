@@ -65,8 +65,11 @@
     return forest_seal_stone_available && brilliant_blender_available;
   }
 
-  #include "part_issue_3222_steven_blender_semantic_override.inc"
-  #include "part_issue_3221_k0_steven_blender_semantic_override.inc"
+  // Canonical semantic Steven/Blender route owners:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_blender_semantic_policy.inc
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/k0_steven_blender_semantic_policy.inc
+  #include "core/routes/steven_blender_semantic_policy.inc"
+  #include "core/routes/k0_steven_blender_semantic_policy.inc"
   // Canonical issue-3203 route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/active_vstar_steven_route_policy.inc
   #include "core/routes/active_vstar_steven_route_policy.inc"
 
@@ -97,5 +100,5 @@
   }
 
   // Keep exact source-bounded Supporter packages together before the final dispatcher.
-  // Canonical Steven package owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_package_policy.inc
-  #include "core/routes/steven_package_policy.inc"
+  // Canonical Steven package owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven/package.inc
+  #include "core/routes/steven/package.inc"

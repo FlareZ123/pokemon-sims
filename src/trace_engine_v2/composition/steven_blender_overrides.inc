@@ -1,7 +1,7 @@
-// Steven/Blender composition owner. Keep this block at the historical boundary
-// immediately after part_009b2.inc, where play_ultra_ball is intentionally live.
-// The local aliases are established and released here so the parent composition
-// only has to preserve the ordering contract.
+// Canonical Steven/Blender composition owner. Keep this block at the historical
+// boundary immediately after part_009b2.inc, where play_ultra_ball is intentionally
+// live. Local aliases are established and released here so the parent composition
+// only preserves the ordering contract.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 // Steven/Blender source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010.inc
 // Legacy Supporter cards: https://api.pokemontcg.io/v2/cards/swsh12-156 https://api.pokemontcg.io/v2/cards/sv7-133 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26 https://api.pokemontcg.io/v2/cards/sm7-145
@@ -23,7 +23,10 @@
 #undef attach_fss
 #undef fss_target_after_search_started
 
-#include "../part_010_late_steven_override.inc"
+// Canonical late-Steven policy owner. The historical part_010 path remains as a
+// source-contract mirror until its anchored documentation and tests migrate.
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_route_policy.inc
+#include "../core/routes/late_steven_route_policy.inc"
 
   Card choose_supporter_after_search_started_issue3202_const_fallback() const {
     return choose_supporter_after_search_started();

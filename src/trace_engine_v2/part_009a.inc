@@ -1,26 +1,3 @@
-    return Card::RegidragoV;
-  }
-
-  Card fallback_ultra_ball_target_after_search_started() const {
-    // Ultra Ball searches any Pokémon, so the K1 fallback covers the complete
-    // modeled universe, including the Appletun and Pineco package:
-    // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-    // https://api.pokemontcg.io/v2/cards/sv8-140
-    // https://api.pokemontcg.io/v2/cards/sv4pt5-1
-    // https://api.pokemontcg.io/v2/cards/sv4pt5-2
-    // Crobat V is a Basic Pokemon V and remains a legal Ultra Ball target:
-    // https://api.pokemontcg.io/v2/cards/swsh3-104
-    // https://github.com/FlareZ123/pokemon-sims/issues/1254
-    // https://github.com/FlareZ123/pokemon-sims/issues/1952
-    for (const Card target : {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx, Card::Oricorio,
-                              Card::TapuLeleGX, Card::CrobatV, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
-                              Card::DialgaGX, Card::MawileGX, Card::Dipplin, Card::Appletun,
-                              Card::Pineco, Card::ForretressEx}) {
-      if (deck_count_after_search_started(target) > 0) return target;
-    }
-    return Card::RegidragoV;
-  }
-
   std::optional<Card> issue_1221_burnet_treasure_vstar_cost() const {
     // After Professor Burnet establishes the strict current-turn payload, one
     // setup-dead Supporter may pay Mysterious Treasure only when the searched
@@ -33,8 +10,7 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1221
     const bool burnet_resolved_this_turn = state_.supporter_used &&
         count_of(state_.discard, Card::ProfessorBurnet) > 0 &&
-        std::any_of(state_.discarded_this_turn.begin(),
-                    state_.discarded_this_turn.end(), is_payload);
+        payload_zone_contains(state_.discarded_this_turn);
     const bool active_route_complete = state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
@@ -83,15 +59,10 @@
     });
   }
 
+#include "core/mysterious_treasure_target_policy.inc"
+
   static constexpr std::array<Card, 10> preferred_mysterious_treasure_targets() {
-    // Mysterious Treasure searches Psychic or Dragon Pokémon, and Appletun is a legal Dragon target:
-    // https://api.pokemontcg.io/v2/cards/sm6-113
-    // https://api.pokemontcg.io/v2/cards/sv8-140
-    // The ordering preserves the repository's earliest-ready-route priority:
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    return {Card::RegidragoV, Card::RegidragoVstar, Card::LatiasEx,
-            Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar,
-            Card::DialgaGX, Card::Appletun, Card::TapuLeleGX, Card::Oricorio};
+    return MysteriousTreasureTargetPolicy::preferred_targets();
   }
 
   bool play_mysterious_treasure(const bool permit_payload) {
@@ -103,7 +74,7 @@
         state_.active->entered_turn < state_.turn &&
         state_.active->grass >= 2 && state_.active->fire == 0 &&
         need_vstar() && need_payload() && hand_count(Card::Fire) > 0 &&
-        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload) &&
+        payload_zone_contains(state_.hand) &&
         might_be_unseen(Card::RegidragoVstar);
     if (bank_for_deterministic_next_turn_payload) {
       // Preserve the Treasure recovered by Gladion for the exact public route.
@@ -135,7 +106,7 @@
     // https://github.com/FlareZ123/pokemon-sims/issues/951
     const bool can_jit_discard = permit_payload && can_play_payload_this_turn() &&
                                   blender_energy_axis_can_finish_this_turn() &&
-                                  std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+                                  payload_zone_contains(state_.hand);
     if (!mysterious_treasure_search_has_target()) return false;
     // Mysterious Treasure searches only the deck after paying its discard cost.
     // K0 keeps fixed-list targets plausible; K1 requires the inspected deck to
@@ -170,8 +141,7 @@
     // https://api.pokemontcg.io/v2/cards/me2pt5-152
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // https://github.com/FlareZ123/pokemon-sims/issues/1335
-    const bool payload_already_held =
-        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const bool payload_already_held = payload_zone_contains(state_.hand);
     const bool want_payload = need_payload() && !can_jit_discard &&
                               !payload_already_held &&
                               !has_live_serena_hand_payload_line() &&

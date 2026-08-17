@@ -1,4 +1,5 @@
-  struct KnowledgeCopyPolicy {
+  class KnowledgeCopyPolicy final {
+   public:
     [[nodiscard]] static constexpr bool has_any(const int count) {
       return count > 0;
     }

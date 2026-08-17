@@ -64,18 +64,39 @@ struct CardDefinition {
   std::string_view source_url;
 };
 
+// Keep reusable intrinsic classification beside CardDefinition rather than
+// reproducing raw enum comparisons in each registry or card module.
+// Cleanup architecture: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+class CardDefinitionPredicates final {
+ public:
+  [[nodiscard]] static constexpr bool is_kind(
+      const CardDefinition& definition, const CardKind kind) {
+    return definition.kind == kind;
+  }
+
+  [[nodiscard]] static constexpr bool is_trainer_kind(
+      const CardDefinition& definition, const TrainerKind trainer_kind) {
+    return is_kind(definition, CardKind::Trainer) &&
+           definition.trainer_kind == trainer_kind;
+  }
+
+  [[nodiscard]] static constexpr bool has_pokemon_type(
+      const CardDefinition& definition, const PokemonType type) {
+    for (std::uint8_t index = 0; index < definition.pokemon_type_count; ++index) {
+      if (definition.pokemon_types[index] == type) return true;
+    }
+    return false;
+  }
+};
+
 constexpr bool is_trainer_kind(const CardDefinition& definition,
                                const TrainerKind trainer_kind) {
-  return definition.kind == CardKind::Trainer &&
-         definition.trainer_kind == trainer_kind;
+  return CardDefinitionPredicates::is_trainer_kind(definition, trainer_kind);
 }
 
 constexpr bool has_pokemon_type(const CardDefinition& definition,
                                 const PokemonType type) {
-  for (std::uint8_t index = 0; index < definition.pokemon_type_count; ++index) {
-    if (definition.pokemon_types[index] == type) return true;
-  }
-  return false;
+  return CardDefinitionPredicates::has_pokemon_type(definition, type);
 }
 
 }  // namespace sim::cards

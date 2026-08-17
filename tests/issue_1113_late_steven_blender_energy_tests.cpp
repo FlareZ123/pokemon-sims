@@ -71,6 +71,26 @@ void test_exact_k0_state_admits_route() {
          "The exact K0 VSTAR-plus-Grass route with held Blender must admit Steven.");
 }
 
+void test_rule_box_ability_lock_allows_trainer_only_route() {
+  const sim::Scenario scenario = issue_1113_scenario(sim::LockMode::FullRuleBoxAbility);
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{4027};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, issue_1113_state(), false);
+
+  // Steven's Resolve is a Supporter and held Brilliant Blender is an Item used on
+  // the following turn. Normal attachment/evolution and Apex Dragon do not require
+  // a Rule Box Pokémon Ability, so Path-style Ability suppression is irrelevant.
+  // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+  // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Advanced Supporter, Item, evolution, and attack procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Canonical lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4027
+  expect(sim::EngineTestAccess::late_steven_blender_energy_route(engine),
+         "Rule Box Ability lock must admit the Trainer-only K0 Steven-Blender route.");
+}
+
 void test_observable_blockers_reject_route() {
   const sim::DeckRecipe recipe = sim::baseline_recipe();
 
@@ -94,17 +114,22 @@ void test_observable_blockers_reject_route() {
            "The K0-only route must stop after legal deck inspection.");
   }
 
-  {
-    const sim::Scenario scenario =
-        issue_1113_scenario(sim::LockMode::FullItem);
-    std::mt19937_64 rng{1116};
+  for (const sim::LockMode lock : {sim::LockMode::FullItem,
+                                   sim::LockMode::TurnTwoItem,
+                                   sim::LockMode::FullCombined,
+                                   sim::LockMode::FullSupporter}) {
+    const sim::Scenario scenario = issue_1113_scenario(lock);
+    std::mt19937_64 rng{1116 + static_cast<unsigned>(lock)};
     sim::Engine engine(scenario, recipe, rng);
     sim::EngineTestAccess::set_state(engine, issue_1113_state(), false);
-    // Blender is an Item, so the repository full-Item-lock scenario blocks it:
-    // https://api.pokemontcg.io/v2/cards/sv8-164
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Steven must be a legal current-turn Supporter and Blender a legal projected
+    // next-turn Item. Persistent T2 Item lock is already active for this T2 -> T3 route.
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Advanced Supporter and Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Canonical lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4027
     expect(!sim::EngineTestAccess::late_steven_blender_energy_route(engine),
-           "Full Item lock must reject the held-Blender route.");
+           "A required Supporter or projected Item lock admitted the K0 route.");
   }
 }
 
@@ -139,6 +164,7 @@ void test_seed_63_uses_steven_and_reaches_turn_three() {
 
 int main() {
   test_exact_k0_state_admits_route();
+  test_rule_box_ability_lock_allows_trainer_only_route();
   test_observable_blockers_reject_route();
   test_seed_63_uses_steven_and_reaches_turn_three();
   return 0;

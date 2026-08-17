@@ -1,23 +1,26 @@
-  struct PayloadZonePolicy {
-    template <typename Predicate>
+  class PayloadZonePolicy final {
+   public:
+    template <typename Zone, typename Predicate>
     [[nodiscard]] static auto first_iterator_matching(
-        const std::vector<Card>& zone, Predicate predicate) {
+        const Zone& zone, Predicate predicate) {
       // Keep physical-zone traversal behind one primitive so payload and concrete
-      // card membership preserve identical first-match ordering.
+      // card membership preserve identical first-match ordering. Accept any
+      // Card range with begin/end semantics so route-local fixed-size cost plans
+      // can share the same physical traversal without copying them into vectors.
       // C++20 find_if: https://eel.is/c++draft/alg.find
       // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
       return std::find_if(zone.begin(), zone.end(), predicate);
     }
 
-    template <typename Predicate>
+    template <typename Zone, typename Predicate>
     [[nodiscard]] static bool contains_matching(
-        const std::vector<Card>& zone, Predicate predicate) {
+        const Zone& zone, Predicate predicate) {
       return first_iterator_matching(zone, predicate) != zone.end();
     }
 
-    template <typename Predicate>
+    template <typename Zone, typename Predicate>
     [[nodiscard]] static int count_matching(
-        const std::vector<Card>& zone, Predicate predicate) {
+        const Zone& zone, Predicate predicate) {
       // Keep payload cardinality on the same predicate-oriented zone seam as
       // membership so later cleanup does not recreate route-local count scans.
       // C++20 count_if: https://eel.is/c++draft/alg.count
@@ -25,12 +28,14 @@
       return static_cast<int>(std::count_if(zone.begin(), zone.end(), predicate));
     }
 
-    [[nodiscard]] static bool contains(const std::vector<Card>& zone) {
+    template <typename Zone>
+    [[nodiscard]] static bool contains(const Zone& zone) {
       return contains_matching(zone, is_payload);
     }
 
+    template <typename Zone>
     [[nodiscard]] static bool contains_card(
-        const std::vector<Card>& zone, const Card card) {
+        const Zone& zone, const Card card) {
       // Keep concrete-card membership in the same physical-zone abstraction as
       // payload membership so strategic preference callers do not grow ad hoc scans.
       // https://eel.is/c++draft/alg.find
@@ -39,12 +44,13 @@
           zone, [card](const Card candidate) { return candidate == card; });
     }
 
-    [[nodiscard]] static int count(const std::vector<Card>& zone) {
+    template <typename Zone>
+    [[nodiscard]] static int count(const Zone& zone) {
       return count_matching(zone, is_payload);
     }
 
-    [[nodiscard]] static std::optional<Card> first(
-        const std::vector<Card>& zone) {
+    template <typename Zone>
+    [[nodiscard]] static std::optional<Card> first(const Zone& zone) {
       // Preserve physical zone order through the canonical first-match primitive:
       // https://eel.is/c++draft/alg.find
       // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
@@ -53,7 +59,8 @@
     }
   };
 
-  struct PayloadPreferencePolicy {
+  class PayloadPreferencePolicy final {
+   public:
     inline static constexpr std::array<Card, 5> kOrder{{
         Card::Appletun,
         Card::MegaDragonite,

@@ -1,4 +1,18 @@
   struct ActiveVstarStevenProjectionPolicy final {
+    struct KnownDeckSearchState final {
+      int grass_in_deck;
+      int fire_in_deck;
+      int treasure_targets;
+
+      [[nodiscard]] constexpr bool supports_route() const {
+        return grass_in_deck >= 2 && fire_in_deck > 0 && treasure_targets > 0;
+      }
+
+      [[nodiscard]] constexpr int grass_after_steven() const {
+        return grass_in_deck - 1;
+      }
+    };
+
     [[nodiscard]] static constexpr int failing_topdecks(
         const int grass_after_steven, const int fire_in_deck) {
       // Preserve the established known-deck topdeck-risk model for Steven's
@@ -58,17 +72,18 @@
       return false;
     }
 
-    const int grass_in_deck = deck_count_after_search_started(Card::Grass);
-    const int fire_in_deck = deck_count_after_search_started(Card::Fire);
-    const int treasure_targets =
-        PayloadZonePolicy::count_matching(state_.deck, is_dragon_or_psychic);
+    const ActiveVstarStevenProjectionPolicy::KnownDeckSearchState search_state{
+        .grass_in_deck = deck_count_after_search_started(Card::Grass),
+        .fire_in_deck = deck_count_after_search_started(Card::Fire),
+        .treasure_targets =
+            PayloadZonePolicy::count_matching(state_.deck, is_dragon_or_psychic),
+    };
     if (deck_count_after_search_started(Card::Crispin) == 0 ||
-        grass_in_deck < 2 || fire_in_deck == 0 || treasure_targets == 0) {
+        !search_state.supports_route()) {
       return false;
     }
 
     const int post_steven_deck_size = static_cast<int>(state_.deck.size()) - 2;
-    const int grass_after_steven = grass_in_deck - 1;
 
     // Preserve #1098's known-deck topdeck-risk model while removing only historical
     // profile, seat, absolute-turn, and blanket no-lock coordinates from admission.
@@ -77,5 +92,6 @@
     // Route-risk provenance: https://github.com/FlareZ123/pokemon-sims/issues/1098
     // Semantic-admission correction: https://github.com/FlareZ123/pokemon-sims/issues/3203
     return ActiveVstarStevenProjectionPolicy::continuation_survives_next_draw(
-        post_steven_deck_size, grass_after_steven, fire_in_deck);
+        post_steven_deck_size, search_state.grass_after_steven(),
+        search_state.fire_in_deck);
   }

@@ -1,3 +1,27 @@
+  [[nodiscard]] bool crispin_supported_projected_apex_ready(
+      const Card first, const std::optional<Card> second) const {
+    Pokemon projected = *state_.active;
+    if (!attach_energy_card(projected, first)) return false;
+    if (second.has_value() && !attach_energy_card(projected, *second)) {
+      return false;
+    }
+    return pays_apex_energy_cost(projected);
+  }
+
+  [[nodiscard]] bool crispin_supported_energy_completion_available(
+      const bool grass_available, const bool fire_available) const {
+    const bool one_found_manual_completion =
+        (grass_available &&
+         crispin_supported_projected_apex_ready(Card::Grass, std::nullopt)) ||
+        (fire_available &&
+         crispin_supported_projected_apex_ready(Card::Fire, std::nullopt));
+    const bool two_found_crispin_manual_completion =
+        grass_available && fire_available &&
+        (crispin_supported_projected_apex_ready(Card::Grass, Card::Fire) ||
+         crispin_supported_projected_apex_ready(Card::Fire, Card::Grass));
+    return one_found_manual_completion || two_found_crispin_manual_completion;
+  }
+
   bool issue_1393_held_crispin_completion_available() const {
     // A resolved full Prize inspection establishes K1 without a deck search: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // StrictJit and MatchupFlexJit share current-turn payload timing; keep the
@@ -28,23 +52,9 @@
         deck_count_after_search_started(Card::Grass) > 0;
     const bool fire_available =
         deck_count_after_search_started(Card::Fire) > 0;
-    const auto projected_apex_ready =
-        [this](const Card first, const std::optional<Card> second) {
-          Pokemon projected = *state_.active;
-          if (!attach_energy_card(projected, first)) return false;
-          if (second.has_value() &&
-              !attach_energy_card(projected, *second)) return false;
-          return pays_apex_energy_cost(projected);
-        };
-    const bool one_found_manual_completion =
-        (grass_available && projected_apex_ready(Card::Grass, std::nullopt)) ||
-        (fire_available && projected_apex_ready(Card::Fire, std::nullopt));
-    const bool two_found_crispin_manual_completion =
-        grass_available && fire_available &&
-        (projected_apex_ready(Card::Grass, Card::Fire) ||
-         projected_apex_ready(Card::Fire, Card::Grass));
     const bool crispin_completes_energy =
-        one_found_manual_completion || two_found_crispin_manual_completion;
+        crispin_supported_energy_completion_available(grass_available,
+                                                      fire_available);
     const bool payload_outlet = has_live_blender_payload_line() ||
         has_live_one_discard_hand_payload_line();
 

@@ -52,6 +52,18 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc` owns strategic Mysterious Treasure target priority. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
 - `src/trace_engine_v2/core/forretress/` owns reusable Forretress scenario and runtime composition, with `package.inc` as the namespace composition owner.
 
+## Catalog and knowledge cleanup
+
+Keep intrinsic catalog facts in `src/trace_engine_v2/core/card_catalog.inc` only while they remain unmigrated, and keep copy arithmetic in `src/trace_engine_v2/core/deck_knowledge.inc` after visibility is resolved. New card metadata should prefer the registry path, and hidden-zone visibility decisions stay in Engine strategy.
+
+## Payload policy cleanup
+
+Keep shared Dragon-payload zone and preference queries in `src/trace_engine_v2/core/payload_hand_policy.inc`. Route-specific strict-JIT timing, discard admission, deadlines, and setup-axis decisions stay with their strategy owners rather than moving into the reusable payload policy.
+
+## Setup lifecycle cleanup
+
+Keep opening-hand, mulligan, Prize-deal, and setup-trace mechanics in `src/trace_engine_v2/core/setup_lifecycle.inc`. Route admission and strategic opening choices stay outside the lifecycle owner.
+
 ## Composition ownership
 
 `src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered Engine composition owner. Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. C++ textual-include semantics: https://eel.is/c++draft/cpp.include

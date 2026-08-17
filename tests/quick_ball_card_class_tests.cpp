@@ -29,6 +29,8 @@ struct FakeQuickBallState {
   bool search_started = false;
   bool shuffled = false;
   bool selector_saw_search_started = false;
+  bool selector_saw_source_in_discard = false;
+  bool selector_saw_cost_in_discard = false;
   std::vector<std::string> events;
 };
 
@@ -104,6 +106,12 @@ sim::rules::CardContext make_context(FakeQuickBallState& state) {
 std::optional<Card> choose_regidrago_after_inspection(void* opaque) {
   auto& state = *static_cast<FakeQuickBallState*>(opaque);
   state.selector_saw_search_started = state.search_started;
+  state.selector_saw_source_in_discard =
+      std::find(state.discard.begin(), state.discard.end(), Card::QuickBall) !=
+      state.discard.end();
+  state.selector_saw_cost_in_discard =
+      std::find(state.discard.begin(), state.discard.end(), Card::Grass) !=
+      state.discard.end();
   return state.search_started ? std::optional<Card>{Card::RegidragoV}
                               : std::nullopt;
 }
@@ -138,7 +146,7 @@ void test_registry_metadata_and_item_classification() {
           "Legacy compatibility name must source the registered definition.");
 }
 
-void test_resolution_preserves_source_cost_k1_search_shuffle_order() {
+void test_resolution_preserves_cost_k1_search_shuffle_source_order() {
   FakeQuickBallState state{
       .hand = {Card::QuickBall, Card::Grass},
       .deck = {Card::RegidragoV, Card::Fire},
@@ -154,16 +162,28 @@ void test_resolution_preserves_source_cost_k1_search_shuffle_order() {
   require(resolution.played, "A payable Quick Ball action must resolve.");
   require(state.selector_saw_search_started,
           "Engine target policy must run only after deck-search knowledge begins.");
+
+  // Quick Ball's separate printed cost is already discarded while its search is
+  // resolving, while B-01 keeps the resolving Item itself out of discard until the
+  // Item has been used.
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4288
+  require(state.selector_saw_cost_in_discard,
+          "Quick Ball's mandatory other-card cost must be discarded before target selection.");
+  require(!state.selector_saw_source_in_discard,
+          "The resolving Quick Ball must stay out of discard during target selection.");
+
   require(resolution.search_target == Card::RegidragoV,
           "Post-inspection selector must choose Regidrago V.");
   require(resolution.found_target,
           "Selected Regidrago V must move from deck to hand.");
   require(state.shuffled, "Quick Ball must shuffle after its deck search.");
-  require(state.events == std::vector<std::string>{"source", "cost", "search",
-                                                   "target", "shuffle"},
-          "Quick Ball state-transition ordering changed.");
+  require(state.events == std::vector<std::string>{"cost", "search", "target",
+                                                   "shuffle", "source"},
+          "Quick Ball must pay its cost, resolve search and shuffle, then discard the used Item.");
   require(std::count(state.discard.begin(), state.discard.end(), Card::QuickBall) == 1,
-          "Played Quick Ball must enter discard exactly once.");
+          "Played Quick Ball must enter discard exactly once after resolution.");
   require(std::count(state.discard.begin(), state.discard.end(), Card::Grass) == 1,
           "Quick Ball must discard the selected other-card cost exactly once.");
   require(std::count(state.hand.begin(), state.hand.end(), Card::RegidragoV) == 1,
@@ -241,7 +261,7 @@ void test_non_basic_strategy_target_is_never_searched() {
 int main() {
   try {
     test_registry_metadata_and_item_classification();
-    test_resolution_preserves_source_cost_k1_search_shuffle_order();
+    test_resolution_preserves_cost_k1_search_shuffle_source_order();
     test_second_quick_ball_is_legal_other_card_cost();
     test_single_quick_ball_cannot_discard_itself();
     test_non_basic_strategy_target_is_never_searched();

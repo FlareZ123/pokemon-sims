@@ -45,6 +45,7 @@ class QuickBall final {
 
     // Quick Ball says to discard another card. A second Quick Ball is legal cost,
     // while the copy being played cannot pay for itself.
+    // Exact print: https://api.pokemontcg.io/v2/cards/swsh1-179
     const int copies_required = action.discard == Card::QuickBall ? 2 : 1;
     return context.hand_count(action.discard) >= copies_required;
   }
@@ -53,9 +54,11 @@ class QuickBall final {
                             const Action& action) {
     if (!validate(context, action)) return {};
 
-    // The played Item enters the discard pile as its own card lifecycle. It is not
-    // the card discarded to pay Quick Ball's printed cost.
-    if (!context.move_hand_to_discard(Card::QuickBall)) return {};
+    // Follow Quick Ball's printed discard cost before its search. The resolving
+    // Item itself is discarded only after its text has finished resolving.
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4288
     if (!context.discard_from_hand(action.discard, action.cost_reason,
                                    action.rules_reference)) {
       return {};
@@ -73,6 +76,14 @@ class QuickBall final {
 
     const bool found = target && context.search_deck_to_hand(*target);
     context.shuffle_deck();
+
+    // B-01 step 4 discards an Item after the Item has been used. Keep this after
+    // Quick Ball's cost, search, target movement, and required shuffle.
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4288
+    if (!context.move_hand_to_discard(Card::QuickBall)) return {};
+
     return Resolution{.played = true,
                       .search_target = target,
                       .found_target = found};

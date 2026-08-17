@@ -12,7 +12,10 @@ namespace sim::rules {
 class CardContext final {
  public:
   using HandCountFn = int (*)(const void*, Card);
+  using ResolvingCountFn = int (*)(const void*, Card);
   using MoveHandToDiscardFn = bool (*)(void*, Card);
+  using MoveHandToResolvingFn = bool (*)(void*, Card);
+  using MoveResolvingToDiscardFn = bool (*)(void*, Card);
   using DiscardFromHandFn = bool (*)(void*, Card, std::string_view,
                                      std::string_view);
   using SearchDeckToHandFn = bool (*)(void*, Card);
@@ -30,6 +33,12 @@ class CardContext final {
     IsSpecialEnergyFn is_special_energy = nullptr;
   };
 
+  struct ResolvingSourceCallbacks {
+    ResolvingCountFn resolving_count = nullptr;
+    MoveHandToResolvingFn move_hand_to_resolving = nullptr;
+    MoveResolvingToDiscardFn move_resolving_to_discard = nullptr;
+  };
+
   struct Callbacks {
     HandCountFn hand_count;
     MoveHandToDiscardFn move_hand_to_discard;
@@ -39,6 +48,7 @@ class CardContext final {
     IsBasicPokemonFn is_basic_pokemon;
     BeginDeckSearchFn begin_deck_search;
     Classifiers classifiers{};
+    ResolvingSourceCallbacks resolving_source{};
   };
 
   constexpr CardContext(void* opaque, const Callbacks& callbacks)
@@ -50,7 +60,8 @@ class CardContext final {
         shuffle_deck_(callbacks.shuffle_deck),
         is_basic_pokemon_(callbacks.is_basic_pokemon),
         begin_deck_search_(callbacks.begin_deck_search),
-        classifiers_(callbacks.classifiers) {}
+        classifiers_(callbacks.classifiers),
+        resolving_source_(callbacks.resolving_source) {}
 
   constexpr CardContext(void* opaque, HandCountFn hand_count_fn,
                         MoveHandToDiscardFn move_hand_to_discard_fn,
@@ -91,8 +102,30 @@ class CardContext final {
     return hand_count_(static_cast<const void*>(opaque_), card);
   }
 
+  int resolving_count(const Card card) const {
+    return resolving_source_.resolving_count == nullptr
+               ? 0
+               : resolving_source_.resolving_count(
+                     static_cast<const void*>(opaque_), card);
+  }
+
   bool move_hand_to_discard(const Card card) {
     return move_hand_to_discard_(opaque_, card);
+  }
+
+  // A played Trainer leaves the ordinary hand before its effect resolves and is
+  // discarded only after that effect finishes. The callback pair models that
+  // intermediate source zone without exposing Engine internals to card modules.
+  // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  bool move_hand_to_resolving(const Card card) {
+    return resolving_source_.move_hand_to_resolving != nullptr &&
+           resolving_source_.move_hand_to_resolving(opaque_, card);
+  }
+
+  // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  bool move_resolving_to_discard(const Card card) {
+    return resolving_source_.move_resolving_to_discard != nullptr &&
+           resolving_source_.move_resolving_to_discard(opaque_, card);
   }
 
   bool discard_from_hand(const Card card, const std::string_view reason,
@@ -144,6 +177,7 @@ class CardContext final {
   IsBasicPokemonFn is_basic_pokemon_;
   BeginDeckSearchFn begin_deck_search_;
   Classifiers classifiers_;
+  ResolvingSourceCallbacks resolving_source_;
 };
 
 }  // namespace sim::rules

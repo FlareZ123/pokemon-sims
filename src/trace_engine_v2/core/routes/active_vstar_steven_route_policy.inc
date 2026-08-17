@@ -1,3 +1,9 @@
+  // Pure deck-risk arithmetic for this route has one named owner; Engine keeps
+  // every state read, K1/lock/DCI/JIT decision, and physical action.
+  // Cleanup architecture: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+  // C++ textual include semantics: https://eel.is/c++draft/cpp.include
+#include "active_vstar_steven_projection_policy.inc"
+
   bool issue_3203_active_vstar_steven_crispin_treasure_route_available() const {
     const bool next_turn_items_locked = item_locked_on_turn(state_.turn + 1);
     // Shared projected Item-lock timing: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
@@ -45,8 +51,6 @@
 
     const int post_steven_deck_size = static_cast<int>(state_.deck.size()) - 2;
     const int grass_after_steven = grass_in_deck - 1;
-    const int failing_topdecks = static_cast<int>(grass_after_steven == 1) +
-        static_cast<int>(fire_in_deck == 1);
 
     // Preserve #1098's known-deck topdeck-risk model while removing only historical
     // profile, seat, absolute-turn, and blanket no-lock coordinates from admission.
@@ -54,5 +58,6 @@
     // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
     // Route-risk provenance: https://github.com/FlareZ123/pokemon-sims/issues/1098
     // Semantic-admission correction: https://github.com/FlareZ123/pokemon-sims/issues/3203
-    return post_steven_deck_size > failing_topdecks;
+    return ActiveVstarStevenProjectionPolicy::continuation_survives_next_draw(
+        post_steven_deck_size, grass_after_steven, fire_in_deck);
   }

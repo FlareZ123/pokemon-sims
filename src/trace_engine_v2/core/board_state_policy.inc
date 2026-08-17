@@ -2,29 +2,53 @@
   // representation beside the traversal implementation so every board-index user
   // shares one mapping contract.
   // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
-  using BoardIndex = std::size_t;
+  class BoardIndexPolicy final {
+   public:
+    using Index = std::size_t;
+    inline static constexpr Index kActive = 0U;
+
+    [[nodiscard]] static constexpr bool is_active(const Index index) {
+      return index == kActive;
+    }
+
+    [[nodiscard]] static constexpr bool is_benched(const Index index) {
+      return !is_active(index);
+    }
+
+    [[nodiscard]] static constexpr Index for_bench_position(
+        const Index bench_position) {
+      return bench_position + 1U;
+    }
+
+    [[nodiscard]] static constexpr Index bench_position_from_index(
+        const Index index) {
+      return index - 1U;
+    }
+  };
+
+  using BoardIndex = BoardIndexPolicy::Index;
   using OptionalBoardIndex = std::optional<BoardIndex>;
   using BoardAttachmentDestinations = std::vector<BoardIndex>;
-  inline static constexpr BoardIndex kActiveBoardIndex = 0U;
+  inline static constexpr BoardIndex kActiveBoardIndex = BoardIndexPolicy::kActive;
 
   [[nodiscard]] static constexpr bool board_index_is_active(
       const BoardIndex index) {
-    return index == kActiveBoardIndex;
+    return BoardIndexPolicy::is_active(index);
   }
 
   [[nodiscard]] static constexpr bool board_index_is_benched(
       const BoardIndex index) {
-    return !board_index_is_active(index);
+    return BoardIndexPolicy::is_benched(index);
   }
 
   [[nodiscard]] static constexpr BoardIndex board_index_for_bench_position(
       const BoardIndex bench_position) {
-    return bench_position + 1U;
+    return BoardIndexPolicy::for_bench_position(bench_position);
   }
 
   [[nodiscard]] static constexpr BoardIndex bench_position_from_board_index(
       const BoardIndex index) {
-    return index - 1U;
+    return BoardIndexPolicy::bench_position_from_index(index);
   }
 
   template <typename ActiveZone, typename BenchZone, typename Visitor>

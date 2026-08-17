@@ -8,7 +8,7 @@
 // C++ optional semantics: https://eel.is/c++draft/optional
 // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
 template <typename ScenarioRange>
-class ScenarioExtension {
+class ScenarioExtension final {
  public:
   explicit ScenarioExtension(const ScenarioRange& scenarios)
       : scenarios_(scenarios) {}
@@ -31,7 +31,7 @@ class ScenarioExtension {
  private:
   // Own the extension range so append and lookup cannot outlive external storage.
   // C++ object lifetime rules: https://eel.is/c++draft/basic.life
-  ScenarioRange scenarios_;
+  const ScenarioRange scenarios_;
 };
 
 // Canonical Forretress-side owner for the Garbodor / Boost Shake scenario family.

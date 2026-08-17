@@ -4,24 +4,40 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  matrix-report:
+  apply-roadmap:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - name: Configure Release
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-      - name: Build simulator
-        run: cmake --build build --target regidrago_sim --parallel 2
-      - name: Generate paired two-deck T2, T3, and T4 matrix
-        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out multi-deck-matrix.csv
-      - name: Derive canonical T2 and T3 shell matrix
-        run: python scripts/extract_deck_matrix.py --input multi-deck-matrix.csv --output t2-t3-matrix.csv --deck regidrago-shell
-      - name: Print exact current T2/T3 shell matrix
-        run: cat t2-t3-matrix.csv
+          ref: cleanup-1786945480000
+      - name: Advance cleanup roadmap
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('CARD_CLASS_CLEANUP.md')
+          text = path.read_text(encoding='utf-8')
+
+          anchor = "The source-bounded Steven route package has its canonical organized owner at `src/trace_engine_v2/core/routes/steven/package.inc`. The historical `src/trace_engine_v2/core/routes/steven_package_policy.inc` compatibility include is retired and should not be recreated. The package preserves the established #1745 -> #1771 -> #1772 -> #2622 textual route order while rule-sensitive function bodies remain in their existing route owners. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven/package.inc\n"
+          addition = anchor + "\nThe issue-1199 Steven package body now has its canonical organized owner at `src/trace_engine_v2/core/routes/issue_1199_steven_package_policy.inc`. The historical `src/trace_engine_v2/part_issue_1199_steven_package_override.inc` path is a thin compatibility include while source-contract references migrate. K0/K1 admission, DCI/JIT timing, Supporter contention, route priority, and physical card actions remain in the route owner. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1199_steven_package_policy.inc\n"
+          if text.count(anchor) != 1:
+              raise SystemExit('composition anchor changed')
+          text = text.replace(anchor, addition, 1)
+
+          old_step = "3. Continue retiring other composition-only `part_*steven*` forwarders when a complete function body or macro lifetime can move at the identical textual boundary. The issue-3221 and issue-3222 root semantic forwarders are complete and should not be recreated."
+          new_step = "3. Continue retiring other composition-only `part_*steven*` forwarders when a complete function body or macro lifetime can move at the identical textual boundary. The issue-1199 body now lives in `core/routes/issue_1199_steven_package_policy.inc`; migrate remaining references to its canonical path before retiring the root compatibility include. The issue-3221 and issue-3222 root semantic forwarders are complete and should not be recreated."
+          if text.count(old_step) != 1:
+              raise SystemExit('cleanup step 3 changed')
+          text = text.replace(old_step, new_step, 1)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+          git config user.name "Zyenith"
+          git config user.email "40903650+FlareZ123@users.noreply.github.com"
+          git add CARD_CLASS_CLEANUP.md
+          git commit -m "Cleanup: advance issue-1199 route ownership plan"
+          git push origin HEAD:cleanup-1786945480000

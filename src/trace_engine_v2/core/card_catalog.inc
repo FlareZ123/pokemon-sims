@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "../../cards/card_registry.hpp"
-#include "card_context_adapter.hpp"
+#include "adapters/card_context_adapter.hpp"
 
 #if defined(_WIN32)
 #include <windows.h>

@@ -150,8 +150,15 @@ void test_real_blockers_remain() {
     auto state = route_state(2);
     state.manual_energy_used = true;
     sim::EngineTestAccess_issue_3203::set_state(engine, std::move(state));
-    expect(!sim::EngineTestAccess_issue_3203::route(engine),
-           "Spent manual attachment admitted route");
+    // The manual attachment is once per turn. Steven's Resolve ends this turn, and
+    // begin_turn() resets the attachment marker before the route's required normal
+    // attachment on the following turn, so spending today's attachment is legal.
+    // Advanced turn/attachment procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Canonical turn reset: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Confirmed cross-turn correction: https://github.com/FlareZ123/pokemon-sims/issues/4130
+    expect(sim::EngineTestAccess_issue_3203::route(engine),
+           "Current-turn attachment incorrectly blocked the following-turn route");
   }
   {
     std::mt19937_64 rng{320316};

@@ -13,58 +13,61 @@ struct CrobatModelingDeck {
   DeckRecipe recipe;
 };
 
-void adjust_modeling_recipe(DeckRecipe& recipe, const Card card, const int delta) {
-  const auto found = std::find_if(recipe.begin(), recipe.end(), [card](const auto& entry) {
-    return entry.first == card;
-  });
-  if (found == recipe.end()) {
-    if (delta <= 0) throw std::logic_error("modeling cut is absent");
-    recipe.push_back({card, delta});
-    return;
+class CrobatModelingRecipeFactory {
+ public:
+  static CrobatModelingDeck make_variant(
+      std::string id, const std::initializer_list<Card> cuts) {
+    DeckRecipe recipe = baseline_recipe();
+    std::ostringstream cut_names;
+    std::size_t index = 0;
+    for (const Card cut : cuts) {
+      adjust(recipe, cut, -1);
+      if (index++ > 0) cut_names << " + ";
+      cut_names << name(cut);
+    }
+    adjust(recipe, Card::CrobatV, static_cast<int>(cuts.size()));
+    return validate({std::move(id), cut_names.str(), std::move(recipe)});
   }
-  found->second += delta;
-  if (found->second < 0) throw std::logic_error("modeling cut exceeds copies");
-  if (found->second == 0) recipe.erase(found);
-}
 
-CrobatModelingDeck make_crobat_modeling_deck(
-    std::string id, const std::initializer_list<Card> cuts) {
-  DeckRecipe recipe = baseline_recipe();
-  std::ostringstream cut_names;
-  std::size_t index = 0;
-  for (const Card cut : cuts) {
-    adjust_modeling_recipe(recipe, cut, -1);
-    if (index++ > 0) cut_names << " + ";
-    cut_names << name(cut);
+  static CrobatModelingDeck make_issue_3545_trace() {
+    DeckRecipe recipe = baseline_recipe();
+    // This explicit trace fixture swaps six singleton support/utility slots for four
+    // Battle Compressor plus two VS Seeker so CI can exercise the new routing without
+    // changing the canonical shell or the ordinary Crobat modeling matrix.
+    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+    // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+    // Enhancement scope: https://github.com/FlareZ123/pokemon-sims/issues/3545
+    for (const Card cut : {Card::BrilliantBlender, Card::TeamYellsCheer, Card::Klara,
+                           Card::Lusamine, Card::Channeler, Card::ErikasInvitation}) {
+      adjust(recipe, cut, -1);
+    }
+    adjust(recipe, Card::BattleCompressor, 4);
+    adjust(recipe, Card::VsSeeker, 2);
+    return validate({"issue3545-bc-vs", "Issue #3545 BC + VS trace deck",
+                     std::move(recipe)});
   }
-  adjust_modeling_recipe(recipe, Card::CrobatV, static_cast<int>(cuts.size()));
-  CrobatModelingDeck deck{std::move(id), cut_names.str(), std::move(recipe)};
-  std::string error;
-  if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
-  return deck;
-}
 
-CrobatModelingDeck make_issue_3545_bc_vs_trace_deck() {
-  DeckRecipe recipe = baseline_recipe();
-  // This explicit trace fixture swaps six singleton support/utility slots for four
-  // Battle Compressor plus two VS Seeker so CI can exercise the new routing without
-  // changing the canonical shell or the ordinary Crobat modeling matrix.
-  // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
-  // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
-  // Enhancement scope: https://github.com/FlareZ123/pokemon-sims/issues/3545
-  for (const Card cut : {Card::BrilliantBlender, Card::TeamYellsCheer, Card::Klara,
-                         Card::Lusamine, Card::Channeler, Card::ErikasInvitation}) {
-    adjust_modeling_recipe(recipe, cut, -1);
+ private:
+  static void adjust(DeckRecipe& recipe, const Card card, const int delta) {
+    const auto found = std::find_if(recipe.begin(), recipe.end(), [card](const auto& entry) {
+      return entry.first == card;
+    });
+    if (found == recipe.end()) {
+      if (delta <= 0) throw std::logic_error("modeling cut is absent");
+      recipe.push_back({card, delta});
+      return;
+    }
+    found->second += delta;
+    if (found->second < 0) throw std::logic_error("modeling cut exceeds copies");
+    if (found->second == 0) recipe.erase(found);
   }
-  adjust_modeling_recipe(recipe, Card::BattleCompressor, 4);
-  adjust_modeling_recipe(recipe, Card::VsSeeker, 2);
 
-  CrobatModelingDeck deck{"issue3545-bc-vs", "Issue #3545 BC + VS trace deck",
-                          std::move(recipe)};
-  std::string error;
-  if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
-  return deck;
-}
+  static CrobatModelingDeck validate(CrobatModelingDeck deck) {
+    std::string error;
+    if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
+    return deck;
+  }
+};
 
 class CrobatModelingRegistry {
  public:
@@ -73,29 +76,30 @@ class CrobatModelingRegistry {
     // --all-decks: https://github.com/FlareZ123/pokemon-sims/issues/1394
     static const std::vector<CrobatModelingDeck> decks{
         {"regidrago-shell", "none", baseline_recipe()},
-        make_crobat_modeling_deck("crobat1-erika", {Card::ErikasInvitation}),
-        make_crobat_modeling_deck("crobat1-channeler", {Card::Channeler}),
-        make_crobat_modeling_deck("crobat1-team-yell", {Card::TeamYellsCheer}),
-        make_crobat_modeling_deck("crobat1-klara", {Card::Klara}),
-        make_crobat_modeling_deck("crobat1-turo", {Card::ProfessorTuro}),
-        make_crobat_modeling_deck("crobat1-powerglass", {Card::Powerglass}),
-        make_crobat_modeling_deck("crobat1-heavy-ball", {Card::HisuianHeavyBall}),
-        make_crobat_modeling_deck("crobat1-tapu-lele", {Card::TapuLeleGX}),
-        make_crobat_modeling_deck("crobat2-erika-channeler",
-                                  {Card::ErikasInvitation, Card::Channeler}),
-        make_crobat_modeling_deck("crobat2-erika-team-yell",
-                                  {Card::ErikasInvitation, Card::TeamYellsCheer}),
-        make_crobat_modeling_deck("crobat2-erika-tapu-lele",
-                                  {Card::ErikasInvitation, Card::TapuLeleGX}),
-        make_crobat_modeling_deck("crobat2-tapu-lele-both",
-                                  {Card::TapuLeleGX, Card::TapuLeleGX}),
+        CrobatModelingRecipeFactory::make_variant("crobat1-erika", {Card::ErikasInvitation}),
+        CrobatModelingRecipeFactory::make_variant("crobat1-channeler", {Card::Channeler}),
+        CrobatModelingRecipeFactory::make_variant("crobat1-team-yell", {Card::TeamYellsCheer}),
+        CrobatModelingRecipeFactory::make_variant("crobat1-klara", {Card::Klara}),
+        CrobatModelingRecipeFactory::make_variant("crobat1-turo", {Card::ProfessorTuro}),
+        CrobatModelingRecipeFactory::make_variant("crobat1-powerglass", {Card::Powerglass}),
+        CrobatModelingRecipeFactory::make_variant("crobat1-heavy-ball", {Card::HisuianHeavyBall}),
+        CrobatModelingRecipeFactory::make_variant("crobat1-tapu-lele", {Card::TapuLeleGX}),
+        CrobatModelingRecipeFactory::make_variant(
+            "crobat2-erika-channeler", {Card::ErikasInvitation, Card::Channeler}),
+        CrobatModelingRecipeFactory::make_variant(
+            "crobat2-erika-team-yell", {Card::ErikasInvitation, Card::TeamYellsCheer}),
+        CrobatModelingRecipeFactory::make_variant(
+            "crobat2-erika-tapu-lele", {Card::ErikasInvitation, Card::TapuLeleGX}),
+        CrobatModelingRecipeFactory::make_variant(
+            "crobat2-tapu-lele-both", {Card::TapuLeleGX, Card::TapuLeleGX}),
     };
     return decks;
   }
 
   static const CrobatModelingDeck* find(const std::string_view id) {
     if (id == "issue3545-bc-vs") {
-      static const CrobatModelingDeck trace_deck = make_issue_3545_bc_vs_trace_deck();
+      static const CrobatModelingDeck trace_deck =
+          CrobatModelingRecipeFactory::make_issue_3545_trace();
       return &trace_deck;
     }
     const auto& decks = all();

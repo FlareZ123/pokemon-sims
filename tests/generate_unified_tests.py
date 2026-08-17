@@ -151,12 +151,9 @@ def build_test_case(
 def collect_test_cases(
     source_root: Path, tests_root: Path
 ) -> tuple[list[tuple[str, str, str]], list[str], set[str]]:
-    source_headers = set(ANGLE_INCLUDE.findall(
-        (source_root / "src" / "trace_engine_v2" / "part_000.inc").read_text(encoding="utf-8")
-    ))
     cases: list[tuple[str, str, str]] = []
     access_blocks: list[str] = []
-    headers = set(source_headers)
+    headers: set[str] = set()
     for path in discover_test_files(tests_root):
         case, blocks, test_headers = build_test_case(path, source_root, tests_root)
         cases.append(case)

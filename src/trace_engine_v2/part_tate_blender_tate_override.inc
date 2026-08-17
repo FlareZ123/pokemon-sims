@@ -1,0 +1,260 @@
+  bool has_live_serena_hand_payload_line() const {
+    // A held Serena plus a permitted Dragon payload is already a direct current-turn
+    // discard route. Preserve it instead of spending another search and discard to
+    // fetch a duplicate payload:
+    // https://api.pokemontcg.io/v2/cards/swsh12-164
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    return supporter_allowed() && can_play_payload_this_turn() &&
+           hand_count(Card::Serena) > 0 &&
+           std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+  }
+
+  bool has_live_one_discard_hand_payload_line() const {
+    // A resolved deck search and complete Prize inspection establish the same fixed-list K1.
+    // Hisuian Heavy Ball / complete Prize inspection: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // Official Prize, search, Ability, Trainer, attachment, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2078
+
+    // Each modeled one-discard outlet must begin a deck search after paying its cost.
+    // An empty deck makes that promised post-Tate payload route unavailable:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
+    if (!deck_search_available() || item_locked() || !can_play_payload_this_turn() ||
+        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+      return false;
+    }
+
+    // These Items discard one other hand card before resolving their searches. When
+    // the policy-selected cost is a Dragon payload, the same play establishes the
+    // strict current-turn Apex Dragon payload axis after Tate & Liza switches Active:
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    for (const Card item : {Card::MysteriousTreasure, Card::QuickBall, Card::EarthenVessel}) {
+      if (hand_count(item) == 0) continue;
+      // A K1 Mysterious Treasure route is live only when the inspected deck still
+      // contains a Psychic or Dragon Pokémon. The payload discard is a play cost and
+      // cannot justify a Trainer that is known to have no effect:
+      // https://api.pokemontcg.io/v2/cards/sm6-113
+      // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+      const bool known_dead_mysterious = item == Card::MysteriousTreasure && prizes_known() &&
+          std::none_of(state_.deck.begin(), state_.deck.end(), is_dragon_or_psychic);
+      if (known_dead_mysterious) continue;
+      // The same target-aware legality applies to Quick Ball's Basic Pokémon search:
+      // https://api.pokemontcg.io/v2/cards/swsh1-179
+      // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+      const bool known_dead_quick = item == Card::QuickBall && prizes_known() &&
+          std::none_of(state_.deck.begin(), state_.deck.end(), is_basic);
+      if (known_dead_quick) continue;
+      // Earthen Vessel is live only while K0 keeps Basic Energy plausible or K1
+      // proves at least one modeled Basic Energy remains in deck:
+      // https://api.pokemontcg.io/v2/cards/sv4-163
+      // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/#:~:text=No%2C%20you%20cannot%20play%20a%20Trainer%20when%20it%20is%20known%20that%20it%20will%20have%20no%20effect.
+      if (item == Card::EarthenVessel && !earthen_vessel_has_legal_target()) continue;
+      const auto cost = choose_discard(true, true, true, item);
+      if (cost && is_payload(*cost)) return true;
+    }
+    return false;
+  }
+
+  bool preserve_incomplete_tate_blender_line() const {
+    const int supporters_in_hand = static_cast<int>(
+        std::count_if(state_.hand.begin(), state_.hand.end(), is_supporter));
+    const bool only_tate_supporter_held =
+        supporters_in_hand == hand_count(Card::TateLiza);
+
+    // Tate & Liza can promote the selected Benched VSTAR and Brilliant Blender can
+    // supply its current-turn payload, but Apex Dragon still requires GGF. Inspect
+    // the actual promotion target instead of generic Energy routing to another line:
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/sv8-164
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    return supporter_allowed() && strict_payload_timing() && only_tate_supporter_held &&
+           hand_count(Card::TateLiza) > 0 && need_active_vstar() &&
+           !benched_vstar_promotion_ready() && has_live_blender_payload_line();
+  }
+
+  bool preserve_tate_hand_payload_switch_line() const {
+    // Tate & Liza switch mode may promote a complete Benched Regidrago VSTAR before
+    // a payable one-discard Item puts the held Dragon into discard. Preserve that
+    // complete route instead of shuffling all three cards through Tate's draw mode:
+    // https://api.pokemontcg.io/v2/cards/sm7-148
+    // https://api.pokemontcg.io/v2/cards/sm6-113
+    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    return supporter_allowed() && hand_count(Card::TateLiza) > 0 &&
+           need_active_vstar() && benched_vstar_promotion_ready() && need_payload() &&
+           !can_free_retreat_with_latias() && has_live_one_discard_hand_payload_line();
+  }
+
+  bool play_tate_switch() {
+    if (preserve_incomplete_tate_blender_line()) {
+      trace("HOLD SUPPORTER", "R-TATE-01; R-BLENDER-01; R-RVS-01; P-DCI-01",
+            "Retained Tate & Liza because the promoted Regidrago VSTAR still lacks part of GGF.");
+      return false;
+    }
+    return play_tate_switch_tate_blender_original();
+  }
+
+  bool issue_2368_preserve_direct_treasure_vstar_payload_completion() const {
+    if (!strict_payload_timing() || !supporter_allowed() || item_locked() ||
+        hand_count(Card::MysteriousTreasure) == 0 || !need_vstar() ||
+        !need_payload() || !can_play_payload_this_turn() || !deck_search_available() ||
+        !might_be_unseen(Card::RegidragoVstar)) {
+      return false;
+    }
+    const auto ready_evolvable = [this](const Pokemon& pokemon) {
+      return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn &&
+             pokemon.double_dragon > 0 && pays_apex_energy_cost(pokemon);
+    };
+    const bool powered_line =
+        (state_.active && ready_evolvable(*state_.active)) ||
+        std::any_of(state_.bench.begin(), state_.bench.end(), ready_evolvable);
+    if (!powered_line) return false;
+    const auto cost = choose_discard(true, true, true, Card::MysteriousTreasure);
+    return cost.has_value() && is_payload(*cost);
+  }
+
+  bool play_tate_draw() {
+    if (issue_2368_preserve_direct_treasure_vstar_payload_completion()) {
+      // An attached DDE can finish the Energy axis before the strict-JIT Item fixed
+      // point. A held Mysterious Treasure can then use its printed discard cost as
+      // the current-turn Dragon payload while searching Regidrago VSTAR. Do not
+      // shuffle that deterministic two-axis route away with Tate & Liza.
+      // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Official Item, discard-cost, search, evolution, Energy, and Supporter procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Earliest-route / strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2368
+      trace("HOLD SUPPORTER", "R-MT-01; R-TATE-01; R-RVS-01; P-JIT-01; P-COMPRESS-01",
+            "Preserved Mysterious Treasure's immediate VSTAR plus Dragon-payload completion instead of using Tate & Liza draw mode.");
+      return false;
+    }
+    if (tate_switch_then_next_turn_burnet_route()) {
+      // Tate's switch mode resolves the Active-position axis now, while the held
+      // Professor Burnet remains available on the following turn to establish the
+      // strict current-turn Dragon payload. Do not shuffle either deterministic
+      // connector through Tate's draw mode:
+      // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+      // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // One-Supporter-per-turn and switching procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Earliest deterministic route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2154
+      trace("HOLD SUPPORTER", "R-TATE-01; R-BURNET-01; R-RVS-01; P-JIT-01; P-COMPRESS-01",
+            "Preserved Tate & Liza switch mode and the next-turn Professor Burnet payload route.");
+      return false;
+    }
+    if (tate_draw_after_active_vstar_evolution_route()) {
+      // The prior-turn Active Regidrago V already has GGF. Preserve the searched
+      // evolution through this fixed-point pass, then Tate still draws exactly five:
+      // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+      // Forest Seal Stone / Star Alchemy: https://api.pokemontcg.io/v2/cards/swsh12-156
+      // Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+      // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Evolution, Supporter, search, shuffle, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1162
+      trace("HOLD SUPPORTER", "R-TATE-01; R-FSS-02; R-RVS-01; P-JIT-01; P-COMPRESS-01",
+            "Retained Tate & Liza until the held Regidrago VSTAR evolves the prior-turn GGF Active.");
+      return false;
+    }
+    if (tate_switch_after_held_vstar_evolution_route()) {
+      // Star Alchemy has already searched Regidrago VSTAR. Keep Tate's switch mode
+      // while the fixed-point policy evolves the prior-turn GGF Benched Basic:
+      // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+      // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1070
+      trace("HOLD SUPPORTER", "R-TATE-01; R-RVS-01; P-COMPRESS-01",
+            "Retained Tate & Liza until the held Regidrago VSTAR evolves the prepared Benched Basic.");
+      return false;
+    }
+    if (preserve_incomplete_tate_blender_line()) {
+      trace("HOLD SUPPORTER", "R-TATE-01; R-BLENDER-01; R-RVS-01; P-DCI-01",
+            "Retained Tate & Liza and Brilliant Blender instead of shuffling the incomplete promotion route.");
+      return false;
+    }
+    if (preserve_tate_hand_payload_switch_line()) {
+      trace("HOLD SUPPORTER", "R-TATE-01; R-RVS-01; P-DCI-01",
+            "Retained Tate & Liza switch mode and the held one-discard Dragon payload route.");
+      return false;
+    }
+    return play_tate_draw_tate_blender_original();
+  }
+
+  std::optional<Card> choose_discard_issue1740(
+      const bool permit_payload, const bool flex_fodder,
+      const bool allow_heavy_ball = true,
+      const std::optional<Card> excluded_from_cost = std::nullopt,
+      const bool allow_redundant_payload = false) const {
+    const auto ordinary = choose_discard(
+        permit_payload, flex_fodder, allow_heavy_ball, excluded_from_cost,
+        allow_redundant_payload);
+    const bool current_turn_payload_cost_live =
+        can_play_payload_this_turn() &&
+        std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+    const auto dde_completed_regi = [this](const Pokemon& pokemon) {
+      return (pokemon.card == Card::RegidragoV || pokemon.card == Card::RegidragoVstar) &&
+             pokemon.double_dragon > 0 && pays_apex_energy_cost(pokemon);
+    };
+    const bool dde_completed_energy_line =
+        (state_.active && dde_completed_regi(*state_.active)) ||
+        std::any_of(state_.bench.begin(), state_.bench.end(), dde_completed_regi);
+    if (!ordinary && dde_completed_energy_line && !need_energy() &&
+        !current_turn_payload_cost_live) {
+      const int excluded_crispin =
+          excluded_from_cost && *excluded_from_cost == Card::Crispin ? 1 : 0;
+      if (hand_count(Card::Crispin) > excluded_crispin) {
+        // DDE can finish Apex Dragon's Energy axis while a singleton Crispin is
+        // still protected by the pre-DDE dynamic-DCI table. Only in that concrete
+        // DDE-complete state, and only when no current-turn Dragon payload should
+        // pay the cost instead, Crispin is setup-inert Item fuel.
+        // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+        // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
+        // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+        // Dynamic DCI / earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/2368
+        return Card::Crispin;
+      }
+    }
+    const bool duplicate_treasure_is_ordinary_cost =
+        ordinary && *ordinary == Card::MysteriousTreasure;
+    const bool preserve_second_treasure_for_vstar =
+        duplicate_treasure_is_ordinary_cost &&
+        scenario_.dci == DciProfile::StrictJit && excluded_from_cost &&
+        *excluded_from_cost == Card::MysteriousTreasure &&
+        hand_count(Card::MysteriousTreasure) >= 2 &&
+        hand_count(Card::Channeler) > 0 && need_regi() && bench_space() > 0 &&
+        hand_count(Card::RegidragoV) == 0 && might_be_unseen(Card::RegidragoV) &&
+        !has_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
+        might_be_unseen(Card::RegidragoVstar);
+    if (preserve_second_treasure_for_vstar) {
+      // Replace only the existing duplicate-Treasure fallback. Every ordinary
+      // lower-DCI cost keeps its established priority. The first Treasure must
+      // establish the missing Basic, while the distinct second copy remains the
+      // one-discard VSTAR connector and setup-inert Channeler pays the current cost:
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Channeler: https://api.pokemontcg.io/v2/cards/sm11-190
+      // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Official Item, discard-cost, search, evolution, and turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+      // K0/K1, dynamic DCI, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#card-text-outside-initial-setup https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug and source-bound projection: https://github.com/FlareZ123/pokemon-sims/issues/1740 https://github.com/FlareZ123/pokemon-sims/actions/runs/30390502968
+      return Card::Channeler;
+    }
+    return ordinary;
+  }
+
+#undef choose_discard
+#define choose_discard choose_discard_issue1740
+#include "part_issue_1876_treasure_payload_cost_override.inc"

@@ -30,6 +30,7 @@
 #include "trainers/klara.hpp"
 #include "trainers/lusamine.hpp"
 #include "trainers/mysterious_treasure.hpp"
+#include "trainers/path_to_the_peak.hpp"
 #include "trainers/pokemon_communication.hpp"
 #include "trainers/powerglass.hpp"
 #include "trainers/professor_burnet.hpp"
@@ -47,7 +48,7 @@
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 42> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 43> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
     &MawileGX::definition, // Exact Unified Minds Basic Metal Pokémon-GX: https://api.pokemontcg.io/v2/cards/sm11-141 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3704
     &Oricorio::definition, // Exact Guardians Rising Basic Psychic Pokémon: https://api.pokemontcg.io/v2/cards/sm2-55 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3712
@@ -76,6 +77,7 @@ inline constexpr std::array<const CardDefinition*, 42> kRegisteredCardDefinition
     &MysteriousTreasure::definition, // Exact SM 113 metadata: https://api.pokemontcg.io/v2/cards/sm6-113
     &HisuianHeavyBall::definition, // Exact SWSH 146 metadata: https://api.pokemontcg.io/v2/cards/swsh10-146
     &GuzmaHala::definition, // Exact Cosmic Eclipse 229 Supporter: https://api.pokemontcg.io/v2/cards/sm12-229
+    &PathToThePeak::definition, // Exact Chilling Reign Stadium: https://api.pokemontcg.io/v2/cards/swsh6-148 ; Stadium procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3519
     &PokemonCommunication::definition, // Exact Team Up Item: https://api.pokemontcg.io/v2/cards/sm9-152 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3552
     &Powerglass::definition, // Exact Shrouded Fable Tool: https://api.pokemontcg.io/v2/cards/sv6pt5-63
     &ProfessorBurnet::definition, // Exact Trainer Gallery Supporter: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
@@ -212,5 +214,7 @@ static_assert(definition_matches_registration(VsSeeker::definition, Card::VsSeek
 static_assert(definition_matches_registration(EarthenVessel::definition,
                                               Card::EarthenVessel, "sv4-163",
                                               "Earthen Vessel")); // Exact Item: https://api.pokemontcg.io/v2/cards/sv4-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3475
+static_assert(definition_matches_registration(PathToThePeak::definition, Card::PathToPeak,
+                                              "swsh6-148", "Path to the Peak")); // Exact Stadium: https://api.pokemontcg.io/v2/cards/swsh6-148 ; Stadium procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3519
 
 }  // namespace sim::cards

@@ -44,6 +44,19 @@ std::string join_cards(const std::vector<Card>& cards) {
 }
 
 std::string pokemon_summary(const Pokemon& p) {
+  std::ostringstream out;
+  out << name(p.card) << " [";
+  for (int i = 0; i < p.grass; ++i) out << "G";
+  for (int i = 0; i < p.fire; ++i) out << "F";
+  // D is one physical Double Dragon Energy card.
+  for (int i = 0; i < p.double_dragon; ++i) out << "D";
+  if (p.grass == 0 && p.fire == 0 && p.double_dragon == 0) out << "-";
+  out << "]";
+  if (p.tool == Tool::ForestSealStone) out << " + Forest Seal Stone";
+  if (p.tool == Tool::WishfulBaton) out << " + Wishful Baton";
+  if (p.tool == Tool::Powerglass) out << " + Powerglass";
+  return out.str();
+}
 
 #endif  // SIM_TRACE_SIMULATOR_STATE_INCLUDED
 

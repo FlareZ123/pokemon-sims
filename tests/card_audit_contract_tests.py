@@ -220,7 +220,7 @@ def main() -> int:
     # aligned with the printed effect and the production late-turn route policy:
     # https://api.pokemontcg.io/v2/cards/sm7-145
     # https://www.pokemon.com/us/pokemon-tcg/rules
-    # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_010_late_steven_override.inc#L162-L166
+    # https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_route_policy.inc#L162-L166
     # https://github.com/FlareZ123/pokemon-sims/issues/1181
     if "It is used only going second on turn 1" in register:
         raise AssertionError("R-STEVEN-01 still incorrectly limits Steven's Resolve to turn one.")

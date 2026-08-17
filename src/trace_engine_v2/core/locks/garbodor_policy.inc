@@ -112,7 +112,11 @@
   }
 
   [[nodiscard]] bool ability_available_for_pokemon_garbodor(const Card card) const {
-    return GarbodorAbilityLockPolicy::ability_available_from_lock_state(
-        garbodor_lock_present(), garbodor_lock_removed(),
-        is_rule_box_pokemon(card), rule_box_abilities_locked());
+    // Reuse the canonical Engine gates so this composition does not duplicate
+    // Garbodor and Rule Box lock-state extraction already owned by those helpers.
+    // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
+    // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+    // Scenario contract: https://github.com/FlareZ123/pokemon-sims/issues/2808
+    return GarbodorAbilityLockPolicy::ability_available(
+        garbodor_abilities_locked(), rule_box_ability_available(card));
   }

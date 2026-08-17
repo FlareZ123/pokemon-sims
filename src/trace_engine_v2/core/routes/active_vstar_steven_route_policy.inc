@@ -18,10 +18,13 @@
     // K1/JIT/lock/priority policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3203
     // Canonical payload membership: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+    // The current turn's manual attachment cannot consume the following turn's
+    // attachment because begin_turn() resets manual_energy_used before that turn:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // https://github.com/FlareZ123/pokemon-sims/issues/4130
     if (!prizes_known() || !strict_payload_timing() || next_turn_items_locked ||
         state_.turn >= scenario_.max_turn || !supporter_allowed() ||
-        state_.manual_energy_used || !state_.active ||
-        state_.active->card != Card::RegidragoVstar ||
+        !state_.active || state_.active->card != Card::RegidragoVstar ||
         state_.active->grass != 0 || state_.active->fire < 1 ||
         hand_count(Card::StevensResolve) == 0 ||
         hand_count(Card::MysteriousTreasure) == 0 ||

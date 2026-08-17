@@ -84,7 +84,7 @@ The modeled Path lock removes Abilities on Rule Box Pokémon. It does not remove
 
 ## Strict JIT policy
 
-Strict and matchup-flex JIT profiles require an A- or S-tier Dragon payload to enter discard during the same turn as the ready-state check. The current model accepts Dragapult ex and Mega Dragonite ex as S-tier payloads, plus Dialga-GX and Hisuian Goodra VSTAR as A-tier payloads, and recipe-gated Appletun `sv8-140` when the selected registered recipe contains it: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_001.inc#L128-L137 https://github.com/FlareZ123/pokemon-sims/issues/1490
+Strict and matchup-flex JIT profiles require an A- or S-tier Dragon payload to enter discard during the same turn as the ready-state check. The current model accepts Dragapult ex and Mega Dragonite ex as S-tier payloads, plus Dialga-GX and Hisuian Goodra VSTAR as A-tier payloads, and recipe-gated Appletun `sv8-140` when the selected registered recipe contains it: https://api.pokemontcg.io/v2/cards/sv8-140 https://api.pokemontcg.io/v2/cards/swsh12-136 https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc https://github.com/FlareZ123/pokemon-sims/issues/1490
 
 Dipplin TWM 127 is deliberately outside that A/S set. This maintainer policy treats Syrup Catcher as an unreliable game-winning line: it may take no Prize, and the opponent can switch after the effect. Dipplin can remain a legal Dragon search target and a discard-cost card without satisfying the ready-state predicate. https://api.pokemontcg.io/v2/cards/sv6-127
 

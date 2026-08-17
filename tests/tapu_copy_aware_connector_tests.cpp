@@ -149,7 +149,7 @@ void test_two_public_copies_close_fixed_list_availability() {
 
   // The fixed recipe contains two Tapu Lele-GX. Once both physical copies are public,
   // K0 must not invent a third searchable copy:
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_000.inc#L75-L88
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
   // https://github.com/FlareZ123/pokemon-sims/issues/746
   expect(!sim::EngineTestAccess::might_be_unseen(

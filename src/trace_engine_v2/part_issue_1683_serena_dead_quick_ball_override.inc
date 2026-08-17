@@ -107,9 +107,15 @@
 
   bool play_serena_permanent_item_lock_if_selected(
       const bool allow_zero_draw_payload_completion) {
-    const bool permanent_full_item_lock =
-        scenario_.locks == LockMode::FullItem ||
-        scenario_.locks == LockMode::FullCombined;
+    // The optimization is legal only while Items are locked on this exact turn.
+    // `FullCombined` preserves the turn-one Item window and starts its Item
+    // restriction on turn two, so use the canonical timing primitive instead of
+    // inferring legality from the aggregate scenario enum:
+    // Canonical Item-lock primitive: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Combined-lock timing: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#combined-lock
+    // Serena: https://api.pokemontcg.io/v2/cards/swsh12-164
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4003
+    const bool permanent_full_item_lock = item_locked();
     const bool preserve_banked_tapu_route =
         scenario_.locks == LockMode::FullCombined && scenario_.going_first &&
         scenario_.max_turn >= 5 && state_.active &&

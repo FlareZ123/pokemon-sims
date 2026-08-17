@@ -21,7 +21,7 @@ std::filesystem::path find_repo_root() {
   std::filesystem::path candidate = std::filesystem::current_path();
   for (int depth = 0; depth < 8; ++depth) {
     if (std::filesystem::exists(candidate / "docs/POLICY_DECISIONS.md") &&
-        std::filesystem::exists(candidate / "src/trace_engine_v2/part_001.inc")) {
+        std::filesystem::exists(candidate / "src/trace_engine_v2/core/card_catalog.inc")) {
       return candidate;
     }
     if (!candidate.has_parent_path()) break;
@@ -40,7 +40,7 @@ std::string read_text(const std::filesystem::path& path) {
 
 void test_policy_names_every_executable_payload() {
   const std::filesystem::path root = find_repo_root();
-  const std::string source = read_text(root / "src/trace_engine_v2/part_001.inc");
+  const std::string source = read_text(root / "src/trace_engine_v2/core/card_catalog.inc");
   const std::string policy = read_text(root / "docs/POLICY_DECISIONS.md");
 
   const std::size_t function_start = source.find("constexpr bool is_payload(const Card card)");
@@ -82,7 +82,7 @@ void test_policy_names_every_executable_payload() {
 
   // The canonical policy must name every member of the executable readiness set.
   // Appletun card data and Apex Dragon establish its modeled payload role:
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_001.inc#L128-L137
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#L15-L19
   // https://api.pokemontcg.io/v2/cards/sv8-140
   // https://api.pokemontcg.io/v2/cards/swsh12-136

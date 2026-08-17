@@ -54,7 +54,7 @@ std::string pokemon_summary(const Pokemon& p) {
 // Historical opening fragment: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
 // Historical continuation: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_004.inc
 // State-line closure: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc
-// Garbotoxin policy owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/garbodor_lock_policy.inc
+// Garbotoxin policy owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/locks/garbodor_policy.inc
 
 #if defined(begin_turn) || defined(might_be_unseen)
 #error "Opening composition requires begin_turn and might_be_unseen aliases to be undefined on entry"
@@ -78,7 +78,9 @@ std::string pokemon_summary(const Pokemon& p) {
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_005.inc#L1-L5
 #include "../part_004.inc"
 #include "../part_005.inc"
-#include "../core/garbodor_lock_policy.inc"
+// Canonical lock owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/locks/garbodor_policy.inc
+// Textual include semantics: https://eel.is/c++draft/cpp.include
+#include "../core/locks/garbodor_policy.inc"
 
 #undef might_be_unseen
 #if defined(might_be_unseen)

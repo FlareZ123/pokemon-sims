@@ -1,5 +1,4 @@
-  class ActiveVstarStevenProjectionPolicy final {
-   public:
+  struct ActiveVstarStevenProjectionPolicy final {
     [[nodiscard]] static constexpr int failing_topdecks(
         const int grass_after_steven, const int fire_in_deck) {
       // Preserve the established known-deck topdeck-risk model for Steven's

@@ -93,7 +93,12 @@
 
 #define play_mysterious_treasure play_mysterious_treasure_empty_deck_original
 #define play_heavy_ball play_heavy_ball_prize_payload_original
-#include "../part_008b.inc"
+// Compose the named route owners at the Engine member boundary directly so the
+// numbered part_008b forwarding shim no longer owns live behavior.
+// Hisuian Heavy Ball: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/hisuian_heavy_ball_policy.inc
+// Search connector helpers: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/search_connector_helpers.inc
+#include "../core/routes/hisuian_heavy_ball_policy.inc"
+#include "../core/routes/search_connector_helpers.inc"
 #undef play_heavy_ball
 
 // Wonder Tag is copy-specific. Preserve all existing selector controls while an

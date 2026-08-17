@@ -49,11 +49,10 @@
     // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/issues/705
-    const bool open_fss_holder =
-        (state_.active && is_pokemon_v(state_.active->card) && state_.active->tool == Tool::None) ||
-        std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
-          return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
-        });
+    // Reuse the canonical Active-before-Bench Pokémon V Tool-slot query:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    const bool open_fss_holder = board_has_open_pokemon_v_tool_slot();
     // Lusamine spends the current turn. An unlocked Blender route needs the next
     // turn for Arven and Star Alchemy; the Item-lock Burnet route needs one further
     // turn to play the banked Supporter. Do not begin a chain beyond the configured

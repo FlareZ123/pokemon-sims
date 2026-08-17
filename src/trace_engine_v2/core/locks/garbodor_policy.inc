@@ -1,4 +1,5 @@
-  struct GarbodorScenarioPolicy {
+  class GarbodorScenarioPolicy final {
+   public:
     inline static constexpr std::string_view kShakeScenarioPrefix =
         "garbodor-shake-ability-lock/";
 
@@ -26,7 +27,8 @@
     }
   };
 
-  struct GarbodorAbilityLockPolicy {
+  class GarbodorAbilityLockPolicy final {
+   public:
     [[nodiscard]] static constexpr bool garbotoxin_locked(
         const bool lock_present, const bool lock_removed) {
       // Garbotoxin removes other Pokemon Abilities only while its modeled lock is

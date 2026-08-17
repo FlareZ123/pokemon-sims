@@ -1,5 +1,11 @@
   class KnowledgeCopyPolicy final {
    public:
+    struct PublicZoneCopyCounts {
+      int hand;
+      int discard;
+      int attached = 0;
+    };
+
     [[nodiscard]] static constexpr bool has_any(const int count) {
       return count > 0;
     }
@@ -10,21 +16,19 @@
     }
 
     [[nodiscard]] static constexpr int combined_unattached_public_zones(
-        const int hand_count, const int discard_count) {
+        const PublicZoneCopyCounts counts) {
       // Hand and discard are the shared public-zone base used by both unattached
       // K0 accounting and the hand/discard/attached aggregate below.
       // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#catalog-and-knowledge-cleanup
-      return combined(hand_count, discard_count);
+      return combined(counts.hand, counts.discard);
     }
 
     [[nodiscard]] static constexpr int combined_public_zones(
-        const int hand_count, const int discard_count, const int attached_count) {
+        const PublicZoneCopyCounts counts) {
       // Keep public hand/discard/attached aggregation behind one named arithmetic
       // seam after Engine callers have already resolved zone visibility.
       // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#catalog-and-knowledge-cleanup
-      return combined(
-          combined_unattached_public_zones(hand_count, discard_count),
-          attached_count);
+      return combined(combined_unattached_public_zones(counts), counts.attached);
     }
 
     [[nodiscard]] static int unresolved(const int total_copies,
@@ -42,7 +46,7 @@
     // actually know before K1:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
     return KnowledgeCopyPolicy::combined_unattached_public_zones(
-        hand_count(card), count_of(state_.discard, card));
+        {hand_count(card), count_of(state_.discard, card)});
   }
 
   [[nodiscard]] int publicly_known_copy_count(const Card card) const {
@@ -51,7 +55,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#k0-before-a-legal-inspection
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
     return KnowledgeCopyPolicy::combined_public_zones(
-        hand_count(card), count_of(state_.discard, card), attached_public_count(card));
+        {hand_count(card), count_of(state_.discard, card), attached_public_count(card)});
   }
 
   [[nodiscard]] int unresolved_copy_count(

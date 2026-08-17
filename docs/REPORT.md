@@ -14,12 +14,12 @@ Seed: `20260705`.
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, going first | 12.242% | 41.843% | 59.373% |
-| Matchup-flex JIT, going first | 17.152% | 50.658% | 68.089% |
-| No discard control, going first | 19.74% | 56.829% | 73.585% |
-| Strict JIT, going second | 29.658% | 55.591% | 67.484% |
-| Matchup-flex JIT, going second | 37.296% | 64.209% | 75.84% |
-| No discard control, going second | 40.232% | 68.436% | 79.981% |
+| Strict JIT, going first | 12.234% | 41.859% | 69.564% |
+| Matchup-flex JIT, going first | 17.152% | 50.658% | 75.958% |
+| No discard control, going first | 19.740% | 56.829% | 81.159% |
+| Strict JIT, going second | 29.794% | 55.667% | 78.247% |
+| Matchup-flex JIT, going second | 37.410% | 64.307% | 84.658% |
+| No discard control, going second | 40.448% | 68.575% | 88.242% |
 
 ## Lock stress tests
 
@@ -27,16 +27,16 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, turn-two Item lock, first | 4.583% | 10.484% | 18.587% |
-| Strict JIT, Rule Box Ability lock, first | 4.496% | 27.721% | 42.716% |
-| Strict JIT, turn-two Item + Rule Box Ability lock, first | 0.779% | 4.667% | 9.645% |
-| Strict JIT, turn-two Item lock, second | 14.203% | 28.493% | 37.272% |
-| Strict JIT, Rule Box Ability lock, second | 18.557% | 37.182% | 49.442% |
-| Strict JIT, turn-two Item + Rule Box Ability lock, second | 3.924% | 14.705% | 20.389% |
-| Strict JIT, Supporter lock, first | 0.005% | 16.426% | 23.376% |
-| Strict JIT, Supporter lock, second | 7.85% | 20.357% | 26.735% |
-| Garbodor + Boost Shake Ability lock, first | 5.604% | 25.133% | 37.799% |
-| Garbodor + Boost Shake Ability lock, second | 15.375% | 30.647% | 42.033% |
+| Strict JIT, turn-two Item lock, first | 4.523% | 10.518% | 32.144% |
+| Strict JIT, Rule Box Ability lock, first | 4.545% | 28.165% | 52.149% |
+| Strict JIT, turn-two Item + Rule Box Ability lock, first | 0.779% | 4.667% | 21.197% |
+| Strict JIT, turn-two Item lock, second | 14.077% | 28.453% | 49.435% |
+| Strict JIT, Rule Box Ability lock, second | 18.419% | 37.234% | 64.471% |
+| Strict JIT, turn-two Item + Rule Box Ability lock, second | 3.874% | 14.683% | 34.719% |
+| Strict JIT, Supporter lock, first | 0.005% | 16.426% | 38.431% |
+| Strict JIT, Supporter lock, second | 7.850% | 20.357% | 42.390% |
+| Garbodor + Boost Shake Ability lock, first | 5.602% | 25.112% | 48.595% |
+| Garbodor + Boost Shake Ability lock, second | 15.436% | 30.671% | 60.108% |
 
 ## Interpretation boundary
 

@@ -48,6 +48,17 @@ class ScenarioExtension {
     return ScenarioRangePolicy::find(scenarios_, label);
   }
 
+  template <typename Fallback>
+  [[nodiscard]] std::optional<Scenario> find_or_fallback(
+      const std::string& label, Fallback fallback) const {
+    // Keep extension-first precedence in the registry abstraction so each scenario
+    // family cannot accidentally reverse lookup order when it composes a base set.
+    // C++ optional semantics: https://eel.is/c++draft/optional
+    // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+    if (const auto match = find(label)) return match;
+    return fallback();
+  }
+
  private:
   // Own the extension range so append and lookup cannot outlive external storage.
   // C++ object lifetime rules: https://eel.is/c++draft/basic.life
@@ -81,8 +92,6 @@ ScenarioList all_scenarios_with_garbodor() {
 }
 
 std::optional<Scenario> scenario_by_label_with_garbodor(const std::string& label) {
-  if (const auto match = kGarbodorScenarioExtension.find(label)) {
-    return match;
-  }
-  return scenario_by_label(label);
+  return kGarbodorScenarioExtension.find_or_fallback(
+      label, [&label] { return scenario_by_label(label); });
 }

@@ -36,23 +36,51 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 ## Current ownership
 
 - `src/cards/card_id.hpp` owns stable `sim::Card` identifiers. Exact external print identity belongs in `CardDefinition::canonical_id`.
-- `src/cards/card_definition.hpp` owns intrinsic exact-print facts and reusable intrinsic classification. `CardDefinitionPredicates` centralizes kind, Trainer-subtype, and Pokémon-type tests while the established free functions remain compatibility seams. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_definition.hpp
+- `src/cards/card_definition.hpp` owns intrinsic exact-print facts and reusable intrinsic classification. `CardDefinitionPredicates` centralizes kind, Trainer-subtype, and Pokémon-type tests. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_definition.hpp
 - `src/cards/card_registry.hpp` owns explicit deterministic registration and canonical lookup: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-- `src/rules/card_context.hpp` owns reusable printed-rules operations. Its optional intrinsic classifier callbacks share one null-safe dispatch seam. Card-specific strategic route policy stays outside that interface. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/rules/card_context.hpp
-- `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` owns the trace-engine bridge for reusable card effects. `src/trace_engine_v2/core/card_context_adapter.hpp` is a compatibility include until direct consumers move.
+- `src/rules/card_context.hpp` owns reusable printed-rules operations. Card-specific strategic route policy stays outside that interface. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/rules/card_context.hpp
+- `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` owns the trace-engine bridge for reusable card effects. `src/trace_engine_v2/core/card_context_adapter.hpp` remains a compatibility include until direct consumers move.
 - Engine strategy owns route admission, target preference, DCI/UDP/AMR, strict-JIT and matchup-flex timing, Supporter contention, connector domination, K0/K1 state, setup-axis value, lock schedules, readiness, and payload policy.
 - `src/trace_engine_v2/core/card_catalog.inc` owns unmigrated name and intrinsic-classification fallbacks. Registry lookup remains the first metadata path.
-- `src/trace_engine_v2/core/payload_hand_policy.inc` owns shared Dragon-payload zone and preference queries. `PayloadZonePolicy` and `PayloadPreferencePolicy` are explicit final stateless policy classes so traversal and preference order stay centralized without becoming extensible Engine subtypes.
+- `src/trace_engine_v2/core/payload_hand_policy.inc` owns shared Dragon-payload zone and preference queries. Route-specific DCI/JIT admission remains outside its reusable policies.
 - `src/trace_engine_v2/core/board_state_policy.inc` owns reusable board traversal and board-index queries.
 - `src/trace_engine_v2/core/setup_lifecycle.inc` owns opening-hand, mulligan, Prize-deal, and setup-trace mechanics.
 - `src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn action-state reset semantics.
-- `src/trace_engine_v2/core/deck_knowledge.inc` owns reusable copy arithmetic after visibility is resolved. `KnowledgeCopyPolicy` is an explicit final stateless policy class; hidden-zone visibility and route admission remain Engine concerns.
-- `src/trace_engine_v2/core/routes/oricorio_connector_policy.inc` owns the Oricorio connector's pure energy-need and connector-admission projections through `OricorioConnectorPolicy`; Engine retains Ability availability, K0/K1 visibility, Bench-space, and action execution. Oricorio: https://api.pokemontcg.io/v2/cards/sm2-55
-- `src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc` owns the Legacy Star/Quick Ball pure connector and inertness projections through `LegacyStarQuickBallPolicy`; Engine retains DCI/JIT state queries and the temporary projection-only hand mutation around Legacy Star. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
-- `src/trace_engine_v2/core/tate/package.inc` owns the established discard-provenance, Tate attachment, and Tate action override order. `core/tate/discard_recovery_provenance.inc` and `core/tate/attachment_policy.inc` are now the live named lower-level owners for the first two bodies; the historical root files remain source-contract mirrors while Tate action migration is still pending: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/package.inc
-- `src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc` is the canonical Battle Compressor / VS Seeker route owner and is consumed directly by `composition/engine_body.inc`. The historical `src/trace_engine_v2/core/battle_compressor_vs_seeker_policy.inc` compatibility include is retired. Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92 VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-- `src/trace_engine_v2/core/routes/search_connector_helpers.inc` owns `need_regi`, `need_vstar`, payload-outlet checks, and complete K1 fallback selectors for Mysterious Treasure, Quick Ball, and Ultra Ball. Its nested final `SearchConnectorFallbackPolicy` owns the three legal post-search fallback orders plus the shared first-available K1 traversal. Engine wrappers provide only the already-resolved deck-count query. DCI/UDP/AMR, K0/K1 admission, and route-specific target choice remain Engine strategy concerns. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-- `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc` owns the established strategic Mysterious Treasure target priority through `MysteriousTreasureTargetPolicy`. That route priority is intentionally separate from `SearchConnectorFallbackPolicy`, whose target order applies only after a legal K1 search has started. The remaining `part_009a.inc` route delegates pure physical payload-zone membership to `PayloadZonePolicy`, while DCI/JIT admission, K0/K1 target visibility, connector domination, and action execution remain Engine-owned. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Payload owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+- `src/trace_engine_v2/core/deck_knowledge.inc` owns reusable copy arithmetic after visibility is resolved. Hidden-zone visibility and route admission remain Engine concerns.
+- `src/trace_engine_v2/core/tate/package.inc` owns the established discard-provenance, Tate attachment, and Tate action override order. Lower-level provenance and attachment bodies live under `core/tate/`.
+- `src/trace_engine_v2/core/routes/search_connector_helpers.inc` owns complete K1 fallback selectors and traversal for Mysterious Treasure, Quick Ball, and Ultra Ball. Route-specific target priority remains separate.
+- `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc` owns strategic Mysterious Treasure target priority. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+- `src/trace_engine_v2/core/forretress/` owns reusable Forretress scenario and runtime composition, with `package.inc` as the namespace composition owner.
+
+## Catalog and knowledge cleanup
+
+Keep intrinsic catalog facts in `src/trace_engine_v2/core/card_catalog.inc` only while they remain unmigrated, and keep copy arithmetic in `src/trace_engine_v2/core/deck_knowledge.inc` after visibility is resolved. New card metadata should prefer the registry path, and hidden-zone visibility decisions stay in Engine strategy.
+
+## Payload policy cleanup
+
+Keep shared Dragon-payload zone and preference queries in `src/trace_engine_v2/core/payload_hand_policy.inc`. Route-specific strict-JIT timing, discard admission, deadlines, and setup-axis decisions stay with their strategy owners rather than moving into the reusable payload policy.
+
+## Setup lifecycle cleanup
+
+Keep opening-hand, mulligan, Prize-deal, and setup-trace mechanics in `src/trace_engine_v2/core/setup_lifecycle.inc`. Route admission and strategic opening choices stay outside the lifecycle owner.
+
+## Composition ownership
+
+`src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered Engine composition owner. Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+
+The Steven/Brilliant Blender macro-composition block is directly owned by `src/trace_engine_v2/composition/steven_blender_overrides.inc` at the established post-`part_009b2.inc` boundary. The canonical owner receives the intentionally live aliases and releases them before later composition continues. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/steven_blender_overrides.inc
+
+The source-bounded Steven route package has its canonical organized owner at `src/trace_engine_v2/core/routes/steven/package.inc`. The historical `src/trace_engine_v2/core/routes/steven_package_policy.inc` forwarding path is retired and should not be recreated. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+
+The late-Steven route body has its canonical policy owner at `src/trace_engine_v2/core/routes/late_steven_route_policy.inc`, and the Steven/Blender composition includes that owner directly. The historical `src/trace_engine_v2/part_010_late_steven_override.inc` source-contract mirror is retired and should not be recreated. Audit and traceability anchors must use the canonical route path. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_route_policy.inc Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+
+The Steven/Brilliant Blender semantic route owners are `src/trace_engine_v2/core/routes/k0_steven_blender_semantic_policy.inc` and `src/trace_engine_v2/core/routes/steven_blender_semantic_policy.inc`. Their historical root compatibility includes are retired. Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164 Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+
+The Battle Compressor / VS Seeker route is owned directly by `src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc`; the historical root forwarding include is retired. Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92 VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+
+The Hisuian Heavy Ball route body is owned by `src/trace_engine_v2/core/routes/hisuian_heavy_ball_policy.inc`. Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+
+The Tate package composes discard/recovery provenance and proactive attachment from named owners under `core/tate/`. The remaining Tate action body is the next root-fragment migration at its identical member boundary.
 
 ## Active card migrations
 
@@ -65,92 +93,33 @@ Do not create a parallel migration while one of these owners is active:
 
 For each migration, move intrinsic metadata and classification before printed resolution. Move printed resolution only after the live resolver and reusable `CardContext` operations are identified. Keep strategic selection, DCI/UDP/AMR, Supporter contention, connector domination, K0/K1 handling, and lock policy in Engine. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
-## Composition ownership
-
-`src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered Engine composition owner. Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
-
-The Steven/Brilliant Blender macro-composition block is now directly owned by `src/trace_engine_v2/composition/steven_blender_overrides.inc` at the identical post-`part_009b2.inc` boundary. The redundant nested `src/trace_engine_v2/composition/steven/blender_overrides.inc` forwarding layer has been retired. The canonical owner receives the intentionally live `play_ultra_ball` alias and releases the same search, Steven, and Blender aliases before later composition continues. This remains a textual ownership cleanup. Route admission remains with `core/routes/`. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/steven_blender_overrides.inc
-
-The source-bounded Steven route package has its canonical organized owner at `src/trace_engine_v2/core/routes/steven/package.inc`. The historical `src/trace_engine_v2/core/routes/steven_package_policy.inc` compatibility include is retired and should not be recreated. The package preserves the established #1745 -> #1771 -> #1772 -> #2622 textual route order while rule-sensitive function bodies remain in their existing route owners. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven/package.inc
-
-The late-Steven route body now has a canonical policy owner at `src/trace_engine_v2/core/routes/late_steven_route_policy.inc`, and the Steven/Blender composition includes that owner directly. The historical `src/trace_engine_v2/part_010_late_steven_override.inc` body remains temporarily as an exact source-contract mirror because existing audit and traceability anchors still reference its historical line numbers. It is no longer part of the composition path. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_route_policy.inc Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
-
-The namespace-scope Forretress composition has its canonical package at `src/trace_engine_v2/core/forretress/package.inc`. Public scenario aliases and registry declarations live in `src/trace_engine_v2/core/forretress/scenario_contract.inc`, while `src/trace_engine_v2/core/forretress/scenario_extension.inc` now owns both the reusable `ScenarioExtension` abstraction and the concrete Garbodor / Boost Shake scenario family. The former `garbodor_scenario_extension.inc` split fragment is retired. The historical `src/trace_engine_v2/part_forretress_ex_combo.inc` path remains a thin compatibility include while the final `part_014c.inc` source-boundary consumer is live. Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/package.inc Canonical contract: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/scenario_contract.inc Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57 Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
-
-The Steven/Brilliant Blender semantic route owners are `src/trace_engine_v2/core/routes/k0_steven_blender_semantic_policy.inc` and `src/trace_engine_v2/core/routes/steven_blender_semantic_policy.inc`. Their former issue-3221 and issue-3222 root compatibility includes are retired, and `src/trace_engine_v2/part_issue_1067_arven_before_late_steven_override.inc` now composes those canonical route owners directly at the same member boundary. Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164 Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-
-The issue-1368 Earthen Vessel / Celestial Roar route remains owned by `src/trace_engine_v2/core/routes/earthen_vessel_celestial_roar_policy.inc`, which keeps route-specific target preference separate from shared Item and search legality. Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163 Regidrago V / Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-
-The issue-1516/2164 Quick Ball, Tapu Lele-GX, Crispin route family remains owned by `src/trace_engine_v2/core/routes/quick_ball_tapu_crispin_policy.inc`. Its Latias completion projection delegates Bench traversal to `core/board_state_policy.inc` and Rule Box Ability admission to the canonical per-Pokémon Ability predicate, while route-specific JIT, evolution, connector, and action decisions remain in the route owner. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60 Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76 Canonical board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc Canonical Ability-lock owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
-
-The Hisuian Heavy Ball route body is owned by `src/trace_engine_v2/core/routes/hisuian_heavy_ball_policy.inc`. `src/trace_engine_v2/part_008b.inc` composes that complete member body at its existing Engine boundary before the shared search-connector helpers, so K0/K1 inspection timing, Prize recovery preference, Supporter-contention projections, and trace behavior remain in the same strategy layer. Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146 C++ textual-include semantics: https://eel.is/c++draft/cpp.include
-
-The complete search-connector preparation and post-search fallback helpers have one named owner at `src/trace_engine_v2/core/routes/search_connector_helpers.inc`. `SearchConnectorFallbackPolicy` centralizes the printed legal fallback orders and shared first-available K1 traversal for Mysterious Treasure, Quick Ball, and Ultra Ball. Mysterious Treasure's separate strategic priority remains owned by `core/mysterious_treasure_target_policy.inc`. `part_008b.inc` includes the fallback owner directly after the Heavy Ball policy. C++ textual-include semantics: https://eel.is/c++draft/cpp.include Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
-
-The Tate package now composes discard/recovery provenance and proactive attachment from `core/tate/discard_recovery_provenance.inc` and `core/tate/attachment_policy.inc` at the same member positions. The two historical root bodies are retained only as source-contract mirrors while references are migrated. The remaining Tate action body is still rooted at `part_tate_blender_tate_override.inc` and is the next Tate member-boundary migration. Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/package.inc C++ textual-include semantics: https://eel.is/c++draft/cpp.include
-
-## Payload policy cleanup
-
-`src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner. Reuse `PayloadZonePolicy` only where physical-zone traversal, membership, and count semantics match exactly. Preserve physical order for observable first-match selection and preserve explicit strategic order for preference selection. DCI/JIT predicates and discard timing remain with strategy owners. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-
-`PayloadZonePolicy` now accepts any Card range with `begin()` / `end()` semantics, so fixed-size route cost plans can reuse the same physical membership and count traversal without temporary vectors or duplicated STL scans. The issue-1673 Secret Box deadline cost plan is the first `std::array<Card, 3>` consumer. Canonical route: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1673_secret_box_payload_deadline_policy.inc Secret Box: https://api.pokemontcg.io/v2/cards/sv6-163
-
-`PayloadZonePolicy` and `PayloadPreferencePolicy` are final utility classes with static operations only. Keep their responsibilities narrow: physical-zone mechanics belong to the zone policy, strategic payload ordering belongs to the preference policy, and route-specific DCI/JIT admission remains outside both classes.
-
-The Mysterious Treasure route now uses the shared payload-zone membership seam for its Burnet provenance, deterministic next-turn banking, current-turn JIT gate, and held-payload connector-domination check. Its ordered strategic Dragon/Psychic target preference is centralized separately in `core/mysterious_treasure_target_policy.inc`; post-search K1 fallback legality/order is centralized in `core/routes/search_connector_helpers.inc`. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-
-## Setup lifecycle cleanup
-
-`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup-facing labels, opening-deck initialization, opening-hand and mulligan mechanics, Prize dealing, and setup-trace output. `src/trace_engine_v2/part_005.inc` composes that owner at the established Engine member boundary. Preserve setup declaration order and hand, Active, Bench, and Prize transitions. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
-
-## Catalog and knowledge cleanup
-
-`src/trace_engine_v2/core/card_catalog.inc` owns the shrinking legacy name bridge and intrinsic-classification compatibility seam. Registered `CardDefinition` lookup remains canonical for migrated metadata: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
-
-Reusable exact-print classification should flow through `CardDefinitionPredicates` before adding another raw `definition.kind`, `definition.trainer_kind`, or `definition.pokemon_types` comparison. Compatibility free functions may delegate to that owner until direct consumers migrate. Canonical definition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_definition.hpp
-
-`src/trace_engine_v2/core/deck_knowledge.inc` owns reusable copy arithmetic after the Engine caller resolves visibility. Hidden-zone visibility, Prize deduction, search timing, target preference, DCI/UDP/AMR, and route admission remain strategy concerns. K0/K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-
-Keep `KnowledgeCopyPolicy` as a final arithmetic utility class with no Engine or State ownership. New copy-count helpers should compose its arithmetic only after the caller has decided which zones are legally visible in K0 or K1.
-
 ## Shared policy owners
 
 Before adding a route-local loop or helper, reuse an existing owner when ordering and semantics match exactly:
 
 - Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.
 - Board traversal and board indices: `src/trace_engine_v2/core/board_state_policy.inc`.
-- Garbodor scenario and Ability-lock composition: `src/trace_engine_v2/core/garbodor_lock_policy.inc`. Garbodor: https://api.pokemontcg.io/v2/cards/xy9-57
 - Setup lifecycle: `src/trace_engine_v2/core/setup_lifecycle.inc`.
 - Recovery Supporter policy: `src/trace_engine_v2/core/recovery_supporter_policy.inc`.
 - Turn action runtime: `src/trace_engine_v2/turn_action_policy_runtime.inc`.
 - Intrinsic exact-print predicates: `src/cards/card_definition.hpp` via `CardDefinitionPredicates`.
 - Optional card-effect classifier dispatch: `src/rules/card_context.hpp` via `CardContext::classify`.
-- Oricorio connector decision projection: `src/trace_engine_v2/core/routes/oricorio_connector_policy.inc` via `OricorioConnectorPolicy`.
-- Legacy Star/Quick Ball decision projection: `src/trace_engine_v2/core/routes/issue_1016_legacy_star_quick_ball_policy.inc` via `LegacyStarQuickBallPolicy`.
-- Tate/provenance composition: `src/trace_engine_v2/core/tate/package.inc`; discard/recovery provenance and proactive attachment now compose from named lower-level owners under `core/tate/`, while the Tate action body remains the next root fragment to migrate.
-- Battle Compressor / VS Seeker route policy: `src/trace_engine_v2/core/routes/battle_compressor_vs_seeker_policy.inc`.
-- Hisuian Heavy Ball route policy: `src/trace_engine_v2/core/routes/hisuian_heavy_ball_policy.inc`.
 - Shared post-search K1 fallback orders and traversal: `src/trace_engine_v2/core/routes/search_connector_helpers.inc` via `SearchConnectorFallbackPolicy`.
 - Mysterious Treasure strategic target priority: `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc` via `MysteriousTreasureTargetPolicy`.
-- Forretress namespace registry contract: `src/trace_engine_v2/core/forretress/scenario_contract.inc`; `src/trace_engine_v2/core/forretress/scenario_extension.inc` owns the reusable extension abstraction plus the Garbodor / Boost Shake extension family, and runtime mechanics remain in `core/forretress/runtime.inc`.
+- Forretress registry and runtime composition: `src/trace_engine_v2/core/forretress/`.
 
 ## Next cleanup steps
 
-1. Keep `composition/steven_blender_overrides.inc` and `core/routes/steven/package.inc` as the canonical Steven organization boundaries. The historical `core/routes/steven_package_policy.inc` forwarding path is retired; continue deleting other forwarding paths only after repository-wide and source-contract references are proven gone.
-2. Keep `core/routes/late_steven_route_policy.inc` as the canonical late-Steven policy body. Migrate audit and traceability anchors to the canonical path, then delete the historical `part_010_late_steven_override.inc` source-contract mirror.
-3. Continue retiring other composition-only `part_*steven*` forwarders when a complete function body or macro lifetime can move at the identical textual boundary. The issue-3221 and issue-3222 root semantic forwarders are complete and should not be recreated.
-4. Migrate direct `CardContext` bridge consumers to `core/adapters/card_context_adapter.hpp`. Remove the old forwarding include only after references are proven gone. New bridge construction should use `CardContextAdapterCallbacks`.
-5. Migrate remaining `LegacyCardCatalog` and intrinsic compatibility rows one card at a time. Reuse `CardDefinitionPredicates` for intrinsic classification before adding new raw metadata checks; delete a row only after explicit `CardDefinition` registration, exact-print source, and focused metadata coverage exist.
-6. Continue replacing route-local board traversals with `core/board_state_policy.inc` only when first-match/order semantics are identical. The Quick Ball/Latias completion route is migrated; preserve its route-local JIT, evolution, and connector decisions.
-7. Keep Forretress reusable scenario and runtime ownership under `core/forretress/`, with `core/forretress/package.inc` as the namespace-scope composition owner, `core/forretress/scenario_contract.inc` as the registry declaration owner, and `core/forretress/scenario_extension.inc` as the single scenario-extension owner. The Garbodor split fragment is retired. Migrate the remaining `part_014c.inc` consumer to the canonical package before deleting `part_forretress_ex_combo.inc`.
-8. Keep the Tate/provenance package as the sole composition include. The provenance and attachment bodies now have named owners under `core/tate/`; migrate `part_tate_blender_tate_override.inc` next at the identical member boundary, then migrate source-contract anchors before retiring the historical mirrors.
-9. Prefer named pure-projection members over route-local anonymous projections when a projection is reused or has a distinct policy contract.
-10. Prefer named final stateless policy classes for reusable arithmetic or traversal seams. Do not move route admission, hidden-zone visibility decisions, DCI/JIT timing, or target preference into a utility class merely to reduce line count.
-11. Keep route-local final policy classes limited to reusable pure projections. Engine callers continue to own state reads, DCI/JIT visibility, route admission, and physical actions unless a lower card/rules layer owns the printed transition.
-12. Route new optional intrinsic card classifiers through `CardContext`'s shared classifier dispatch seam rather than duplicating callback-null checks in each public operation.
-13. Reuse generic `PayloadZonePolicy` range operations for fixed-size Card cost plans and physical route-zone queries only when the query is purely membership, count, or first-match traversal; keep route-specific DCI/JIT admission outside the utility class.
-14. Keep `composition/engine_body.inc` pointed directly at `core/routes/battle_compressor_vs_seeker_policy.inc`; the historical root compatibility include is retired and should not be recreated.
-15. Keep `MysteriousTreasureTargetPolicy` limited to strategic route priority and `SearchConnectorFallbackPolicy` limited to legal post-search K1 fallback ordering/traversal. Continue moving the remaining Mysterious Treasure member body out of `part_009a.inc` only when the full continuation can migrate atomically without changing declaration order. C++ textual-include semantics: https://eel.is/c++draft/cpp.include Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+1. Keep `composition/steven_blender_overrides.inc`, `core/routes/steven/package.inc`, and `core/routes/late_steven_route_policy.inc` as the canonical Steven organization boundaries. The historical late-Steven mirror is retired; keep future audit and traceability anchors on the canonical path.
+2. Continue retiring composition-only `part_*steven*` forwarders when a complete function body or macro lifetime can move at the identical textual boundary. Do not recreate the retired issue-3221 or issue-3222 semantic forwarders.
+3. Migrate direct `CardContext` bridge consumers to `core/adapters/card_context_adapter.hpp`. Remove the old forwarding include only after references are proven gone. New bridge construction should use `CardContextAdapterCallbacks`.
+4. Migrate remaining `LegacyCardCatalog` and intrinsic compatibility rows one card at a time. Reuse `CardDefinitionPredicates` before adding raw metadata checks.
+5. Continue replacing route-local board traversals with `core/board_state_policy.inc` only when first-match and ordering semantics are identical.
+6. Keep Forretress reusable scenario and runtime ownership under `core/forretress/`; migrate the remaining historical consumer before deleting its last compatibility forwarder.
+7. Keep the Tate package as the sole composition include. Migrate the remaining Tate action body at the identical member boundary, then retire historical mirrors after source-contract anchors move.
+8. Prefer named pure-projection members when a projection is reused or has a distinct policy contract.
+9. Prefer final stateless policy classes for reusable arithmetic or traversal seams. Keep route admission, hidden-zone visibility, DCI/JIT timing, and target preference in strategy owners.
+10. Continue moving the remaining Mysterious Treasure member body out of `part_009a.inc` only when the full continuation can migrate atomically without changing declaration order. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 ## One-card workflow
 

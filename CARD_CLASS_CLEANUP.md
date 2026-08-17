@@ -41,6 +41,18 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - Engine strategy owns route admission, target preference, DCI/UDP/AMR, strict-JIT and matchup-flex timing, Supporter contention, connector domination, K0/K1 visibility, setup-axis value, lock schedules, readiness, and payload policy.
 - `src/trace_engine_v2/composition/engine_body.inc` owns ordered Engine composition. Mechanical `.inc` cleanup must preserve macro lifetime, include order, declaration order, member boundaries, and relative roots. C++ textual include semantics: https://eel.is/c++draft/cpp.include
 
+## Payload policy cleanup
+
+`src/trace_engine_v2/core/payload_hand_policy.inc` owns reusable Dragon payload membership and established payload-preference traversal. Reuse it for physical membership, count, and first-match projections only when ordering semantics match exactly. DCI/JIT admission, discard timing, and route-specific target preference remain in Engine or the route owner. Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+
+## Setup lifecycle cleanup
+
+`src/trace_engine_v2/core/setup/policies.inc` owns pure recipe/config projection and setup constants. `src/trace_engine_v2/core/setup_lifecycle.inc` owns physical opening-hand, mulligan, Prize, and setup-trace transitions. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+## Catalog and knowledge cleanup
+
+`src/trace_engine_v2/core/card_catalog.inc` owns the shrinking legacy metadata/classification compatibility seam. Registered `CardDefinition` lookup remains canonical. `src/trace_engine_v2/core/deck_knowledge.inc` owns copy arithmetic only after Engine has resolved legal visibility. K0/K1 visibility, Prize deduction, target preference, DCI/UDP/AMR, and route admission remain strategy concerns. Knowledge-state contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+
 ## Shared policy owners
 
 Reuse an existing policy only when ordering and semantics match exactly.

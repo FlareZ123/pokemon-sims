@@ -174,16 +174,12 @@
   }
 
   bool has_regidrago_v_that_can_evolve_this_turn() const {
-    // An Evolution card may be played on any matching Pokémon that was already in
-    // play before this turn, whether that Pokémon is Active or Benched:
-    // https://www.pokemon.com/us/pokemon-tcg/rules
-    // Regidrago VSTAR evolves from Regidrago V:
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    const auto can_evolve = [this](const Pokemon& pokemon) {
-      return pokemon.card == Card::RegidragoV && pokemon.entered_turn < state_.turn;
-    };
-    return (state_.active && can_evolve(*state_.active)) ||
-           std::any_of(state_.bench.begin(), state_.bench.end(), can_evolve);
+    // Reuse the canonical Active-before-Bench evolution-age query. It applies the
+    // same Regidrago V identity and entered-before-current-turn rule:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+    // Evolution procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+    // Regidrago VSTAR evolves from Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-136
+    return board_has_evolvable_regidrago_v();
   }
 
   bool has_payable_roseanne_vstar_search() {

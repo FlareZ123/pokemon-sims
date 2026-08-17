@@ -1,5 +1,15 @@
 #pragma once
 
+  class TapuConnectorPolicy final {
+   public:
+    [[nodiscard]] static constexpr bool species_presence_blocks_copy(
+        const bool card_is_in_play, const bool another_copy_is_known) {
+      // Wonder Tag belongs to the individual Tapu Lele-GX played from hand onto the Bench:
+      // https://api.pokemontcg.io/v2/cards/sm2-60
+      return card_is_in_play && !another_copy_is_known;
+    }
+  };
+
   bool tapu_connector_copy_aware_in_play(const Card card) const {
     // Wonder Tag belongs to the individual Tapu Lele-GX played from hand onto the
     // Bench. Ignore species-level board presence only when another physical copy is
@@ -12,7 +22,8 @@
     // https://github.com/FlareZ123/pokemon-sims/issues/746
     const bool another_tapu_copy_is_known =
         card == Card::TapuLeleGX && has_known_hand_or_deck_copy(card);
-    return in_play(card) && !another_tapu_copy_is_known;
+    return TapuConnectorPolicy::species_presence_blocks_copy(
+        in_play(card), another_tapu_copy_is_known);
   }
 
 // Keep the legacy Tapu-adjacent aliases with the policy that consumes them so the

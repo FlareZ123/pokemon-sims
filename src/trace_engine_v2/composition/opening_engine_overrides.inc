@@ -93,7 +93,14 @@
 
 #define play_mysterious_treasure play_mysterious_treasure_empty_deck_original
 #define play_heavy_ball play_heavy_ball_prize_payload_original
-#include "../part_008b.inc"
+// Compose the named search-item owners directly at their historical alias boundary.
+// This removes a numbered forwarding layer while preserving include order and macro lifetime.
+// Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+// Canonical Heavy Ball owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/hisuian_heavy_ball_policy.inc
+// Canonical connector helpers: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/search_connector_helpers.inc
+// Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+#include "../core/routes/hisuian_heavy_ball_policy.inc"
+#include "../core/routes/search_connector_helpers.inc"
 #undef play_heavy_ball
 
 // Wonder Tag is copy-specific. Preserve all existing selector controls while an

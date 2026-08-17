@@ -32,6 +32,79 @@
            deck_count_after_search_started(Card::Fire) > 0;
   }
 
+  bool issue_4060_wonder_tag_bank_route_available_under_action_locks() const {
+    if (scenario_.locks == LockMode::None) return false;
+
+    // Wonder Tag resolves on T1 and banks Steven because the first player cannot
+    // play a Supporter on that opening turn. Admit the route from the actions it
+    // actually needs: a future Supporter, Latias ex's Ability, and the appropriate
+    // Brilliant Blender Item window for the active DCI profile.
+    // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Advanced Supporter, Item, Ability, and first-turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Canonical lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Turn-two Item schedule: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4060
+    if (uses_full_supporter_lock(scenario_.locks) ||
+        !ability_available_for_pokemon(Card::LatiasEx)) {
+      return false;
+    }
+    if (strict_payload_timing()) {
+      if (item_locked_on_turn(state_.turn + 2)) return false;
+    } else if (scenario_.dci == DciProfile::NoDiscardControl) {
+      if (item_locked()) return false;
+    } else {
+      return false;
+    }
+
+    // Preserve every legacy K1, board, Energy, payload, target, and horizon boundary.
+    // Only the coarse historical lock identity is neutralized after the real action
+    // windows above have been validated against the actual scenario.
+    // Route provenance: https://github.com/FlareZ123/pokemon-sims/issues/946
+    // No-discard extension: https://github.com/FlareZ123/pokemon-sims/issues/1351
+    // Confirmed lock-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/4060
+    Engine projected = *this;
+    projected.scenario_.locks = LockMode::None;
+    return projected.wonder_tag_can_bank_steven_for_known_t3_blender_route();
+  }
+
+  bool issue_4060_banked_steven_route_available_under_action_locks() const {
+    if (scenario_.locks == LockMode::None) return false;
+
+    const bool strict_payload_route = strict_payload_timing() &&
+        hand_count(Card::BrilliantBlender) > 0 && need_payload() &&
+        payload_might_be_in_deck();
+    const bool banked_no_control_payload =
+        scenario_.dci == DciProfile::NoDiscardControl && payload_ready();
+    const bool payload_route_compatible_with_item_window =
+        banked_no_control_payload ||
+        (strict_payload_route && !item_locked_on_turn(state_.turn + 1));
+
+    // Steven is played on T2 and Latias ex must supply Skyliner on the finish turn.
+    // Strict JIT therefore still needs Blender legal on T3. NoDiscardControl may
+    // arrive with the Dragon payload already public in discard and has no remaining
+    // Item dependency in this continuation.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Advanced Supporter, Item, Ability, evolution, and retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Canonical lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Lock policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4060
+    if (!payload_route_compatible_with_item_window || !supporter_allowed() ||
+        !ability_available_for_pokemon(Card::LatiasEx)) {
+      return false;
+    }
+
+    Engine projected = *this;
+    projected.scenario_.locks = LockMode::None;
+    return projected.banked_steven_has_known_t3_blender_route();
+  }
+
   std::optional<int> issue_3458_1797_projected_finish_turn() const {
     // The #1797 connector needs an unused Supporter action. When Steven's Resolve is
     // legal now, it may be found by Wonder Tag and played during this turn, then the
@@ -148,6 +221,14 @@
   }
 
   Card choose_supporter_after_search_started() {
+    if (issue_4060_wonder_tag_bank_route_available_under_action_locks()) {
+      // The route has already validated the exact future Supporter, Item, and Latias
+      // Ability windows against the real lock schedule.
+      // Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+      // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4060
+      return Card::StevensResolve;
+    }
     if (issue_3458_1797_wonder_tag_steven_route_available()) {
       // Wonder Tag searches Steven under the same semantic contract that admitted
       // the preceding Quick Ball, including the relative bank/finish horizon.
@@ -172,6 +253,7 @@
   }
 
   bool should_play_steven_issue1030_original() const {
-    return late_steven_vstar_vessel_route_available() ||
+    return issue_4060_banked_steven_route_available_under_action_locks() ||
+        late_steven_vstar_vessel_route_available() ||
         should_play_steven_issue3202_original();
   }

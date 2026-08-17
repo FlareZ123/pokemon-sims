@@ -8,6 +8,13 @@
 // Single-inclusion boundary: https://eel.is/c++draft/cpp.include
 // Confirmed composition defect: https://github.com/FlareZ123/pokemon-sims/issues/3341
 
+  // A played Trainer is outside ordinary hand while its effect resolves and reaches
+  // discard only after use. Keep this Engine-owned zone generic for later Trainer
+  // migrations rather than encoding Quick Ball as a one-off state exception.
+  // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed resolving-source defect: https://github.com/FlareZ123/pokemon-sims/issues/4293
+  std::vector<Card> resolving_trainer_sources_;
+
   rules::CardContext make_runtime_card_context() {
     return trace_engine_v2::make_card_context_adapter(
         this,
@@ -41,7 +48,34 @@
                 [](const void*, const Card card) { return is_basic(card); },
             .begin_deck_search = [](void* opaque, const std::string_view reason) {
               static_cast<Engine*>(opaque)->record_deck_search_knowledge(reason);
-            }});
+            },
+            .resolving_source =
+                rules::CardContext::ResolvingSourceCallbacks{
+                    .resolving_count = [](const void* opaque, const Card card) {
+                      const auto* engine = static_cast<const Engine*>(opaque);
+                      return static_cast<int>(std::count(
+                          engine->resolving_trainer_sources_.begin(),
+                          engine->resolving_trainer_sources_.end(), card));
+                    },
+                    .move_hand_to_resolving = [](void* opaque, const Card card) {
+                      auto* engine = static_cast<Engine*>(opaque);
+                      const auto it = std::find(engine->state_.hand.begin(),
+                                                engine->state_.hand.end(), card);
+                      if (it == engine->state_.hand.end()) return false;
+                      engine->resolving_trainer_sources_.push_back(*it);
+                      engine->state_.hand.erase(it);
+                      return true;
+                    },
+                    .move_resolving_to_discard = [](void* opaque, const Card card) {
+                      auto* engine = static_cast<Engine*>(opaque);
+                      const auto it = std::find(
+                          engine->resolving_trainer_sources_.begin(),
+                          engine->resolving_trainer_sources_.end(), card);
+                      if (it == engine->resolving_trainer_sources_.end()) return false;
+                      engine->state_.discard.push_back(*it);
+                      engine->resolving_trainer_sources_.erase(it);
+                      return true;
+                    }}});
   }
 
   cards::QuickBall::Resolution resolve_quick_ball_card_action(

@@ -78,10 +78,11 @@
       return std::nullopt;
     }
 
+    template <typename Zone>
     [[nodiscard]] static std::optional<Card> first_preferred_in_zone(
-        const std::vector<Card>& zone) {
-      // Preserve strategic payload priority while keeping direct zone membership
-      // traversal inside the payload policy rather than at Engine callers.
+        const Zone& zone) {
+      // Preserve strategic payload priority while keeping direct physical-zone
+      // membership inside the payload policy for vectors and fixed-size route plans.
       // https://eel.is/c++draft/alg.find
       // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
       return first_preferred([&zone](const Card card) {

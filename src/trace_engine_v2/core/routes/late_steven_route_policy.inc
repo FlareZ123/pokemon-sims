@@ -93,7 +93,21 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1199
     if (issue_1199_route_available()) return true;
 
-    if (state_.turn >= scenario_.max_turn || scenario_.locks != LockMode::None ||
+    // The late-Steven packet depends on three live action permissions rather than
+    // the identity of the scenario's original lock fixture. Supporter legality is
+    // modeled by supporter_allowed(), the Quick Ball step by item_locked(), and the
+    // Latias ex switch connector by ability_available_for_pokemon(). A Path-style
+    // Ability lock therefore stops blocking this route once Field Blower or Stadium
+    // replacement has removed Path from play.
+    // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+    // Field Blower: https://api.pokemontcg.io/v2/cards/sm2-125
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Item, Supporter, Stadium, Ability, and Retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Canonical lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4149
+    if (state_.turn >= scenario_.max_turn || item_locked() ||
         !supporter_allowed() ||
         hand_count(Card::StevensResolve) == 0 || hand_count(Card::TateLiza) == 0 ||
         hand_count(Card::QuickBall) == 0 || !prizes_known() || !state_.active ||

@@ -10,7 +10,7 @@
         if (state_.issue_1447_vessel_ready_turn == state_.turn || // A recorded next-turn continuation resolves now; never re-bank it: https://github.com/FlareZ123/pokemon-sims/issues/3561
             secret_box_combo_enabled() ||
             scenario_.dci != DciProfile::StrictJit ||
-            scenario_.locks != LockMode::None ||
+            item_locked_on_turn(ready_turn) || // Held Earthen Vessel must remain legal on its projected play turn: https://api.pokemontcg.io/v2/cards/sv4-163 https://github.com/FlareZ123/pokemon-sims/issues/3974
             scenario_.max_turn < ready_turn || !deck_seen_ || !state_.active ||
             state_.active->card != Card::RegidragoVstar ||
             hand_count(Card::EarthenVessel) == 0 ||
@@ -40,11 +40,14 @@
         // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
         // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
         // Core Supporter, Item, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+        // Advanced Supporter and Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
         // Strict-JIT and resource priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+        // Canonical action-class lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
         // Pineco direct route: https://github.com/FlareZ123/pokemon-sims/issues/1420
         // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1447
         // Relative-turn correction: https://github.com/FlareZ123/pokemon-sims/issues/3561
-        const bool before_crispin = !state_.supporter_used &&
+        // Confirmed lock-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3974
+        const bool before_crispin = supporter_allowed() &&
             !state_.manual_energy_used && hand_count(Card::Crispin) > 0 &&
             state_.active->grass == 0 && state_.active->fire == 0 &&
             state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368
@@ -89,13 +92,16 @@
         // Double Dragon Energy: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
         // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
         // Core Item, discard, search, attachment, and attack procedure: https://www.pokemon.com/us/pokemon-tcg/rules
+        // Advanced Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+        // Canonical action-class lock primitives: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_003.inc
         // Strict-JIT definition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#strict-jit-definition
         // Pineco direct route: https://github.com/FlareZ123/pokemon-sims/issues/1420
         // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1447
         // Relative-turn correction: https://github.com/FlareZ123/pokemon-sims/issues/3561
+        // Confirmed lock-admission bug: https://github.com/FlareZ123/pokemon-sims/issues/3974
         return !secret_box_combo_enabled() &&
             scenario_.dci == DciProfile::StrictJit &&
-            scenario_.locks == LockMode::None &&
+            !item_locked_on_turn(state_.turn) &&
             state_.issue_1447_vessel_ready_turn == state_.turn && // Recorded next turn only: https://github.com/FlareZ123/pokemon-sims/issues/3561
             deck_seen_ && state_.active &&
             state_.active->card == Card::RegidragoVstar &&

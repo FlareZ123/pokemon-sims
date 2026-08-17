@@ -11,6 +11,12 @@
       bool card_might_be_unseen;
     };
 
+    struct ConnectorProjection final {
+      bool needed_energy_might_be_in_deck;
+      bool original_connector_route;
+      bool burnet_preserving_route;
+    };
+
     [[nodiscard]] static bool needed_basic_energy_can_advance(
         const EnergyNeedProjection& projection) {
       // Vital Dance searches Basic Energy, so a type advances this connector only
@@ -22,11 +28,10 @@
     }
 
     [[nodiscard]] static bool connector_route_live(
-        const bool needed_energy_might_be_in_deck,
-        const bool original_connector_route,
-        const bool burnet_preserving_route) {
-      return needed_energy_might_be_in_deck &&
-             (original_connector_route || burnet_preserving_route);
+        const ConnectorProjection& projection) {
+      return projection.needed_energy_might_be_in_deck &&
+             (projection.original_connector_route ||
+              projection.burnet_preserving_route);
     }
   };
 
@@ -65,9 +70,12 @@
         needed_oricorio_energy_might_be_in_deck();
     if (!needed_energy_might_be_in_deck) return false;
     const bool original_connector_route = needs_oricorio_connector_original();
-    return OricorioConnectorPolicy::connector_route_live(
-        needed_energy_might_be_in_deck, original_connector_route,
-        burnet_preserving_route);
+    const OricorioConnectorPolicy::ConnectorProjection projection{
+        needed_energy_might_be_in_deck,
+        original_connector_route,
+        burnet_preserving_route,
+    };
+    return OricorioConnectorPolicy::connector_route_live(projection);
   }
 
   bool bench_oricorio_if_useful() {

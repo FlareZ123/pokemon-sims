@@ -1,6 +1,8 @@
   class GarbodorScenarioPolicy final {
    public:
-    inline static constexpr std::string_view kShakeScenarioPrefix =
+    // A constexpr static data member is implicitly inline in C++20:
+    // https://eel.is/c++draft/dcl.constexpr
+    static constexpr std::string_view kShakeScenarioPrefix =
         "garbodor-shake-ability-lock/";
 
     [[nodiscard]] static constexpr bool matches(const std::string_view label) {

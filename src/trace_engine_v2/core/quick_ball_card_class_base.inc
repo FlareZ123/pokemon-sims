@@ -15,6 +15,34 @@
   // Confirmed resolving-source defect: https://github.com/FlareZ123/pokemon-sims/issues/4293
   std::vector<Card> resolving_trainer_sources_;
 
+  class ResolvingTrainerSourcePolicy final {
+   public:
+    [[nodiscard]] static int count(const std::vector<Card>& resolving,
+                                   const Card card) {
+      return static_cast<int>(std::count(resolving.begin(), resolving.end(), card));
+    }
+
+    static bool move_from_hand(std::vector<Card>& hand,
+                               std::vector<Card>& resolving,
+                               const Card card) {
+      const auto it = std::find(hand.begin(), hand.end(), card);
+      if (it == hand.end()) return false;
+      resolving.push_back(*it);
+      hand.erase(it);
+      return true;
+    }
+
+    static bool move_to_discard(std::vector<Card>& resolving,
+                                std::vector<Card>& discard,
+                                const Card card) {
+      const auto it = std::find(resolving.begin(), resolving.end(), card);
+      if (it == resolving.end()) return false;
+      discard.push_back(*it);
+      resolving.erase(it);
+      return true;
+    }
+  };
+
   rules::CardContext make_runtime_card_context() {
     return trace_engine_v2::make_card_context_adapter(
         this,
@@ -53,28 +81,20 @@
                 rules::CardContext::ResolvingSourceCallbacks{
                     .resolving_count = [](const void* opaque, const Card card) {
                       const auto* engine = static_cast<const Engine*>(opaque);
-                      return static_cast<int>(std::count(
-                          engine->resolving_trainer_sources_.begin(),
-                          engine->resolving_trainer_sources_.end(), card));
+                      return ResolvingTrainerSourcePolicy::count(
+                          engine->resolving_trainer_sources_, card);
                     },
                     .move_hand_to_resolving = [](void* opaque, const Card card) {
                       auto* engine = static_cast<Engine*>(opaque);
-                      const auto it = std::find(engine->state_.hand.begin(),
-                                                engine->state_.hand.end(), card);
-                      if (it == engine->state_.hand.end()) return false;
-                      engine->resolving_trainer_sources_.push_back(*it);
-                      engine->state_.hand.erase(it);
-                      return true;
+                      return ResolvingTrainerSourcePolicy::move_from_hand(
+                          engine->state_.hand,
+                          engine->resolving_trainer_sources_, card);
                     },
                     .move_resolving_to_discard = [](void* opaque, const Card card) {
                       auto* engine = static_cast<Engine*>(opaque);
-                      const auto it = std::find(
-                          engine->resolving_trainer_sources_.begin(),
-                          engine->resolving_trainer_sources_.end(), card);
-                      if (it == engine->resolving_trainer_sources_.end()) return false;
-                      engine->state_.discard.push_back(*it);
-                      engine->resolving_trainer_sources_.erase(it);
-                      return true;
+                      return ResolvingTrainerSourcePolicy::move_to_discard(
+                          engine->resolving_trainer_sources_,
+                          engine->state_.discard, card);
                     }}});
   }
 

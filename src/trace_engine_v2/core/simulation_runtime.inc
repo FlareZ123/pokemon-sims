@@ -161,6 +161,27 @@ struct Aggregate {
   double total_mulligans{0.0};
 };
 
+class TraceFingerprintPolicy final {
+ public:
+  static void append_cards(std::ostringstream& out,
+                           const std::vector<Card>& cards) {
+    std::vector<int> ordered;
+    ordered.reserve(cards.size());
+    for (const Card card : cards) ordered.push_back(static_cast<int>(card));
+    std::sort(ordered.begin(), ordered.end());
+    out << '[';
+    for (const int card : ordered) out << card << ',';
+    out << ']';
+  }
+
+  static void append_pokemon(std::ostringstream& out, const Pokemon& pokemon) {
+    out << static_cast<int>(pokemon.card) << ':' << pokemon.entered_turn << ':'
+        << pokemon.grass << ':' << pokemon.fire << ':'
+        << static_cast<int>(pokemon.tool) << ':'
+        << pokemon.double_dragon << ';';  // DDE is public attached state: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
+  }
+};
+
 struct TraceLog {
   bool enabled{false};
   std::vector<std::string> lines;
@@ -187,31 +208,17 @@ struct TraceLog {
     // https://github.com/FlareZ123/pokemon-sims/blob/main/README.md#run-one-readable-hand
     // https://github.com/FlareZ123/pokemon-sims/issues/1007
     std::ostringstream out;
-    const auto append_cards = [&out](const std::vector<Card>& cards) {
-      std::vector<int> ordered;
-      ordered.reserve(cards.size());
-      for (const Card card : cards) ordered.push_back(static_cast<int>(card));
-      std::sort(ordered.begin(), ordered.end());
-      out << '[';
-      for (const int card : ordered) out << card << ',';
-      out << ']';
-    };
-    const auto append_pokemon = [&out](const Pokemon& pokemon) {
-      out << static_cast<int>(pokemon.card) << ':' << pokemon.entered_turn << ':'
-          << pokemon.grass << ':' << pokemon.fire << ':'
-          << static_cast<int>(pokemon.tool) << ':'
-          << pokemon.double_dragon << ';';  // DDE is public attached state: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
-    };
-
-    append_cards(state.deck);
-    append_cards(state.hand);
-    append_cards(state.prizes);
-    append_cards(state.discard);
-    append_cards(state.discarded_this_turn);
-    if (state.active) append_pokemon(*state.active);
+    TraceFingerprintPolicy::append_cards(out, state.deck);
+    TraceFingerprintPolicy::append_cards(out, state.hand);
+    TraceFingerprintPolicy::append_cards(out, state.prizes);
+    TraceFingerprintPolicy::append_cards(out, state.discard);
+    TraceFingerprintPolicy::append_cards(out, state.discarded_this_turn);
+    if (state.active) TraceFingerprintPolicy::append_pokemon(out, *state.active);
     else out << "no-active;";
     out << "bench{";
-    for (const Pokemon& pokemon : state.bench) append_pokemon(pokemon);
+    for (const Pokemon& pokemon : state.bench) {
+      TraceFingerprintPolicy::append_pokemon(out, pokemon);
+    }
     out << "}:" << state.turn << ':' << state.supporter_used << ':'
         << state.manual_energy_used << ':' << state.retreat_used << ':'
         << state.stadium_used << ':'

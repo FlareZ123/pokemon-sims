@@ -3,25 +3,25 @@
 // Quick Ball transaction below resolves its printed Item lifecycle through
 // cards::QuickBall and CardContext.
 
-  bool play_quick_ball(const bool permit_payload) {
-    const auto resolve_required_fixed_target =
-        [this](const Card discard, const Card target_card,
-               const std::string_view cost_reason,
-               const std::string_view rules_reference,
-               const std::string_view search_reason,
-               const char* missing_target_message) {
-          QuickBallFixedSearchTarget target{target_card};
-          const auto resolution = resolve_quick_ball_card_action(
-              discard, &target, &Engine::select_quick_ball_fixed_target,
-              cost_reason, rules_reference, search_reason);
-          if (!resolution.played || !resolution.found_target) {
-            throw std::logic_error(missing_target_message);
-          }
-        };
+  void resolve_required_quick_ball_fixed_target(
+      const Card discard, const Card target_card,
+      const std::string_view cost_reason,
+      const std::string_view rules_reference,
+      const std::string_view search_reason,
+      const char* missing_target_message) {
+    QuickBallFixedSearchTarget target{target_card};
+    const auto resolution = resolve_quick_ball_card_action(
+        discard, &target, &Engine::select_quick_ball_fixed_target,
+        cost_reason, rules_reference, search_reason);
+    if (!resolution.played || !resolution.found_target) {
+      throw std::logic_error(missing_target_message);
+    }
+  }
 
+  bool play_quick_ball(const bool permit_payload) {
     if (issue_2199_quick_ball_latias_payload_route_available()) {
       const Card payload = *issue_2199_quick_ball_latias_payload_cost();
-      resolve_required_fixed_target(
+      resolve_required_quick_ball_fixed_target(
           payload, Card::LatiasEx,
           "Quick Ball issue-2199 current-turn payload cost",
           "R-QB-01; P-DCI-01; P-JIT-01; P-CONNECTOR-01",
@@ -35,7 +35,7 @@
 
     if (issue_2289_quick_ball_tapu_arven_route_available()) {
       const Card payload = *issue_2289_quick_ball_tapu_arven_payload_cost();
-      resolve_required_fixed_target(
+      resolve_required_quick_ball_fixed_target(
           payload, Card::TapuLeleGX,
           "Quick Ball issue-2289 current-turn payload cost",
           "R-QB-01; P-DCI-01; P-JIT-01; P-CONNECTOR-01",
@@ -90,7 +90,7 @@
     }
 
     if (issue_2272_route_replaced_arven_quick_ball_available()) {
-      resolve_required_fixed_target(
+      resolve_required_quick_ball_fixed_target(
           Card::Arven, Card::LatiasEx, "route-replaced Quick Ball cost",
           "R-QB-01; P-DCI-01", "Quick Ball issue-2272 route",
           "issue-2272 Quick Ball card-class resolution lost its Latias target");

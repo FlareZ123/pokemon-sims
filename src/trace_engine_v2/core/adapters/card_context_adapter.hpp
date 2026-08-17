@@ -5,7 +5,6 @@
 namespace sim::trace_engine_v2 {
 
 using CardContext = rules::CardContext;
-using CardContextAdapterCallbacks = CardContext::Callbacks;
 
 // Canonical adapter between Engine internals and reusable card effects. Each
 // migrated resolver supplies callbacks that delegate to the Engine's existing zone,
@@ -15,14 +14,18 @@ using CardContextAdapterCallbacks = CardContext::Callbacks;
 // Cleanup ownership: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
 class CardContextAdapter final {
  public:
+  using Callbacks = CardContext::Callbacks;
+
   [[nodiscard]] static CardContext make(
-      void* engine, const CardContextAdapterCallbacks& callbacks) {
+      void* engine, const Callbacks& callbacks) {
     return CardContext{engine, callbacks};
   }
 };
 
-// Preserve the established free-function seam while centralizing construction in
-// the named adapter class. Existing card resolvers can migrate independently.
+// Preserve the established namespace-level type and free-function seams while
+// centralizing adapter-specific aliases and construction on CardContextAdapter.
+using CardContextAdapterCallbacks = CardContextAdapter::Callbacks;
+
 [[nodiscard]] inline CardContext make_card_context_adapter(
     void* engine, const CardContextAdapterCallbacks& callbacks) {
   return CardContextAdapter::make(engine, callbacks);

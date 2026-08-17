@@ -1,4 +1,20 @@
-  std::optional<Card> legacy_star_projection_removed_marker_;
+  class LegacyStarProjectionProvenanceState final {
+   public:
+    void mark_removed(const Card card) {
+      removed_marker_ = card;
+    }
+
+    [[nodiscard]] std::optional<Card> take_removed_marker() {
+      const std::optional<Card> marker = removed_marker_;
+      removed_marker_.reset();
+      return marker;
+    }
+
+   private:
+    std::optional<Card> removed_marker_;
+  };
+
+  LegacyStarProjectionProvenanceState legacy_star_projection_provenance_;
 
   bool should_remove_legacy_star_projection_provenance(
       const std::vector<Card>& zone, const Card card) const {
@@ -17,7 +33,7 @@
 
   void mark_legacy_star_projection_recovery(const Card card) {
     remove_current_turn_discard_provenance(card);
-    legacy_star_projection_removed_marker_ = card;
+    legacy_star_projection_provenance_.mark_removed(card);
   }
 
   bool remove_one_legacy_star_projection(std::vector<Card>& zone, const Card card) {
@@ -45,9 +61,10 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/sm9-152
     // https://github.com/FlareZ123/pokemon-sims/issues/936
-    if (!legacy_star_projection_removed_marker_) return;
-    state_.discarded_this_turn.push_back(*legacy_star_projection_removed_marker_);
-    legacy_star_projection_removed_marker_.reset();
+    const std::optional<Card> marker =
+        legacy_star_projection_provenance_.take_removed_marker();
+    if (!marker) return;
+    state_.discarded_this_turn.push_back(*marker);
   }
 
   std::optional<PokemonCommunicationPlan>

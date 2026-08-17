@@ -112,16 +112,27 @@
         garbodor_lock_present(), garbodor_lock_removed());
   }
 
+  [[nodiscard]] GarbodorAbilityLockPolicy::LockState garbodor_lock_state_for(
+      const Card card) const {
+    // Keep the four already-modeled lock facts in one named snapshot before the
+    // pure policy composes them. This does not change either lock's scope or timing.
+    // Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
+    // Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
+    // Scenario contract: https://github.com/FlareZ123/pokemon-sims/issues/2808
+    return {
+        garbodor_lock_present(),
+        garbodor_lock_removed(),
+        is_rule_box_pokemon(card),
+        rule_box_abilities_locked(),
+    };
+  }
+
   [[nodiscard]] bool rule_box_ability_available(const Card card) const {
     return GarbodorAbilityLockPolicy::rule_box_ability_available(
         is_rule_box_pokemon(card), rule_box_abilities_locked());
   }
 
   [[nodiscard]] bool ability_available_for_pokemon_garbodor(const Card card) const {
-    return GarbodorAbilityLockPolicy::ability_available_from_lock_state({
-        garbodor_lock_present(),
-        garbodor_lock_removed(),
-        is_rule_box_pokemon(card),
-        rule_box_abilities_locked(),
-    });
+    return GarbodorAbilityLockPolicy::ability_available_from_lock_state(
+        garbodor_lock_state_for(card));
   }

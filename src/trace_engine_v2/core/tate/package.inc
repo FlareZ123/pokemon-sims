@@ -1,17 +1,14 @@
 #pragma once
 
-// Canonical Tate/provenance override package. Keep these member fragments in their
-// established textual order while the remaining root-level source-contract mirrors migrate.
+// Canonical Tate/provenance override package. Keep the pre-action policy package
+// before the action owner so the established Engine member declaration order is
+// preserved while related provenance/setup fragments share one internal boundary.
 // C++ textual include semantics: https://eel.is/c++draft/cpp.include
 
-// 1. Discard/recovery provenance owner:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/discard_recovery_provenance.inc
-#include "discard_recovery_provenance.inc"
+// 1. Tate provenance/setup subpackage:
+// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/provenance_setup_package.inc
+#include "provenance_setup_package.inc"
 
-// 2. Proactive Tate attachment owner:
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/attachment_policy.inc
-#include "attachment_policy.inc"
-
-// 3. Tate action owner:
+// 2. Tate action owner:
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/action_policy.inc
 #include "action_policy.inc"

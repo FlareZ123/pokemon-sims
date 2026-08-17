@@ -6,14 +6,19 @@
 
   class OricorioConnectorPolicy final {
    public:
+    struct EnergyNeedProjection final {
+      int amount_needed;
+      bool card_might_be_unseen;
+    };
+
     [[nodiscard]] static bool needed_basic_energy_can_advance(
-        const int amount_needed, const bool card_might_be_unseen) {
+        const EnergyNeedProjection& projection) {
       // Vital Dance searches Basic Energy, so a type advances this connector only
       // while Apex still needs that type and the fixed-list knowledge state permits
       // a remaining deck copy: https://api.pokemontcg.io/v2/cards/sm2-55
       // Apex Dragon energy requirement: https://api.pokemontcg.io/v2/cards/swsh12-136
       // K0/K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-      return amount_needed > 0 && card_might_be_unseen;
+      return projection.amount_needed > 0 && projection.card_might_be_unseen;
     }
 
     [[nodiscard]] static bool connector_route_live(
@@ -27,16 +32,16 @@
 
   [[nodiscard]] bool needed_oricorio_energy_might_be_in_deck() const {
     // Vital Dance can search Basic Energy, while Apex Dragon specifically requires
-    // two Grass and one Fire. At K1, an off-type Energy cannot advance the missing
-    // component; K0 keeps using public fixed-list plausibility through might_be_unseen():
-    // https://api.pokemontcg.io/v2/cards/sm2-55
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // two Grass and one Fire. Keep the existing Grass-first short-circuit: Fire
+    // visibility is queried only when Grass cannot already advance the route.
+    // Oricorio / Vital Dance: https://api.pokemontcg.io/v2/cards/sm2-55
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // K0/K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Decision priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     return OricorioConnectorPolicy::needed_basic_energy_can_advance(
-               grass_needed(), might_be_unseen(Card::Grass)) ||
+               {grass_needed(), might_be_unseen(Card::Grass)}) ||
            OricorioConnectorPolicy::needed_basic_energy_can_advance(
-               fire_needed(), might_be_unseen(Card::Fire));
+               {fire_needed(), might_be_unseen(Card::Fire)});
   }
 
   [[nodiscard]] bool needs_oricorio_connector() const {

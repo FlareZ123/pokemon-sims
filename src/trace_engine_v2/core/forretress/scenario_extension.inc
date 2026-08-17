@@ -1,10 +1,37 @@
 #pragma once
 
-// Shared namespace-scope scenario extension helper for Forretress-side scenario
-// composition. Keep append and lookup traversal together so feature-specific
-// scenario ranges do not grow another forwarding helper at the root boundary.
-// C++ textual include semantics: https://eel.is/c++draft/cpp.include
+// Stateless physical-range mechanics shared by every Forretress-side scenario
+// extension. Keep append and label traversal in one owner so feature-specific
+// registries only own their scenario data and fallback composition.
+// C++ range insertion semantics: https://eel.is/c++draft/vector.modifiers
 // C++ find_if semantics: https://eel.is/c++draft/alg.find
+// Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+class ScenarioRangePolicy final {
+ public:
+  template <typename ScenarioRange>
+  [[nodiscard]] static ScenarioList append(
+      ScenarioList result, const ScenarioRange& scenarios) {
+    result.reserve(result.size() + scenarios.size());
+    result.insert(result.end(), scenarios.begin(), scenarios.end());
+    return result;
+  }
+
+  template <typename ScenarioRange>
+  [[nodiscard]] static std::optional<Scenario> find(
+      const ScenarioRange& scenarios, const std::string& label) {
+    const auto match = std::find_if(
+        scenarios.begin(), scenarios.end(),
+        [&label](const Scenario& scenario) { return scenario.label == label; });
+    return match == scenarios.end()
+        ? std::nullopt
+        : std::optional<Scenario>{*match};
+  }
+};
+
+// Shared namespace-scope scenario extension helper for Forretress-side scenario
+// composition. Keep range ownership beside the centralized physical traversal so
+// feature-specific scenario ranges do not grow forwarding helpers at the root.
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
 // C++ optional semantics: https://eel.is/c++draft/optional
 // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
 template <typename ScenarioRange>
@@ -14,18 +41,11 @@ class ScenarioExtension {
       : scenarios_(scenarios) {}
 
   [[nodiscard]] ScenarioList append_to(ScenarioList result) const {
-    result.reserve(result.size() + scenarios_.size());
-    result.insert(result.end(), scenarios_.begin(), scenarios_.end());
-    return result;
+    return ScenarioRangePolicy::append(std::move(result), scenarios_);
   }
 
   [[nodiscard]] std::optional<Scenario> find(const std::string& label) const {
-    const auto match = std::find_if(
-        scenarios_.begin(), scenarios_.end(),
-        [&label](const Scenario& scenario) { return scenario.label == label; });
-    return match == scenarios_.end()
-        ? std::nullopt
-        : std::optional<Scenario>{*match};
+    return ScenarioRangePolicy::find(scenarios_, label);
   }
 
  private:

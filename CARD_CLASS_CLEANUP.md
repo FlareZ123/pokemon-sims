@@ -25,7 +25,6 @@ src/cards/card_registry.hpp
 src/cards/trainers/quick_ball.hpp
 src/rules/card_context.hpp
 src/trace_engine_v2/core/adapters/card_context_adapter.hpp
-src/trace_engine_v2/core/card_context_adapter.hpp
 src/trace_engine_v2/core/quick_ball_card_class_base.inc
 src/trace_engine_v2/core/quick_ball_card_class_tail.inc
 tests/quick_ball_card_class_tests.cpp
@@ -39,7 +38,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/cards/card_definition.hpp` owns intrinsic exact-print facts and reusable intrinsic classification. `CardDefinitionPredicates` centralizes kind, Trainer-subtype, and Pokémon-type tests while the established free functions remain compatibility seams. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_definition.hpp
 - `src/cards/card_registry.hpp` owns explicit deterministic registration and canonical lookup: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 - `src/rules/card_context.hpp` owns reusable printed-rules operations. Its optional intrinsic classifier callbacks share one null-safe dispatch seam. Card-specific strategic route policy stays outside that interface. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/rules/card_context.hpp
-- `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` owns the trace-engine bridge for reusable card effects. `src/trace_engine_v2/core/card_context_adapter.hpp` is a compatibility include until direct consumers move.
+- `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` is the sole trace-engine bridge owner for reusable card effects. The former `src/trace_engine_v2/core/card_context_adapter.hpp` forwarding include is retired after `core/card_catalog.inc` moved to the canonical organized path: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/adapters/card_context_adapter.hpp
 - Engine strategy owns route admission, target preference, DCI/UDP/AMR, strict-JIT and matchup-flex timing, Supporter contention, connector domination, K0/K1 state, setup-axis value, lock schedules, readiness, and payload policy.
 - `src/trace_engine_v2/core/card_catalog.inc` owns unmigrated name and intrinsic-classification fallbacks. Registry lookup remains the first metadata path.
 - `src/trace_engine_v2/core/payload_hand_policy.inc` owns shared Dragon-payload zone and preference queries. `PayloadZonePolicy` and `PayloadPreferencePolicy` are explicit final stateless policy classes so traversal and preference order stay centralized without becoming extensible Engine subtypes.
@@ -105,7 +104,7 @@ The Mysterious Treasure route now uses the shared payload-zone membership seam f
 
 ## Catalog and knowledge cleanup
 
-`src/trace_engine_v2/core/card_catalog.inc` owns the shrinking legacy name bridge and intrinsic-classification compatibility seam. Registered `CardDefinition` lookup remains canonical for migrated metadata: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
+`src/trace_engine_v2/core/card_catalog.inc` owns the shrinking legacy name bridge and intrinsic-classification compatibility seam. It imports the reusable `CardContext` bridge directly from the canonical `core/adapters/card_context_adapter.hpp` owner. Registered `CardDefinition` lookup remains canonical for migrated metadata: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_registry.hpp
 
 Reusable exact-print classification should flow through `CardDefinitionPredicates` before adding another raw `definition.kind`, `definition.trainer_kind`, or `definition.pokemon_types` comparison. Compatibility free functions may delegate to that owner until direct consumers migrate. Canonical definition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/cards/card_definition.hpp
 
@@ -139,7 +138,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 1. Keep `composition/steven_blender_overrides.inc` and `core/routes/steven/package.inc` as the canonical Steven organization boundaries. The historical `core/routes/steven_package_policy.inc` forwarding path is retired; continue deleting other forwarding paths only after repository-wide and source-contract references are proven gone.
 2. Keep `core/routes/late_steven_route_policy.inc` as the canonical late-Steven policy body. Migrate audit and traceability anchors to the canonical path, then delete the historical `part_010_late_steven_override.inc` source-contract mirror.
 3. Continue retiring other composition-only `part_*steven*` forwarders when a complete function body or macro lifetime can move at the identical textual boundary. The issue-3221 and issue-3222 root semantic forwarders are complete and should not be recreated.
-4. Migrate direct `CardContext` bridge consumers to `core/adapters/card_context_adapter.hpp`. Remove the old forwarding include only after references are proven gone. New bridge construction should use `CardContextAdapterCallbacks`.
+4. Keep direct `CardContext` bridge consumers on `core/adapters/card_context_adapter.hpp`; the former root forwarding include is retired and should not be recreated. New bridge construction should use `CardContextAdapterCallbacks`.
 5. Migrate remaining `LegacyCardCatalog` and intrinsic compatibility rows one card at a time. Reuse `CardDefinitionPredicates` for intrinsic classification before adding new raw metadata checks; delete a row only after explicit `CardDefinition` registration, exact-print source, and focused metadata coverage exist.
 6. Continue replacing route-local board traversals with `core/board_state_policy.inc` only when first-match/order semantics are identical. The Quick Ball/Latias completion route is migrated; preserve its route-local JIT, evolution, and connector decisions.
 7. Keep Forretress reusable scenario and runtime ownership under `core/forretress/`, with `core/forretress/package.inc` as the namespace-scope composition owner, `core/forretress/scenario_contract.inc` as the registry declaration owner, and `core/forretress/scenario_extension.inc` as the single scenario-extension owner. The Garbodor split fragment is retired. Migrate the remaining `part_014c.inc` consumer to the canonical package before deleting `part_forretress_ex_combo.inc`.

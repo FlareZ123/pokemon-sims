@@ -26,9 +26,12 @@ struct FakeQuickBallState {
   std::vector<Card> hand;
   std::vector<Card> deck;
   std::vector<Card> discard;
+  std::vector<Card> resolving;
   bool search_started = false;
   bool shuffled = false;
   bool selector_saw_search_started = false;
+  bool selector_saw_source_in_hand = false;
+  bool selector_saw_source_in_resolving = false;
   bool selector_saw_source_in_discard = false;
   bool selector_saw_cost_in_discard = false;
   std::vector<std::string> events;
@@ -39,12 +42,38 @@ int hand_count(const void* opaque, const Card card) {
   return static_cast<int>(std::count(state.hand.begin(), state.hand.end(), card));
 }
 
+int resolving_count(const void* opaque, const Card card) {
+  const auto& state = *static_cast<const FakeQuickBallState*>(opaque);
+  return static_cast<int>(
+      std::count(state.resolving.begin(), state.resolving.end(), card));
+}
+
 bool move_hand_to_discard(void* opaque, const Card card) {
   auto& state = *static_cast<FakeQuickBallState*>(opaque);
   const auto it = std::find(state.hand.begin(), state.hand.end(), card);
   if (it == state.hand.end()) return false;
   state.discard.push_back(*it);
   state.hand.erase(it);
+  state.events.emplace_back("source-direct");
+  return true;
+}
+
+bool move_hand_to_resolving(void* opaque, const Card card) {
+  auto& state = *static_cast<FakeQuickBallState*>(opaque);
+  const auto it = std::find(state.hand.begin(), state.hand.end(), card);
+  if (it == state.hand.end()) return false;
+  state.resolving.push_back(*it);
+  state.hand.erase(it);
+  state.events.emplace_back("resolve-source");
+  return true;
+}
+
+bool move_resolving_to_discard(void* opaque, const Card card) {
+  auto& state = *static_cast<FakeQuickBallState*>(opaque);
+  const auto it = std::find(state.resolving.begin(), state.resolving.end(), card);
+  if (it == state.resolving.end()) return false;
+  state.discard.push_back(*it);
+  state.resolving.erase(it);
   state.events.emplace_back("source");
   return true;
 }
@@ -97,15 +126,32 @@ void begin_deck_search(void* opaque, const std::string_view reason) {
 }
 
 sim::rules::CardContext make_context(FakeQuickBallState& state) {
-  return sim::rules::CardContext{&state, &hand_count, &move_hand_to_discard,
-                                 &discard_from_hand, &search_deck_to_hand,
-                                 &shuffle_deck, &is_basic_pokemon,
-                                 &begin_deck_search};
+  return sim::rules::CardContext{
+      &state,
+      sim::rules::CardContext::Callbacks{
+          .hand_count = &hand_count,
+          .move_hand_to_discard = &move_hand_to_discard,
+          .discard_from_hand = &discard_from_hand,
+          .search_deck_to_hand = &search_deck_to_hand,
+          .shuffle_deck = &shuffle_deck,
+          .is_basic_pokemon = &is_basic_pokemon,
+          .begin_deck_search = &begin_deck_search,
+          .resolving_source =
+              sim::rules::CardContext::ResolvingSourceCallbacks{
+                  .resolving_count = &resolving_count,
+                  .move_hand_to_resolving = &move_hand_to_resolving,
+                  .move_resolving_to_discard = &move_resolving_to_discard}}};
 }
 
 std::optional<Card> choose_regidrago_after_inspection(void* opaque) {
   auto& state = *static_cast<FakeQuickBallState*>(opaque);
   state.selector_saw_search_started = state.search_started;
+  state.selector_saw_source_in_hand =
+      std::find(state.hand.begin(), state.hand.end(), Card::QuickBall) !=
+      state.hand.end();
+  state.selector_saw_source_in_resolving =
+      std::find(state.resolving.begin(), state.resolving.end(), Card::QuickBall) !=
+      state.resolving.end();
   state.selector_saw_source_in_discard =
       std::find(state.discard.begin(), state.discard.end(), Card::QuickBall) !=
       state.discard.end();
@@ -163,14 +209,18 @@ void test_resolution_preserves_cost_k1_search_shuffle_source_order() {
   require(state.selector_saw_search_started,
           "Engine target policy must run only after deck-search knowledge begins.");
 
-  // Quick Ball's separate printed cost is already discarded while its search is
-  // resolving, while B-01 keeps the resolving Item itself out of discard until the
-  // Item has been used.
+  // The printed other-card cost is already discarded during target selection. The
+  // played Item itself is in the resolving-source zone, outside both ordinary hand
+  // and discard, until B-01 step 4 runs after the Item has been used.
   // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
   // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-  // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4288
+  // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4293
   require(state.selector_saw_cost_in_discard,
           "Quick Ball's mandatory other-card cost must be discarded before target selection.");
+  require(!state.selector_saw_source_in_hand,
+          "The played Quick Ball must leave ordinary hand before target selection.");
+  require(state.selector_saw_source_in_resolving,
+          "The played Quick Ball must remain in the resolving-source zone during target selection.");
   require(!state.selector_saw_source_in_discard,
           "The resolving Quick Ball must stay out of discard during target selection.");
 
@@ -179,9 +229,12 @@ void test_resolution_preserves_cost_k1_search_shuffle_source_order() {
   require(resolution.found_target,
           "Selected Regidrago V must move from deck to hand.");
   require(state.shuffled, "Quick Ball must shuffle after its deck search.");
-  require(state.events == std::vector<std::string>{"cost", "search", "target",
-                                                   "shuffle", "source"},
-          "Quick Ball must pay its cost, resolve search and shuffle, then discard the used Item.");
+  require(state.events ==
+              std::vector<std::string>{"cost", "resolve-source", "search",
+                                       "target", "shuffle", "source"},
+          "Quick Ball must pay its cost, enter resolving state, search and shuffle, then discard the used Item.");
+  require(state.resolving.empty(),
+          "No Quick Ball source may remain resolving after resolution completes.");
   require(std::count(state.discard.begin(), state.discard.end(), Card::QuickBall) == 1,
           "Played Quick Ball must enter discard exactly once after resolution.");
   require(std::count(state.discard.begin(), state.discard.end(), Card::Grass) == 1,
@@ -206,6 +259,7 @@ void test_second_quick_ball_is_legal_other_card_cost() {
   require(resolution.played,
           "A second Quick Ball must be legal as the printed other-card cost.");
   require(state.hand.empty(), "Both Quick Ball copies must leave hand.");
+  require(state.resolving.empty(), "Resolved Quick Ball must leave the resolving zone.");
   require(std::count(state.discard.begin(), state.discard.end(), Card::QuickBall) == 2,
           "Source and cost Quick Ball copies must both enter discard.");
   require(state.search_started && state.shuffled,
@@ -229,7 +283,8 @@ void test_single_quick_ball_cannot_discard_itself() {
           "The played Quick Ball cannot pay its own other-card discard cost.");
   require(state.hand == std::vector<Card>{Card::QuickBall},
           "Rejected Quick Ball must preserve hand state.");
-  require(state.discard.empty() && !state.search_started && !state.shuffled,
+  require(state.discard.empty() && state.resolving.empty() &&
+              !state.search_started && !state.shuffled,
           "Rejected Quick Ball must not mutate later resolution state.");
 }
 
@@ -254,6 +309,8 @@ void test_non_basic_strategy_target_is_never_searched() {
               state.deck.end(),
           "Quick Ball must never move a non-Basic target from deck.");
   require(state.shuffled, "A failed Quick Ball search must still shuffle.");
+  require(state.resolving.empty(),
+          "Failed search still completes Item resolution and clears its source zone.");
 }
 
 }  // namespace

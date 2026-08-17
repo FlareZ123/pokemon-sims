@@ -54,15 +54,18 @@ class QuickBall final {
                             const Action& action) {
     if (!validate(context, action)) return {};
 
-    // Follow Quick Ball's printed discard cost before its search. The resolving
-    // Item itself is discarded only after its text has finished resolving.
+    // Follow Quick Ball's printed discard cost before its search.
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4288
     if (!context.discard_from_hand(action.discard, action.cost_reason,
                                    action.rules_reference)) {
       return {};
     }
+
+    // Playing the Item removes that source copy from ordinary hand visibility while
+    // its effect is resolving. B-01 discards the Item only after it has been used.
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed resolving-source defect: https://github.com/FlareZ123/pokemon-sims/issues/4293
+    if (!context.move_hand_to_resolving(Card::QuickBall)) return {};
 
     context.begin_deck_search(action.search_reason);
 
@@ -77,12 +80,12 @@ class QuickBall final {
     const bool found = target && context.search_deck_to_hand(*target);
     context.shuffle_deck();
 
-    // B-01 step 4 discards an Item after the Item has been used. Keep this after
-    // Quick Ball's cost, search, target movement, and required shuffle.
+    // B-01 step 4 moves the Item from its resolving-source zone to discard after
+    // Quick Ball's search and required shuffle have completed.
     // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4288
-    if (!context.move_hand_to_discard(Card::QuickBall)) return {};
+    // Confirmed resolving-source defect: https://github.com/FlareZ123/pokemon-sims/issues/4293
+    if (!context.move_resolving_to_discard(Card::QuickBall)) return {};
 
     return Resolution{.played = true,
                       .search_target = target,

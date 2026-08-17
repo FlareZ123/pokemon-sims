@@ -6,5 +6,5 @@
 // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
 using ScenarioList = std::vector<Scenario>;
 using GarbodorScenarioSet = std::array<Scenario, 2>;
-ScenarioList all_scenarios();
-std::optional<Scenario> scenario_by_label(const std::string& label);
+[[nodiscard]] ScenarioList all_scenarios();
+[[nodiscard]] std::optional<Scenario> scenario_by_label(const std::string& label);

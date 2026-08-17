@@ -43,12 +43,13 @@
 #include "trainers/stevens_resolve.hpp"
 #include "trainers/tate_liza.hpp"
 #include "trainers/team_yells_cheer.hpp"
+#include "trainers/ultra_ball.hpp"
 #include "trainers/vs_seeker.hpp"
 #include "trainers/wishful_baton.hpp"
 
 namespace sim::cards {
 
-inline constexpr std::array<const CardDefinition*, 43> kRegisteredCardDefinitions{
+inline constexpr std::array<const CardDefinition*, 44> kRegisteredCardDefinitions{
     &Appletun::definition, // Exact Surging Sparks Stage 1 Dragon: https://api.pokemontcg.io/v2/cards/sv8-140 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3642
     &MawileGX::definition, // Exact Unified Minds Basic Metal Pokémon-GX: https://api.pokemontcg.io/v2/cards/sm11-141 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3704
     &Oricorio::definition, // Exact Guardians Rising Basic Psychic Pokémon: https://api.pokemontcg.io/v2/cards/sm2-55 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3712
@@ -90,6 +91,7 @@ inline constexpr std::array<const CardDefinition*, 43> kRegisteredCardDefinition
     &Lusamine::definition, // Exact Crimson Invasion Supporter: https://api.pokemontcg.io/v2/cards/sm4-96 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3619
     &Klara::definition, // Exact Chilling Reign Supporter: https://api.pokemontcg.io/v2/cards/swsh6-145 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3625
     &TeamYellsCheer::definition, // Exact Brilliant Stars Supporter: https://api.pokemontcg.io/v2/cards/swsh9-149 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3620
+    &UltraBall::definition, // Exact Scarlet & Violet Item record: https://api.pokemontcg.io/v2/cards?q=id:sv1-196 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3517
     &VsSeeker::definition, // Exact Phantom Forces Item: https://api.pokemontcg.io/v2/cards/xy4-109 ; issue: https://github.com/FlareZ123/pokemon-sims/issues/3545
     &WishfulBaton::definition, // Exact Burning Shadows Pokémon Tool: https://api.pokemontcg.io/v2/cards/sm3-128 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3631
 };
@@ -214,6 +216,8 @@ static_assert(definition_matches_registration(VsSeeker::definition, Card::VsSeek
 static_assert(definition_matches_registration(EarthenVessel::definition,
                                               Card::EarthenVessel, "sv4-163",
                                               "Earthen Vessel")); // Exact Item: https://api.pokemontcg.io/v2/cards/sv4-163 ; cleanup: https://github.com/FlareZ123/pokemon-sims/issues/3475
+static_assert(definition_matches_registration(UltraBall::definition, Card::UltraBall,
+                                              "sv1-196", "Ultra Ball")); // Exact Scarlet & Violet Item record: https://api.pokemontcg.io/v2/cards?q=id:sv1-196 ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3517
 static_assert(definition_matches_registration(PathToThePeak::definition, Card::PathToPeak,
                                               "swsh6-148", "Path to the Peak")); // Exact Stadium: https://api.pokemontcg.io/v2/cards/swsh6-148 ; Stadium procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md ; migration: https://github.com/FlareZ123/pokemon-sims/issues/3519
 

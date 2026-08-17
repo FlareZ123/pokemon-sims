@@ -23,15 +23,21 @@
 #undef attach_fss
 #undef fss_target_after_search_started
 
-// Canonical late-Steven policy owner. The historical part_010 path remains as a
-// source-contract mirror until its anchored documentation and tests migrate.
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_route_policy.inc
+// Late-Steven behavior has one source owner at the canonical route boundary.
+// Policy owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_route_policy.inc
+// K0/K1 and route priority specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md
 #include "../core/routes/late_steven_route_policy.inc"
 
   Card choose_supporter_after_search_started_issue3202_const_fallback() const {
     return choose_supporter_after_search_started();
   }
-#define late_steven_vstar_vessel_route_available late_steven_vstar_vessel_route_available_issue3202_original
+
+#if defined(late_steven_vstar_vessel_route_available) || \
+    defined(choose_supporter_after_search_started) || defined(should_play_steven)
+#error "Issue-3202 Steven composition requires wrapper aliases to be undefined"
+#endif
+#define late_steven_vstar_vessel_route_available \
+  late_steven_vstar_vessel_route_available_issue3202_original
 #define choose_supporter_after_search_started choose_supporter_after_search_started_issue3202_original
 #define should_play_steven should_play_steven_issue3202_original
 #include "../part_010_steven_crispin_override.inc"

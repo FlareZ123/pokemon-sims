@@ -23,8 +23,9 @@
 #undef attach_fss
 #undef fss_target_after_search_started
 
-// Canonical late-Steven policy owner. The historical part_010 path remains as a
-// source-contract mirror until its anchored documentation and tests migrate.
+// Canonical late-Steven policy owner. The historical part_010 compatibility mirror
+// is retired; keep composition pointed directly at the named route owner below.
+// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_route_policy.inc
 #include "../core/routes/late_steven_route_policy.inc"
 

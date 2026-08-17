@@ -47,20 +47,61 @@
     return true;
   }
 
+  bool issue_3961_play_tate_celestial_roar_preservation_route() {
+    if (!supporter_allowed() || hand_count(Card::TateLiza) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 || state_.turn != 1 ||
+        first_turn_going_first() || !state_.active ||
+        state_.active->card == Card::RegidragoV ||
+        state_.active->card == Card::RegidragoVstar ||
+        can_free_retreat_with_latias()) {
+      return false;
+    }
+
+    const auto promoted = std::find_if(
+        state_.bench.begin(), state_.bench.end(), [this](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+                 pokemon.entered_turn == state_.turn &&
+                 total_energy_units(pokemon) >= 1 &&
+                 !pays_apex_energy_cost(pokemon);
+        });
+    if (promoted == state_.bench.end()) return false;
+
+    // The confirmed witness is the player's first turn going second: Tate & Liza
+    // can switch the Active with any Benched Pokemon, that same-turn Regidrago V
+    // cannot evolve through the ordinary evolution action yet, and its attached
+    // Energy pays Celestial Roar's [C]. Keep the special selector on that exact
+    // timing boundary so later-turn deterministic connectors retain their priority.
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Regidrago V / Celestial Roar [C]: https://api.pokemontcg.io/v2/cards/swsh12-135
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Evolution, Supporter, switching, attack, and turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Connector-domination and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed T1 going-second witness: https://github.com/FlareZ123/pokemon-sims/issues/3961
+    // Established later-turn Latias connector witness: https://github.com/FlareZ123/pokemon-sims/issues/1403
+    std::swap(*state_.active, *promoted);
+    consume_tate_liza_supporter();
+    trace("PLAY SUPPORTER", "R-TATE-01; R-GAME-SUPPORTER; P-COMPRESS-01",
+          "Tate & Liza switch mode preserved the held Regidrago VSTAR and promoted an energized same-turn Regidrago V for the confirmed T1 Celestial Roar route.");
+    return true;
+  }
+
   void choose_supporter_with_turo_staging_fallback() {
     if (supporter_allowed() && issue_3040_play_turo_regidrago_staging_route()) return;
     // G&H uses the normal selector path; its policy retains Supporter/DCI/JIT gates.
     // https://api.pokemontcg.io/v2/cards/sm12-229
     if (supporter_allowed() && play_guzma_hala()) return;
+    if (issue_3961_play_tate_celestial_roar_preservation_route()) return;
     choose_supporter_issue1070_original();
   }
 
 // Keep the issue-1070 selector as the single downstream owner and route only its
-// final fallback through the confirmed Turo staging policy. The semantic wrapper
-// name avoids carrying an issue number into later composition layers.
-// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+// final fallback through the confirmed Turo staging and T1 Tate preservation
+// policies. C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
 // Professor Turo's Scenario: https://api.pokemontcg.io/v2/cards/sv4-171
-// Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3040
+// Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+// Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+// Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+// Confirmed bugs: https://github.com/FlareZ123/pokemon-sims/issues/3040 https://github.com/FlareZ123/pokemon-sims/issues/3961
 #define choose_supporter_issue1070_original choose_supporter_with_turo_staging_fallback
 #include "../../part_issue_1070_tate_after_vstar_search_original.inc"
 #undef choose_supporter_issue1070_original

@@ -22,7 +22,7 @@ std::filesystem::path find_repo_root() {
   for (int depth = 0; depth < 8; ++depth) {
     if (std::filesystem::exists(candidate / "docs/MODEL_ASSUMPTIONS.md") &&
         std::filesystem::exists(candidate / "README.md") &&
-        std::filesystem::exists(candidate / "src/trace_engine_v2/part_001.inc")) {
+        std::filesystem::exists(candidate / "src/trace_engine_v2/core/card_catalog.inc")) {
       return candidate;
     }
     if (!candidate.has_parent_path()) break;
@@ -55,7 +55,7 @@ std::string section_between(const std::string& text, const std::string& heading,
 
 void test_model_assumptions_names_every_executable_payload() {
   const std::filesystem::path root = find_repo_root();
-  const std::string source = read_text(root / "src/trace_engine_v2/part_001.inc");
+  const std::string source = read_text(root / "src/trace_engine_v2/core/card_catalog.inc");
   const std::string model = read_text(root / "docs/MODEL_ASSUMPTIONS.md");
   const std::string readme = read_text(root / "README.md");
 
@@ -94,7 +94,7 @@ void test_model_assumptions_names_every_executable_payload() {
 
   // The probability definition must name every member accepted by the executable
   // readiness predicate, including recipe-gated Appletun:
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_001.inc#L128-L137
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
   // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#L82-L91
   // https://api.pokemontcg.io/v2/cards/sv8-140
   // https://api.pokemontcg.io/v2/cards/swsh12-136

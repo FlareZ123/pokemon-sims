@@ -1,3 +1,9 @@
+  // Keep route-local projection bookkeeping in one stateless owner while this
+  // wrapper retains DCI/JIT admission and the physical Legacy Star action.
+  // Canonical projection owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/legacy_star/quick_ball_projection_policy.inc
+  // C++ textual include semantics: https://eel.is/c++draft/cpp.include
+#include "legacy_star/quick_ball_projection_policy.inc"
+
   class LegacyStarQuickBallPolicy final {
    public:
     [[nodiscard]] static bool connector_route_live(
@@ -57,16 +63,17 @@
       return use_legacy_star_issue1016_original();
     }
 
-    const int held_quick_balls = hand_count(Card::QuickBall);
-    std::erase(state_.hand, Card::QuickBall);
+    const int held_quick_balls =
+        LegacyStarQuickBallProjectionPolicy::hide_from_route_view(state_.hand);
     const bool used = use_legacy_star_issue1016_original();
-    state_.hand.insert(state_.hand.end(), static_cast<std::size_t>(held_quick_balls),
-                       Card::QuickBall);
+    LegacyStarQuickBallProjectionPolicy::restore_to_hand(state_.hand,
+                                                          held_quick_balls);
 
     // The held Quick Ball is temporarily excluded only from route evaluation. It
     // stays in hand physically while Legacy Star resolves and remains preserved:
     // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
     // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Projection owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/legacy_star/quick_ball_projection_policy.inc
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1016
     return used;
   }

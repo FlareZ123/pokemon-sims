@@ -1,3 +1,21 @@
+  class PinecoEntryTimingPolicy final {
+   public:
+    [[nodiscard]] static bool entered_before_turn(const Pokemon& pokemon,
+                                                  const int turn) {
+      return pokemon.card == Card::Pineco && pokemon.entered_turn < turn;
+    }
+
+    [[nodiscard]] static bool entered_on_turn(const Pokemon& pokemon,
+                                              const int turn) {
+      return pokemon.card == Card::Pineco && pokemon.entered_turn == turn;
+    }
+  };
+  // Pineco / Forretress ex and Forest of Vitality timing sources:
+  // https://api.pokemontcg.io/v2/cards/sv4pt5-1
+  // https://api.pokemontcg.io/v2/cards/sv4pt5-2
+  // https://api.pokemontcg.io/v2/cards/me1-117
+  // Evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
   bool issue_3057_live_forest_entry_timing() const {
     if (state_.stadium_used || state_.turn <= 1 ||
         !forretress_combo_enabled() || !has_any_regi() || !need_energy() ||
@@ -6,22 +24,19 @@
     }
 
     const auto prior_turn_pineco = [this](const Pokemon& pokemon) {
-      return pokemon.card == Card::Pineco &&
-          pokemon.entered_turn < state_.turn;
+      return PinecoEntryTimingPolicy::entered_before_turn(pokemon, state_.turn);
     };
     const bool pineco_can_evolve_normally =
         (state_.active && prior_turn_pineco(*state_.active)) ||
         std::any_of(state_.bench.begin(), state_.bench.end(), prior_turn_pineco);
     if (pineco_can_evolve_normally) return false;
 
-    const bool current_turn_pineco =
-        (state_.active && state_.active->card == Card::Pineco &&
-         state_.active->entered_turn == state_.turn) ||
-        std::any_of(state_.bench.begin(), state_.bench.end(),
-                    [this](const Pokemon& pokemon) {
-                      return pokemon.card == Card::Pineco &&
-                          pokemon.entered_turn == state_.turn;
-                    });
+    const auto current_turn_pineco = [this](const Pokemon& pokemon) {
+      return PinecoEntryTimingPolicy::entered_on_turn(pokemon, state_.turn);
+    };
+    const bool pineco_entered_this_turn =
+        (state_.active && current_turn_pineco(*state_.active)) ||
+        std::any_of(state_.bench.begin(), state_.bench.end(), current_turn_pineco);
     const bool pineco_can_enter_this_turn =
         in_play_count(Card::Pineco) == 0 && bench_space() > 0 &&
         (hand_count(Card::Pineco) > 0 || might_be_unseen(Card::Pineco));
@@ -37,7 +52,7 @@
     // Earliest-route/resource policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Refined confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3057
     return forretress_available &&
-        (current_turn_pineco || pineco_can_enter_this_turn);
+        (pineco_entered_this_turn || pineco_can_enter_this_turn);
   }
 
   bool issue_3057_live_forest_entry_route() const {

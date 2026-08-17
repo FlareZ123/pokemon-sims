@@ -83,6 +83,39 @@ void test_searches_only_fire_before_immediate_celestial_roar() {
          "Resolving Earthen Vessel must establish K1 deck knowledge.");
 }
 
+void test_fire_absent_searches_zero_and_preserves_grass() {
+  const sim::Scenario scenario{"issue-4131-fire-absent",
+                               sim::DciProfile::StrictJit,
+                               sim::LockMode::FullRuleBoxAbility, false, 3};
+  const sim::DeckRecipe recipe{sim::baseline_recipe()};
+  std::mt19937_64 rng{4131};
+  sim::Engine engine(scenario, recipe, rng);
+  sim::State state = exact_celestial_roar_state();
+  std::replace(state.deck.begin(), state.deck.end(), sim::Card::Fire,
+               sim::Card::QuickBall);
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+
+  // After K1 inspection proves Fire is absent, Earthen Vessel may legally take
+  // zero of its "up to 2" targets. The surplus Grass has no deterministic job
+  // and must remain in the randomized deck for the immediate Celestial Roar:
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Celestial Roar: https://api.pokemontcg.io/v2/cards/swsh12-135
+  // Limited-search rule: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md#L690-L695
+  // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Confirmed regression: https://github.com/FlareZ123/pokemon-sims/issues/4131
+  expect(sim::EngineTestAccess::play_earthen_vessel(engine),
+         "The Fire-absent Earthen Vessel route must resolve.");
+  const sim::State& result = sim::EngineTestAccess::state(engine);
+  expect(count(result.hand, sim::Card::Fire) == 0,
+         "Fire-absent search must not invent a Fire target.");
+  expect(count(result.hand, sim::Card::Grass) == 2,
+         "Zero-target search must preserve both held Grass Energy.");
+  expect(count(result.deck, sim::Card::Grass) == 4,
+         "Zero-target search must leave every surplus Grass in deck for Celestial Roar.");
+  expect(sim::EngineTestAccess::deck_seen(engine),
+         "The Fire-absent search must still establish K1 deck knowledge.");
+}
+
 void test_going_first_keeps_normal_two_target_search() {
   const sim::Scenario scenario{"issue-1368-going-first-control",
                                sim::DciProfile::StrictJit,
@@ -137,9 +170,10 @@ void test_single_held_grass_keeps_normal_two_target_search() {
 int main() {
   try {
     test_searches_only_fire_before_immediate_celestial_roar();
+    test_fire_absent_searches_zero_and_preserves_grass();
     test_going_first_keeps_normal_two_target_search();
     test_single_held_grass_keeps_normal_two_target_search();
-    std::cout << "Issue 1368 Earthen Vessel Celestial Roar tests passed\n";
+    std::cout << "Issue 1368/4131 Earthen Vessel Celestial Roar tests passed\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

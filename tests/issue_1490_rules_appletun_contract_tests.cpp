@@ -49,13 +49,13 @@ int main() {
   const std::string rules =
       read_text(root / "docs" / "RULES_AND_INTERACTIONS.md");
   const std::string payload_source =
-      read_text(root / "src" / "trace_engine_v2" / "part_001.inc");
+      read_text(root / "src" / "trace_engine_v2" / "core" / "card_catalog.inc");
 
   // Appletun is a Dragon Pokémon whose attacks are available to Apex Dragon, and
   // the executable includes it in the recipe-gated readiness set:
   // https://api.pokemontcg.io/v2/cards/sv8-140
   // https://api.pokemontcg.io/v2/cards/swsh12-136
-  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_001.inc#L128-L137
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
   // https://github.com/FlareZ123/pokemon-sims/issues/1490
   expect_contains(rules, "recipe-gated Appletun `sv8-140`",
                   "RULES_AND_INTERACTIONS.md omits recipe-gated Appletun.");

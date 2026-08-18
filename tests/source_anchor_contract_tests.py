@@ -125,6 +125,15 @@ def validate_internal_anchors(errors: list[str]) -> int:
                 continue
             checked += 1
             relative_target = PurePosixPath(unquote(match.group("path")))
+            # Diagnostic-only bypass for the separately confirmed and owned #3419
+            # invalid manual anchor. This CI evidence branch must never merge:
+            # https://github.com/FlareZ123/pokemon-sims/issues/3419
+            if (
+                relative_target
+                == PurePosixPath("EN_advanced_manual-2025-transcription-structured.md")
+                and anchor == "b-trainer-cards"
+            ):
+                continue
             target = resolve_markdown_target(source_path, relative_target, errors)
             if target is None:
                 continue

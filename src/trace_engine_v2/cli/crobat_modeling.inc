@@ -27,18 +27,23 @@ void adjust_modeling_recipe(DeckRecipe& recipe, const Card card, const int delta
   if (found->second == 0) recipe.erase(found);
 }
 
+std::string crobat_modeling_cut_names(const std::initializer_list<Card> cuts) {
+  std::ostringstream names;
+  std::size_t index = 0;
+  for (const Card cut : cuts) {
+    if (index++ > 0) names << " + ";
+    names << name(cut);
+  }
+  return names.str();
+}
+
 CrobatModelingDeck make_crobat_modeling_deck(
     std::string id, const std::initializer_list<Card> cuts) {
   DeckRecipe recipe = baseline_recipe();
-  std::ostringstream cut_names;
-  std::size_t index = 0;
-  for (const Card cut : cuts) {
-    adjust_modeling_recipe(recipe, cut, -1);
-    if (index++ > 0) cut_names << " + ";
-    cut_names << name(cut);
-  }
+  for (const Card cut : cuts) adjust_modeling_recipe(recipe, cut, -1);
   adjust_modeling_recipe(recipe, Card::CrobatV, static_cast<int>(cuts.size()));
-  CrobatModelingDeck deck{std::move(id), cut_names.str(), std::move(recipe)};
+  CrobatModelingDeck deck{
+      std::move(id), crobat_modeling_cut_names(cuts), std::move(recipe)};
   std::string error;
   if (!validate_recipe({deck.id, deck.recipe}, &error)) throw std::logic_error(error);
   return deck;
@@ -131,6 +136,28 @@ constexpr std::size_t crobat_model_seed_slot(const std::size_t scenario_index) {
          (scenario_index >= 10 ? 1U : 0U);
 }
 
+double crobat_average_dark_asset_cards_drawn(const Aggregate& aggregate) {
+  // aggregate.dark_asset counts games with at least one use; cards may accumulate
+  // across turns in two-copy variants: https://github.com/FlareZ123/pokemon-sims/issues/1394
+  if (aggregate.dark_asset == 0) return 0.0;
+  return static_cast<double>(aggregate.dark_asset_cards_drawn) /
+         static_cast<double>(aggregate.dark_asset);
+}
+
+void write_crobat_modeling_row(std::ostringstream& csv,
+                               const CrobatModelingDeck& deck,
+                               const Scenario& scenario,
+                               const Aggregate& aggregate,
+                               const std::uint64_t trials) {
+  csv << deck.id << ',' << '"' << deck.cuts << '"' << ','
+      << crobat_copy_count(deck.recipe) << ','
+      << scenario.label << ',' << trials << ',' << std::fixed
+      << std::setprecision(6) << pct(aggregate.by2, trials) << ','
+      << pct(aggregate.by3, trials) << ',' << pct(aggregate.by4, trials) << ','
+      << pct(aggregate.dark_asset, trials) << ','
+      << crobat_average_dark_asset_cards_drawn(aggregate) << '\n';
+}
+
 void write_crobat_modeling_matrix(const std::filesystem::path& output,
                                   const std::uint64_t trials,
                                   const std::uint64_t seed) {
@@ -144,17 +171,7 @@ void write_crobat_modeling_matrix(const std::filesystem::path& output,
     const std::uint64_t common_seed = seed + 104729ULL * seed_slot;
     for (const CrobatModelingDeck& deck : crobat_modeling_decks()) {
       const Aggregate aggregate = simulate(scenario, deck.recipe, trials, common_seed);
-      // aggregate.dark_asset counts games with at least one use; cards may accumulate
-      // across turns in two-copy variants: https://github.com/FlareZ123/pokemon-sims/issues/1394
-      const double average_draw = aggregate.dark_asset == 0 ? 0.0 :
-          static_cast<double>(aggregate.dark_asset_cards_drawn) /
-          static_cast<double>(aggregate.dark_asset);
-      csv << deck.id << ',' << '"' << deck.cuts << '"' << ','
-          << crobat_copy_count(deck.recipe) << ','
-          << scenario.label << ',' << trials << ',' << std::fixed
-          << std::setprecision(6) << pct(aggregate.by2, trials) << ','
-          << pct(aggregate.by3, trials) << ',' << pct(aggregate.by4, trials) << ','
-          << pct(aggregate.dark_asset, trials) << ',' << average_draw << '\n';
+      write_crobat_modeling_row(csv, deck, scenario, aggregate, trials);
     }
   }
   write_atomic(output, csv.str());

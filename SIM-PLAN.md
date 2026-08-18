@@ -15,7 +15,7 @@ The main simulator registry contains:
 
 Each registered recipe contains 60 cards and is validated against deck-construction constraints represented by the simulator.
 
-`--all-decks` evaluates both registered recipes across the same aggregate scenario list. Crobat V swap studies use a separate modeling registry and do not become registered decks.
+`--all-decks` evaluates both registered recipes across the same aggregate scenario list. Crobat V swap studies use a separate modeling-only Crobat V registry and do not become registered decks. The retired generic `variant_results.csv` surface remains outside the supported result contract; source-bound Crobat modeling is written to `results/crobat_variant_model.csv`. Registered-deck scenario probabilities remain derived only from registered recipes and do not include temporary Crobat swap variants. Sources: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/CROBAT_MODEL_REPORT.md https://github.com/FlareZ123/pokemon-sims/issues/3430
 
 ## Trial lifecycle
 

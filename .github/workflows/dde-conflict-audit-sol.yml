@@ -1,0 +1,19 @@
+name: Audit stale DDE rollup conflicts
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/dde-conflict-audit-sol.yml']
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - run: |
+          git fetch origin fix/dde-semantic-rollup-reclaim-20260809
+          git merge --no-commit --no-edit origin/fix/dde-semantic-rollup-reclaim-20260809 || true
+          echo '=== conflicts ==='
+          git diff --name-only --diff-filter=U
+          echo '=== status ==='
+          git status --short
+          test -z "$(git diff --name-only --diff-filter=U)"

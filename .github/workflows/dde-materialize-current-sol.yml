@@ -1,0 +1,46 @@
+name: Materialize reclaimed DDE rollup on current main
+on:
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/dde-materialize-current-sol.yml']
+permissions:
+  contents: write
+jobs:
+  materialize:
+    if: github.head_ref == 'reclaim/dde-current-main-sol-20260811'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: '${{ github.head_ref }}', fetch-depth: 0}
+      - name: Merge reviewed DDE rollup and retain current evidence
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin fix/dde-semantic-rollup-reclaim-20260809
+          git merge --no-commit --no-edit origin/fix/dde-semantic-rollup-reclaim-20260809
+          for path in docs/MULTI_DECK_REPORT.md docs/REPORT.md results/baseline_manifest.json results/multi_deck_comparison.csv results/multi_deck_manifest.json results/simulation_results.csv; do
+            git checkout HEAD -- "$path"
+          done
+          rm -f .github/workflows/dde-reclaim-push-recovery.yml
+          rm -f .github/workflows/dde-rollup-reclaim-materialize.yml
+          rm -f .github/workflows/dde-materialize-runner.yml
+          rm -f docs/dde-reclaim-trigger-20260809.md docs/dde-reclaim-trigger-20260810.md docs/dde-reclaim-trigger-20260811-sol.md
+          rm -f .github/workflows/dde-conflict-audit-sol.yml .github/workflows/dde-materialize-current-sol.yml
+          git add -A
+          git diff --cached --check
+      - name: Build Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel 2
+      - name: Focused DDE and overlap regressions
+        run: ctest --test-dir build --output-on-failure -R 'issue_(2293|2295|2368|241|242|243|244|2757|2768|2891)'
+      - name: Reviewed trace 1
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+      - name: Reviewed trace 2
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4
+      - name: Reviewed trace 3
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
+      - name: Commit validated integration
+        run: |
+          git commit -m 'Fix DDE semantic rollup on current main'
+          git push origin HEAD:${{ github.head_ref }}

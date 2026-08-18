@@ -48,6 +48,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/routes/search_connector_helpers.inc` owns complete K1 fallback selectors for Mysterious Treasure, Quick Ball, and Ultra Ball.
 - `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc` remains the live strategic target-priority owner composed by `part_009a.inc`. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
 - `src/trace_engine_v2/core/locks/garbodor_policy.inc` remains the sole Garbodor scenario-timing and Ability-lock policy owner. Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
+- `src/trace_engine_v2/core/forretress/scenario_registry.hpp` owns the stable namespace-scope Forretress scenario aliases and registry declarations: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/scenario_registry.hpp
+- `src/trace_engine_v2/core/forretress/package.inc` remains the namespace-scope Forretress runtime and concrete Garbodor / Boost Shake extension composition owner. Forretress ex: https://api.pokemontcg.io/v2/cards/sv4pt5-2 Boost Shake: https://api.pokemontcg.io/v2/cards/swsh7-142
 
 2026-08-18 cleanup checkpoint: `src/trace_engine_v2/core/regidrago_line_helpers.inc` remains a compatibility include at the post-search Arven boundary, but it no longer contains a fallback include to the retired `core/card_classification.inc` path. The canonical catalog is composed first and owns `is_regidrago_v_line()`. Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
 
@@ -66,6 +68,8 @@ Keep strategic selection, DCI/UDP/AMR, Supporter contention, connector dominatio
 `src/trace_engine_v2/composition/post_014a_overrides.inc` owns the later Arven continuation that consumes the Regidrago-line compatibility seam. The shim now asserts that canonical classification was already composed instead of trying to reopen the retired classifier path.
 
 `src/trace_engine_v2/composition/steven_blender_overrides.inc` owns the Steven/Brilliant Blender macro-composition boundary. `src/trace_engine_v2/core/routes/steven/package.inc` is the canonical organized Steven route package. Retire remaining forwarders only when source-contract references and macro lifetime are both proven migrated.
+
+`src/trace_engine_v2/core/forretress/package.inc` keeps the feature's textual runtime and concrete scenario-extension composition at the existing namespace boundary. Stable scenario aliases and declarations now live in `core/forretress/scenario_registry.hpp`, which the package includes immediately after `runtime.inc`; this preserves declaration order while reducing textual `.inc` ownership. C++ declaration rules: https://eel.is/c++draft/dcl.pre
 
 ## Payload policy cleanup
 
@@ -102,6 +106,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Scenario extension traversal: `src/trace_engine_v2/core/scenario_extension_policy.inc`.
 - Garbodor lock behavior: `src/trace_engine_v2/core/locks/garbodor_policy.inc`.
 - Card effect bridge: `src/trace_engine_v2/core/adapters/card_context_adapter.hpp`.
+- Forretress namespace scenario contract: `src/trace_engine_v2/core/forretress/scenario_registry.hpp`.
 
 ## Next cleanup steps
 
@@ -110,7 +115,8 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 3. Continue moving complete route bodies from numbered `part_*` fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner.
 4. Keep card metadata and printed-effect migrations flowing through `src/cards/` and `src/rules/`; do not move DCI, UDP, AMR, connector domination, K0/K1, or opponent-pressure policy into card classes.
 5. Prefer one named policy owner for each reusable traversal or state-reset operation. Remove micro-forwarders after consumers use that owner directly.
-6. Preserve all source URLs beside rules-sensitive code during moves. Use the advanced manual for procedural rules and exact card records for printed effects.
+6. Migrate the remaining `part_014c.inc` Forretress consumer to `core/forretress/package.inc` directly, then retire `part_forretress_ex_combo.inc` after source-contract references and the full paired matrix prove the include boundary is unchanged. Continue splitting stable declarations and pure projections out of `core/forretress/runtime.inc` only when their state-mutation contracts are explicit.
+7. Preserve all source URLs beside rules-sensitive code during moves. Use the advanced manual for procedural rules and exact card records for printed effects.
 
 ## One-card workflow
 

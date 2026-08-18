@@ -23,10 +23,13 @@
 #undef attach_fss
 #undef fss_target_after_search_started
 
-// Canonical late-Steven policy owner. The historical part_010 path remains as a
-// source-contract mirror until its anchored documentation and tests migrate.
-// https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_route_policy.inc
+// Compose the canonical late-Steven policy exactly once at this boundary.
+// C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
+// Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/late_steven_route_policy.inc
+#ifndef REGIDRAGO_TRACE_LATE_STEVEN_ROUTE_POLICY_COMPOSED
+#define REGIDRAGO_TRACE_LATE_STEVEN_ROUTE_POLICY_COMPOSED
 #include "../core/routes/late_steven_route_policy.inc"
+#endif
 
   Card choose_supporter_after_search_started_issue3202_const_fallback() const {
     return choose_supporter_after_search_started();

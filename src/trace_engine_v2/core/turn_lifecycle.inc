@@ -1,8 +1,16 @@
 #pragma once
 
-  class TurnActionStatePolicy final {
+  class TurnLifecyclePolicy final {
    public:
-    static void reset(State& state) {
+    static void reset(State& state, const int turn,
+                      const bool garbodor_shake_active) {
+      state.turn = turn;
+      reset_action_state(state);
+      reset_transient_locks(state, garbodor_shake_active);
+    }
+
+   private:
+    static void reset_action_state(State& state) {
       state.supporter_used = false;
       state.manual_energy_used = false;
       state.retreat_used = false;
@@ -11,11 +19,9 @@
       state.turn_ended = false;
       state.discarded_this_turn.clear();
     }
-  };
 
-  class TransientTurnLockPolicy final {
-   public:
-    static void reset(State& state, const bool garbodor_shake_active) {
+    static void reset_transient_locks(State& state,
+                                      const bool garbodor_shake_active) {
       // In the Garbodor pressure scenario path_lock_removed is the current-turn
       // "opponent Tool removed" flag. The maximum-pressure opponent reattaches a
       // Tool before each following Regidrago turn, so Field Blower's unlock does not
@@ -28,9 +34,7 @@
   };
 
   void reset_per_turn_state(const int turn) {
-    state_.turn = turn;
-    TurnActionStatePolicy::reset(state_);
-    TransientTurnLockPolicy::reset(state_, garbodor_shake_scenario());
+    TurnLifecyclePolicy::reset(state_, turn, garbodor_shake_scenario());
   }
 
   bool draw_start_of_turn_card() {

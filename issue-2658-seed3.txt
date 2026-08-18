@@ -1,0 +1,33 @@
+
+Deck: regidrago-shell | Seed: 3 | first-ready turn: 3 | setup result: success
+Seed: 3 | first-ready turn: 3 | setup result: success
+===== SIMULATE THIS =====
+Deck: regidrago-shell
+Scenario: strict-jit/go-first | DCI: strict-JIT | Locks: none
+Mulligans: 1
+Opening player-known state: Active=Latias ex [-] | Bench=(none) | Hand=Steven's Resolve, Klara, Mysterious Treasure, Serena, Fire Energy, Erika's Invitation | Discard=(none)
+DEBUG ONLY: prizes=Mega Dragonite ex, Team Yell's Cheer, Mysterious Treasure, Regidrago VSTAR, Chaotic Swell, Oricorio GRI 55. Policy may use them only after a legal deck or Prize inspection.
+Policy rule: strict and matchup-flex JIT require a payload to enter discard in the same player turn as the ready-state check.
+T1 | DRAW | rules: R-GAME-DRAW | start-of-turn: Grass Energy
+T1 | TURN START | rules: R-GAME-FIRST-TURN | Going first: drew for the turn; no Supporter or attack is permitted.
+T1 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=(none) | Hand=Steven's Resolve, Klara, Mysterious Treasure, Serena, Fire Energy, Erika's Invitation, Grass Energy | Discard=(none)
+T1 | DISCARD | rules: R-MT-01; P-DCI-01; P-COMPRESS-01 | Erika's Invitation (Mysterious Treasure pre-Steven route cost)
+T1 | DECK KNOWLEDGE | rules: P-KNOWLEDGE-01 | Mysterious Treasure pre-Steven route: deck inspected; Prize identities are now deducible for later decisions.
+T1 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM; P-DCI-01; P-COMPRESS-01 | Spent route-replaced Erika's Invitation and searched Regidrago V before the first legal Steven turn.
+T1 | BENCH | rules: R-GAME-BENCH | Regidrago V from hand.
+T1 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T1 | POLICY | rules: P-AXIS-01 | End: Active=Latias ex [-] | Bench=Regidrago V [G] | Hand=Steven's Resolve, Klara, Serena, Fire Energy | Discard=Mysterious Treasure, Erika's Invitation
+T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Crispin
+T2 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=Regidrago V [G] | Hand=Steven's Resolve, Klara, Serena, Fire Energy, Crispin | Discard=Mysterious Treasure, Erika's Invitation
+T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
+T2 | PLAY SUPPORTER | rules: R-STEVEN-01; R-GAME-SUPPORTER; P-COMPRESS-01 | Searched the deterministic T3 package: Regidrago VSTAR, Brilliant Blender, Grass Energy. Turn ended.
+T2 | TURN END | rules: R-STEVEN-01 | Active=Latias ex [-] | Bench=Regidrago V [GF] | Hand=Klara, Serena, Crispin, Regidrago VSTAR, Brilliant Blender, Grass Energy | Discard=Mysterious Treasure, Erika's Invitation, Steven's Resolve
+T3 | DRAW | rules: R-GAME-DRAW | start-of-turn: Mysterious Treasure
+T3 | POLICY | rules: P-AXIS-01 | Start: Active=Latias ex [-] | Bench=Regidrago V [GF] | Hand=Klara, Serena, Crispin, Regidrago VSTAR, Brilliant Blender, Grass Energy, Mysterious Treasure | Discard=Mysterious Treasure, Erika's Invitation, Steven's Resolve
+T3 | ATTACH | rules: R-GAME-ENERGY | Grass Energy manually to Regidrago V.
+T3 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
+T3 | PLAY ITEM | rules: R-BLENDER-01; R-GAME-ITEM; P-DCI-01 | Searched and discarded: Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX, Dipplin TWM 127.
+T3 | HOLD SUPPORTER | rules: P-DCI-01; P-COMPRESS-01 | Preserved Serena because Skyliner already completes the sole remaining Active axis.
+T3 | RETREAT | rules: R-LATIAS-01; R-GAME-RETREAT | Latias ex gives the Basic Active no Retreat Cost; promoted the best-powered Benched Regidrago VSTAR.
+T3 | POLICY | rules: P-AXIS-01 | End: Active=Regidrago VSTAR [GGF] | Bench=Latias ex [-] | Hand=Klara, Serena, Crispin, Mysterious Treasure | Discard=Mysterious Treasure, Erika's Invitation, Steven's Resolve, Brilliant Blender, Mega Dragonite ex, Dragapult ex, Hisuian Goodra VSTAR, Dialga-GX, Dipplin TWM 127
+T3 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

@@ -54,6 +54,11 @@
     }
   };
 
+  bool search_outlet_present_after_current_search(
+      const Card outlet, const Card excluded) const {
+    return hand_count(outlet) > (outlet == excluded ? 1 : 0);
+  }
+
   bool hand_discard_outlet_survives_current_search(
       const Card outlet, const Card excluded) const {
     const auto cost = choose_discard(false, true);
@@ -61,6 +66,12 @@
     const int played_copy = outlet == excluded ? 1 : 0;
     const int cost_copy = *cost == outlet ? 1 : 0;
     return hand_count(outlet) > played_copy + cost_copy;
+  }
+
+  bool ultra_ball_outlet_payable_after_current_search(
+      const Card excluded) const {
+    return search_outlet_present_after_current_search(Card::UltraBall, excluded) &&
+           state_.hand.size() >= 4U;
   }
 
   bool has_other_payload_outlet(const Card excluded) const {
@@ -75,9 +86,6 @@
     // Evolution Incense has no discard effect, while Brilliant Blender and Professor Burnet
     // discard cards selected from deck, so none can dispose of this fetched hand payload:
     // https://api.pokemontcg.io/v2/cards/swsh1-163 https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    const auto present = [this, excluded](const Card card) {
-      return hand_count(card) > (card == excluded ? 1 : 0);
-    };
     // The current search Item and its mandatory discard resolve before the fetched
     // payload reaches hand. A claimed continuation must survive both operations;
     // Mysterious Treasure and Quick Ball both require that upfront discard:
@@ -87,14 +95,14 @@
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     // Its post-search hand therefore needs Ultra Ball, the fetched payload, and one
     // further card, which requires at least four cards in the pre-search hand.
-    const bool payable_ultra_ball = present(Card::UltraBall) && state_.hand.size() >= 4U;
     return hand_discard_outlet_survives_current_search(Card::MysteriousTreasure,
                                                        excluded) ||
            hand_discard_outlet_survives_current_search(Card::QuickBall, excluded) ||
-           payable_ultra_ball ||
+           ultra_ball_outlet_payable_after_current_search(excluded) ||
            hand_discard_outlet_survives_current_search(Card::EarthenVessel,
                                                        excluded) ||
-           (supporter_allowed() && present(Card::Serena));
+           (supporter_allowed() &&
+            search_outlet_present_after_current_search(Card::Serena, excluded));
   }
 
   Card fallback_mysterious_target_after_search_started() const {

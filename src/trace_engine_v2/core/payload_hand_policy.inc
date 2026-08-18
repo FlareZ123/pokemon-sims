@@ -111,20 +111,26 @@
     }
   };
 
-  [[nodiscard]] static bool payload_zone_contains(const std::vector<Card>& zone) {
+  template <typename Zone>
+  [[nodiscard]] static bool payload_zone_contains(const Zone& zone) {
     // Centralize the simulator's Dragon-payload membership test without moving
-    // DCI/JIT route admission out of Engine strategy:
+    // DCI/JIT route admission out of Engine strategy. Keep the Engine compatibility
+    // seam generic so fixed-size route plans do not need a vector copy or local scan.
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
     return PayloadZonePolicy::contains(zone);
   }
 
+  template <typename Zone>
   [[nodiscard]] static std::optional<Card> first_payload_card_in_zone(
-      const std::vector<Card>& zone) {
+      const Zone& zone) {
     // Preserve physical zone order when a route needs the same first Dragon payload
-    // that its historical std::find_if scan would have selected:
+    // that its historical std::find_if scan would have selected. Keep the wrapper
+    // generic so route-local arrays can reuse the same physical-order abstraction.
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
     return PayloadZonePolicy::first(zone);
   }
 

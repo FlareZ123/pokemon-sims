@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -86,10 +88,31 @@ def test_ci_runs_one_fixed_seed_aggregate() -> None:
     assert "trace-*.txt" in workflow
 
 
+def run_null_basic_ev_vs_qb_experiment() -> None:
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        return
+
+    compiler = os.environ.get("CXX", "c++")
+    source = REPO_ROOT / "experiments" / "ev_vs_quick_ball_null_basic.cpp"
+    binary = REPO_ROOT / "ev-vs-qb-null-basic-experiment"
+    subprocess.run(
+        [compiler, "-std=c++20", "-O2", "-I", str(REPO_ROOT), str(source), "-o", str(binary)],
+        cwd=REPO_ROOT,
+        check=True,
+    )
+    subprocess.run([str(binary)], cwd=REPO_ROOT, check=True)
+
+    print("NULL-BASIC AGGREGATE CSV")
+    print((REPO_ROOT / "ev-qb-null-basic.csv").read_text(encoding="utf-8"), end="")
+    print("NULL-BASIC PAIRED CSV")
+    print((REPO_ROOT / "ev-qb-null-basic-paired.csv").read_text(encoding="utf-8"), end="")
+
+
 def main() -> int:
     test_exact_deck_row_extraction()
     test_canonical_t2_t3_summary()
     test_ci_runs_one_fixed_seed_aggregate()
+    run_null_basic_ev_vs_qb_experiment()
     return 0
 
 

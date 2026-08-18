@@ -1,0 +1,177 @@
+#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
+#include <random>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+
+namespace sim {
+struct EngineTestAccess {
+  static void set_state(Engine& engine, State state) {
+    engine.state_ = std::move(state);
+    engine.deck_seen_ = true;
+  }
+  static bool route_visible(const Engine& engine) {
+    return engine.issue_1646_vessel_burnet_finish_visible();
+  }
+  static std::string route_diagnostic(const Engine& engine) {
+    const Pokemon* active = engine.state_.active ? &*engine.state_.active : nullptr;
+    const bool active_is_vstar =
+        active != nullptr && active->card == Card::RegidragoVstar;
+    const bool completing_energy = active != nullptr &&
+        engine.completing_basic_energy_for(*active, [&engine](const Card card) {
+          return engine.deck_count_after_search_started(card) > 0;
+        }).has_value();
+    std::ostringstream out;
+    out << "active_vstar=" << active_is_vstar
+        << " turn=" << engine.state_.turn
+        << " max_turn=" << engine.scenario_.max_turn
+        << " horizon=" << (engine.state_.turn <= engine.scenario_.max_turn)
+        << " strict=" << engine.strict_payload_timing()
+        << " item_locked=" << engine.item_locked()
+        << " search=" << engine.deck_search_available()
+        << " prizes=" << engine.prizes_known()
+        << " supporter=" << engine.supporter_allowed()
+        << " manual=" << engine.state_.manual_energy_used
+        << " completing_energy=" << completing_energy
+        << " need_payload=" << engine.need_payload()
+        << " held_payload="
+        << std::any_of(engine.state_.hand.begin(), engine.state_.hand.end(), is_payload)
+        << " vessel=" << engine.hand_count(Card::EarthenVessel)
+        << " burnet=" << engine.hand_count(Card::ProfessorBurnet)
+        << " deck_payload=" << engine.payload_might_be_in_deck()
+        << " cost=" << engine.issue_1866_vessel_burnet_cost().has_value();
+    return out.str();
+  }
+};
+}  // namespace sim
+
+namespace {
+
+void expect(const bool condition, const std::string& message) {
+  if (!condition) throw std::runtime_error(message);
+}
+
+sim::State route_state(const int turn) {
+  sim::State state;
+  state.turn = turn;
+  state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 1, 1,
+                              sim::Tool::None};
+  state.hand = {sim::Card::ProfessorBurnet, sim::Card::EarthenVessel,
+                sim::Card::QuickBall};
+  state.deck = {sim::Card::Grass, sim::Card::Fire, sim::Card::Dragapult,
+                sim::Card::RegidragoV};
+  state.prizes = {sim::Card::ForestSealStone, sim::Card::FieldBlower,
+                  sim::Card::Oricorio, sim::Card::MegaDragonite,
+                  sim::Card::Grass, sim::Card::QuickBall};
+  return state;
+}
+
+struct ProbeResult {
+  bool visible{false};
+  std::string diagnostic;
+};
+
+ProbeResult probe_for(const sim::DciProfile dci, const sim::LockMode lock,
+                      sim::State state, const int max_turn = 5) {
+  const sim::Scenario scenario{"issue-3026", dci, lock, true, max_turn};
+  sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng(3026);
+  sim::Engine engine(scenario, recipe, rng);
+  sim::EngineTestAccess::set_state(engine, std::move(state));
+  const std::string diagnostic = sim::EngineTestAccess::route_diagnostic(engine);
+  return {sim::EngineTestAccess::route_visible(engine), diagnostic};
+}
+
+bool visible_for(const sim::DciProfile dci, const sim::LockMode lock,
+                 sim::State state, const int max_turn = 5) {
+  return probe_for(dci, lock, std::move(state), max_turn).visible;
+}
+
+void test_shared_jit_rulebox_and_t2_admission() {
+  // Earthen Vessel is an Item and Professor Burnet is a Supporter, so a Rule Box
+  // Ability lock leaves these Trainer actions legal. StrictJit and MatchupFlexJit
+  // share the repository's same-ready-turn payload requirement:
+  // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Advanced legality procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Same-turn JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3026
+  const ProbeResult rulebox = probe_for(sim::DciProfile::MatchupFlexJit,
+                                        sim::LockMode::FullRuleBoxAbility,
+                                        route_state(4));
+  expect(rulebox.visible,
+         "MatchupFlexJit Rule Box Ability lock hid the legal Vessel-Burnet route: " +
+             rulebox.diagnostic);
+
+  // Neither printed Trainer effect has a T3 minimum. Once the current public/K1
+  // state satisfies the route prerequisites, earliest-route policy admits T2:
+  // Official procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+  // Earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/3026
+  const ProbeResult turn_two = probe_for(sim::DciProfile::StrictJit,
+                                         sim::LockMode::None, route_state(2));
+  expect(turn_two.visible,
+         "The legal T2 Vessel-Burnet route was suppressed by the historical turn witness: " +
+             turn_two.diagnostic);
+}
+
+void test_semantic_boundaries() {
+  // NoDiscardControl is outside the same-turn JIT contract:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // https://github.com/FlareZ123/pokemon-sims/issues/3026
+  expect(!visible_for(sim::DciProfile::NoDiscardControl, sim::LockMode::None,
+                      route_state(3)),
+         "NoDiscardControl incorrectly entered the same-turn-JIT Burnet route");
+
+  // Earthen Vessel remains illegal through Item lock:
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#full-item-lock
+  // https://github.com/FlareZ123/pokemon-sims/issues/3026
+  expect(!visible_for(sim::DciProfile::StrictJit, sim::LockMode::FullItem,
+                      route_state(3)),
+         "Item lock incorrectly admitted the Vessel-Burnet route");
+
+  // Professor Burnet is a Supporter, so Supporter lock blocks the route:
+  // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // https://github.com/FlareZ123/pokemon-sims/issues/3026
+  expect(!visible_for(sim::DciProfile::StrictJit, sim::LockMode::FullSupporter,
+                      route_state(3)),
+         "Supporter lock incorrectly admitted the Vessel-Burnet route");
+
+  sim::State manual_spent = route_state(3);
+  manual_spent.manual_energy_used = true;
+  expect(!visible_for(sim::DciProfile::StrictJit, sim::LockMode::None,
+                      std::move(manual_spent)),
+         "The route ignored the spent manual Energy attachment");
+
+  sim::State no_energy = route_state(3);
+  no_energy.deck = {sim::Card::Fire, sim::Card::Dragapult,
+                    sim::Card::RegidragoV};
+  expect(!visible_for(sim::DciProfile::StrictJit, sim::LockMode::None,
+                      std::move(no_energy)),
+         "The route admitted a state without the completing Basic Energy");
+
+  sim::State no_payload = route_state(3);
+  no_payload.deck = {sim::Card::Grass, sim::Card::Fire,
+                     sim::Card::RegidragoV};
+  expect(!visible_for(sim::DciProfile::StrictJit, sim::LockMode::None,
+                      std::move(no_payload)),
+         "The route admitted a state without a searchable Dragon payload");
+
+  expect(!visible_for(sim::DciProfile::StrictJit, sim::LockMode::None,
+                      route_state(4), 3),
+         "The route ignored the configured simulation horizon");
+}
+
+}  // namespace
+
+int main() {
+  test_shared_jit_rulebox_and_t2_admission();
+  test_semantic_boundaries();
+  return 0;
+}

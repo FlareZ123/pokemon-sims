@@ -13,6 +13,17 @@
     }
 
     template <typename Zone, typename Predicate>
+    [[nodiscard]] static std::optional<Card> first_matching(
+        const Zone& zone, Predicate predicate) {
+      // Centralize iterator-to-value conversion so physical first-match queries
+      // preserve one traversal and one empty-result contract across .inc routes.
+      // C++20 find_if: https://eel.is/c++draft/alg.find
+      // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+      const auto found = first_iterator_matching(zone, predicate);
+      return found == zone.end() ? std::nullopt : std::optional<Card>{*found};
+    }
+
+    template <typename Zone, typename Predicate>
     [[nodiscard]] static bool contains_matching(
         const Zone& zone, Predicate predicate) {
       return first_iterator_matching(zone, predicate) != zone.end();
@@ -54,8 +65,7 @@
       // Preserve physical zone order through the canonical first-match primitive:
       // https://eel.is/c++draft/alg.find
       // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
-      const auto found = first_iterator_matching(zone, is_payload);
-      return found == zone.end() ? std::nullopt : std::optional<Card>{*found};
+      return first_matching(zone, is_payload);
     }
   };
 

@@ -21,62 +21,66 @@ const NamedDeck* tcg_live_deck_by_id(const std::string_view id) {
 #define deck_by_id tcg_live_deck_by_id
 #endif
 
+void accumulate_trial_outcome(Aggregate& aggregate, const TrialOutcome& outcome) {
+  ++aggregate.trials;
+  aggregate.by2 += outcome.ready_by_2 ? 1U : 0U;
+  aggregate.by3 += outcome.ready_by_3 ? 1U : 0U;
+  aggregate.by4 += outcome.ready_by_4 ? 1U : 0U;
+  aggregate.by5 += outcome.ready_by_5 ? 1U : 0U;
+  aggregate.ready_on5 += outcome.first_ready_turn == 5 ? 1U : 0U;
+  aggregate.setup_failures += outcome.setup_failed ? 1U : 0U;
+  aggregate.started_regi += outcome.started_regi ? 1U : 0U;
+  aggregate.started_tapu += outcome.started_tapu ? 1U : 0U;
+  aggregate.dark_asset += outcome.used_dark_asset ? 1U : 0U;
+  aggregate.dark_asset_cards_drawn += outcome.dark_asset_cards_drawn;
+  aggregate.fss += outcome.used_fss ? 1U : 0U;
+  aggregate.legacy += outcome.used_legacy_star ? 1U : 0U;
+  aggregate.steven += outcome.used_steven ? 1U : 0U;
+  aggregate.blender += outcome.used_blender ? 1U : 0U;
+  aggregate.secret_box += outcome.used_secret_box ? 1U : 0U;
+  aggregate.exploding_energy += outcome.used_exploding_energy ? 1U : 0U;
+  aggregate.secret_box_combo_attempted += outcome.secret_box_combo_attempted;
+  aggregate.secret_box_cost_blocked += outcome.secret_box_cost_blocked;
+  aggregate.secret_box_missing_axis += outcome.secret_box_missing_axis;
+  aggregate.secret_box_missing_regi_axis += outcome.secret_box_missing_regi_axis;
+  aggregate.secret_box_missing_line_axis += outcome.secret_box_missing_line_axis;
+  aggregate.secret_box_missing_vstar_axis += outcome.secret_box_missing_vstar_axis;
+  aggregate.secret_box_missing_payload_axis += outcome.secret_box_missing_payload_axis;
+  aggregate.secret_box_missing_treasure_axis += outcome.secret_box_missing_treasure_axis;
+  aggregate.secret_box_missing_fire_axis += outcome.secret_box_missing_fire_axis;
+  aggregate.secret_box_missing_grass_axis += outcome.secret_box_missing_grass_axis;
+  aggregate.secret_box_missing_ability_axis += outcome.secret_box_missing_ability_axis;
+  aggregate.secret_box_missing_supporter_axis += outcome.secret_box_missing_supporter_axis;
+  aggregate.secret_box_missing_known_prize_zone += outcome.secret_box_missing_known_prize_zone;
+  aggregate.secret_box_missing_discard_zone += outcome.secret_box_missing_discard_zone;
+  aggregate.secret_box_missing_stranded_hand_zone += outcome.secret_box_missing_stranded_hand_zone;
+  aggregate.secret_box_bench_blocked += outcome.secret_box_bench_blocked;
+  aggregate.secret_box_arven_bank += outcome.secret_box_arven_bank;
+  aggregate.secret_box_steven_bank += outcome.secret_box_steven_bank;
+  aggregate.secret_box_gladion_bank += outcome.secret_box_gladion_bank;
+  aggregate.secret_box_fss_bank += outcome.secret_box_fss_bank;
+  aggregate.t2_missing_active_vstar += outcome.t2_missing_active_vstar ? 1U : 0U;
+  aggregate.t2_missing_grass += outcome.t2_missing_grass ? 1U : 0U;
+  aggregate.t2_missing_fire += outcome.t2_missing_fire ? 1U : 0U;
+  aggregate.t2_missing_payload += outcome.t2_missing_payload ? 1U : 0U;
+  aggregate.t2_eligible_regi_start += outcome.t2_eligible_regi_start ? 1U : 0U;
+  aggregate.t2_active_regi_start += outcome.t2_active_regi_start ? 1U : 0U;
+  aggregate.t2_pineco_line_start += outcome.t2_pineco_line_start ? 1U : 0U;
+  aggregate.t2_vstar_held_start += outcome.t2_vstar_held_start ? 1U : 0U;
+  aggregate.t2_eligible_held_vstar_missed_active +=
+      outcome.t2_eligible_held_vstar_missed_active ? 1U : 0U;
+  aggregate.t2_eligible_missed_active +=
+      outcome.t2_eligible_missed_active ? 1U : 0U;
+  aggregate.total_mulligans += outcome.mulligans;
+}
+
 Aggregate simulate(const Scenario& scenario, const DeckRecipe& recipe, const std::uint64_t trials, const std::uint64_t seed) {
   std::mt19937_64 rng(seed);
   Aggregate aggregate{};
   for (std::uint64_t trial = 0; trial < trials; ++trial) {
     Engine engine(scenario, recipe, rng);
     const TrialOutcome outcome = engine.run();
-    ++aggregate.trials;
-    aggregate.by2 += outcome.ready_by_2 ? 1U : 0U;
-    aggregate.by3 += outcome.ready_by_3 ? 1U : 0U;
-    aggregate.by4 += outcome.ready_by_4 ? 1U : 0U;
-    aggregate.by5 += outcome.ready_by_5 ? 1U : 0U;
-    aggregate.ready_on5 += outcome.first_ready_turn == 5 ? 1U : 0U;
-    aggregate.setup_failures += outcome.setup_failed ? 1U : 0U;
-    aggregate.started_regi += outcome.started_regi ? 1U : 0U;
-    aggregate.started_tapu += outcome.started_tapu ? 1U : 0U;
-    aggregate.dark_asset += outcome.used_dark_asset ? 1U : 0U;
-    aggregate.dark_asset_cards_drawn += outcome.dark_asset_cards_drawn;
-    aggregate.fss += outcome.used_fss ? 1U : 0U;
-    aggregate.legacy += outcome.used_legacy_star ? 1U : 0U;
-    aggregate.steven += outcome.used_steven ? 1U : 0U;
-    aggregate.blender += outcome.used_blender ? 1U : 0U;
-    aggregate.secret_box += outcome.used_secret_box ? 1U : 0U;
-    aggregate.exploding_energy += outcome.used_exploding_energy ? 1U : 0U;
-    aggregate.secret_box_combo_attempted += outcome.secret_box_combo_attempted;
-    aggregate.secret_box_cost_blocked += outcome.secret_box_cost_blocked;
-    aggregate.secret_box_missing_axis += outcome.secret_box_missing_axis;
-    aggregate.secret_box_missing_regi_axis += outcome.secret_box_missing_regi_axis;
-    aggregate.secret_box_missing_line_axis += outcome.secret_box_missing_line_axis;
-    aggregate.secret_box_missing_vstar_axis += outcome.secret_box_missing_vstar_axis;
-    aggregate.secret_box_missing_payload_axis += outcome.secret_box_missing_payload_axis;
-    aggregate.secret_box_missing_treasure_axis += outcome.secret_box_missing_treasure_axis;
-    aggregate.secret_box_missing_fire_axis += outcome.secret_box_missing_fire_axis;
-    aggregate.secret_box_missing_grass_axis += outcome.secret_box_missing_grass_axis;
-    aggregate.secret_box_missing_ability_axis += outcome.secret_box_missing_ability_axis;
-    aggregate.secret_box_missing_supporter_axis += outcome.secret_box_missing_supporter_axis;
-    aggregate.secret_box_missing_known_prize_zone += outcome.secret_box_missing_known_prize_zone;
-    aggregate.secret_box_missing_discard_zone += outcome.secret_box_missing_discard_zone;
-    aggregate.secret_box_missing_stranded_hand_zone += outcome.secret_box_missing_stranded_hand_zone;
-    aggregate.secret_box_bench_blocked += outcome.secret_box_bench_blocked;
-    aggregate.secret_box_arven_bank += outcome.secret_box_arven_bank;
-    aggregate.secret_box_steven_bank += outcome.secret_box_steven_bank;
-    aggregate.secret_box_gladion_bank += outcome.secret_box_gladion_bank;
-    aggregate.secret_box_fss_bank += outcome.secret_box_fss_bank;
-    aggregate.t2_missing_active_vstar += outcome.t2_missing_active_vstar ? 1U : 0U;
-    aggregate.t2_missing_grass += outcome.t2_missing_grass ? 1U : 0U;
-    aggregate.t2_missing_fire += outcome.t2_missing_fire ? 1U : 0U;
-    aggregate.t2_missing_payload += outcome.t2_missing_payload ? 1U : 0U;
-    aggregate.t2_eligible_regi_start += outcome.t2_eligible_regi_start ? 1U : 0U;
-    aggregate.t2_active_regi_start += outcome.t2_active_regi_start ? 1U : 0U;
-    aggregate.t2_pineco_line_start += outcome.t2_pineco_line_start ? 1U : 0U;
-    aggregate.t2_vstar_held_start += outcome.t2_vstar_held_start ? 1U : 0U;
-    aggregate.t2_eligible_held_vstar_missed_active +=
-        outcome.t2_eligible_held_vstar_missed_active ? 1U : 0U;
-    aggregate.t2_eligible_missed_active +=
-        outcome.t2_eligible_missed_active ? 1U : 0U;
-    aggregate.total_mulligans += outcome.mulligans;
+    accumulate_trial_outcome(aggregate, outcome);
   }
   return aggregate;
 }
@@ -89,6 +93,15 @@ double standard_error_pp(const std::uint64_t count, const std::uint64_t total) {
   if (total == 0) return 0.0;
   const double p = static_cast<double>(count) / static_cast<double>(total);
   return 100.0 * std::sqrt(p * (1.0 - p) / static_cast<double>(total));
+}
+
+bool readiness_counters_are_consistent(const Aggregate& aggregate) {
+  // Readiness columns are cumulative. T5 is diagnostic; setup success still ends at T4.
+  // Repository reporting contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/REPORT.md#100000-trial-baseline
+  return aggregate.by3 >= aggregate.by2 && aggregate.by4 >= aggregate.by3 &&
+      aggregate.by5 >= aggregate.by4 &&
+      aggregate.ready_on5 == aggregate.by5 - aggregate.by4 &&
+      aggregate.setup_failures == aggregate.trials - aggregate.by4;
 }
 
 bool probability_regression_self_test() {
@@ -122,19 +135,15 @@ bool probability_regression_self_test() {
         std::distance(scenarios.begin(), found));
     const Aggregate aggregate = simulate(*found, deck, trials,
                                          base_seed + seed_stride * scenario_index);
-    // Readiness columns are cumulative. T5 is diagnostic; setup success still ends at T4.
-    if (aggregate.by3 < aggregate.by2 || aggregate.by4 < aggregate.by3 ||
-        aggregate.by5 < aggregate.by4) return false;
-    if (aggregate.ready_on5 != aggregate.by5 - aggregate.by4) return false;
-    if (aggregate.setup_failures != aggregate.trials - aggregate.by4) return false;
+    if (!readiness_counters_are_consistent(aggregate)) return false;
     if (pct(aggregate.by3, aggregate.trials) < floor.minimum_ready_by_t3_pct) return false;
   }
   return true;
 }
 
-class OutputLock {
+class ScopedOutputLock {
  public:
-  explicit OutputLock(const std::filesystem::path& output) {
+  explicit ScopedOutputLock(const std::filesystem::path& output) {
     const std::filesystem::path lock_path = output.string() + ".lock";
 #if defined(_WIN32)
     handle_ = ::CreateFileW(lock_path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -147,15 +156,15 @@ class OutputLock {
     }
 #endif
   }
-  ~OutputLock() {
+  ~ScopedOutputLock() {
 #if defined(_WIN32)
     if (handle_ != INVALID_HANDLE_VALUE) ::CloseHandle(handle_);
 #else
     if (descriptor_ >= 0) { ::flock(descriptor_, LOCK_UN); ::close(descriptor_); }
 #endif
   }
-  OutputLock(const OutputLock&) = delete;
-  OutputLock& operator=(const OutputLock&) = delete;
+  ScopedOutputLock(const ScopedOutputLock&) = delete;
+  ScopedOutputLock& operator=(const ScopedOutputLock&) = delete;
  private:
 #if defined(_WIN32)
   HANDLE handle_{INVALID_HANDLE_VALUE};
@@ -164,16 +173,22 @@ class OutputLock {
 #endif
 };
 
-void write_atomic(const std::filesystem::path& output, const std::string& content) {
-  if (!output.parent_path().empty()) std::filesystem::create_directories(output.parent_path());
-  OutputLock lock(output);
-  const std::filesystem::path temporary = output.string() + ".tmp." + std::to_string(
+std::filesystem::path temporary_output_path(const std::filesystem::path& output) {
+  // Keep the temporary file process-scoped before same-filesystem replacement.
+  // C++ filesystem rename semantics: https://eel.is/c++draft/fs.op.rename
+  return output.string() + ".tmp." + std::to_string(
 #if defined(_WIN32)
       static_cast<unsigned long long>(::GetCurrentProcessId())
 #else
       static_cast<unsigned long long>(::getpid())
 #endif
   );
+}
+
+void write_atomic(const std::filesystem::path& output, const std::string& content) {
+  if (!output.parent_path().empty()) std::filesystem::create_directories(output.parent_path());
+  ScopedOutputLock lock(output);
+  const std::filesystem::path temporary = temporary_output_path(output);
   {
     std::ofstream stream(temporary, std::ios::binary | std::ios::trunc);
     if (!stream) throw std::runtime_error("could not write temporary output");

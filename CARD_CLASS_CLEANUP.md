@@ -55,6 +55,22 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 Engine strategy retains route admission, target preference, DCI/UDP/AMR, strict-JIT and matchup-flex timing, Supporter contention, connector domination, K0/K1 state, lock schedules, readiness, and payload timing. These concerns must not migrate into generic card or traversal utilities merely to reduce line count.
 
+## Payload policy cleanup
+
+`src/trace_engine_v2/core/payload_hand_policy.inc` remains the canonical Dragon-payload zone and preference owner. Reuse generic range operations only for physical membership, count, first-match traversal, or the established payload preference order. DCI/JIT admission and current-turn discard timing stay in Engine. Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+
+## Setup lifecycle cleanup
+
+`src/trace_engine_v2/core/setup/policies.inc` owns pure setup constants and classification, while `src/trace_engine_v2/core/setup_lifecycle.inc` owns opening-hand, mulligan, Prize-deal, and setup-trace transitions. Preserve the established `part_005.inc` member boundary until its remaining source-contract anchors migrate. Advanced setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+## Catalog and knowledge cleanup
+
+`src/trace_engine_v2/core/card_catalog.inc` owns unmigrated catalog fallback while registered `CardDefinition` metadata remains canonical. `src/trace_engine_v2/core/deck_knowledge.inc` owns copy arithmetic only after visibility is legally resolved; K0/K1 admission remains Engine-owned. Knowledge policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+
+## Shared policy owners
+
+Before adding route-local traversal, reuse the canonical payload, board, setup, knowledge, Garbodor, search-connector, Forretress, Tate, and scenario-extension owners listed above when ordering and semantics match exactly. Route admission, DCI/JIT, hidden-zone visibility, Supporter contention, connector choice, and physical action execution remain with their established strategy, card, or rules layer.
+
 ## Active card migrations
 
 Do not create a parallel migration while one of these owners is active:

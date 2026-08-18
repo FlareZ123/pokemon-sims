@@ -13,6 +13,17 @@
     }
 
     template <typename Zone, typename Predicate>
+    [[nodiscard]] static std::optional<Card> first_matching(
+        const Zone& zone, Predicate predicate) {
+      // Centralize iterator-to-value conversion so physical first-match queries
+      // preserve one traversal and one empty-result contract across .inc routes.
+      // C++20 find_if: https://eel.is/c++draft/alg.find
+      // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+      const auto found = first_iterator_matching(zone, predicate);
+      return found == zone.end() ? std::nullopt : std::optional<Card>{*found};
+    }
+
+    template <typename Zone, typename Predicate>
     [[nodiscard]] static bool contains_matching(
         const Zone& zone, Predicate predicate) {
       return first_iterator_matching(zone, predicate) != zone.end();
@@ -54,8 +65,7 @@
       // Preserve physical zone order through the canonical first-match primitive:
       // https://eel.is/c++draft/alg.find
       // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
-      const auto found = first_iterator_matching(zone, is_payload);
-      return found == zone.end() ? std::nullopt : std::optional<Card>{*found};
+      return first_matching(zone, is_payload);
     }
   };
 
@@ -101,20 +111,26 @@
     }
   };
 
-  [[nodiscard]] static bool payload_zone_contains(const std::vector<Card>& zone) {
+  template <typename Zone>
+  [[nodiscard]] static bool payload_zone_contains(const Zone& zone) {
     // Centralize the simulator's Dragon-payload membership test without moving
-    // DCI/JIT route admission out of Engine strategy:
+    // DCI/JIT route admission out of Engine strategy. Keep the Engine compatibility
+    // seam generic so fixed-size route plans do not need a vector copy or local scan.
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
     return PayloadZonePolicy::contains(zone);
   }
 
+  template <typename Zone>
   [[nodiscard]] static std::optional<Card> first_payload_card_in_zone(
-      const std::vector<Card>& zone) {
+      const Zone& zone) {
     // Preserve physical zone order when a route needs the same first Dragon payload
-    // that its historical std::find_if scan would have selected:
+    // that its historical std::find_if scan would have selected. Keep the wrapper
+    // generic so route-local arrays can reuse the same physical-order abstraction.
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // DCI/JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
     return PayloadZonePolicy::first(zone);
   }
 

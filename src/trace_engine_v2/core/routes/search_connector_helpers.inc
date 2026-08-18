@@ -54,6 +54,15 @@
     }
   };
 
+  bool hand_discard_outlet_survives_current_search(
+      const Card outlet, const Card excluded) const {
+    const auto cost = choose_discard(false, true);
+    if (!cost) return false;
+    const int played_copy = outlet == excluded ? 1 : 0;
+    const int cost_copy = *cost == outlet ? 1 : 0;
+    return hand_count(outlet) > played_copy + cost_copy;
+  }
+
   bool has_other_payload_outlet(const Card excluded) const {
     // A search connector can only fetch a future payload when a payload may still
     // be in deck. K1 derives this from legal deck or Prize inspection.
@@ -73,22 +82,18 @@
     // payload reaches hand. A claimed continuation must survive both operations;
     // Mysterious Treasure and Quick Ball both require that upfront discard:
     // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179
-    const auto preserves_hand_discard_outlet = [this, excluded](const Card outlet) {
-      const auto cost = choose_discard(false, true);
-      if (!cost) return false;
-      const int played_copy = outlet == excluded ? 1 : 0;
-      const int cost_copy = *cost == outlet ? 1 : 0;
-      return hand_count(outlet) > played_copy + cost_copy;
-    };
     // The current Treasure or Quick Ball line spends its search card and one discard,
     // then adds the fetched payload. Ultra Ball still needs two other cards when played:
     // https://api.pokemontcg.io/v2/cards/swsh12pt5-146
     // Its post-search hand therefore needs Ultra Ball, the fetched payload, and one
     // further card, which requires at least four cards in the pre-search hand.
     const bool payable_ultra_ball = present(Card::UltraBall) && state_.hand.size() >= 4U;
-    return preserves_hand_discard_outlet(Card::MysteriousTreasure) ||
-           preserves_hand_discard_outlet(Card::QuickBall) || payable_ultra_ball ||
-           preserves_hand_discard_outlet(Card::EarthenVessel) ||
+    return hand_discard_outlet_survives_current_search(Card::MysteriousTreasure,
+                                                       excluded) ||
+           hand_discard_outlet_survives_current_search(Card::QuickBall, excluded) ||
+           payable_ultra_ball ||
+           hand_discard_outlet_survives_current_search(Card::EarthenVessel,
+                                                       excluded) ||
            (supporter_allowed() && present(Card::Serena));
   }
 

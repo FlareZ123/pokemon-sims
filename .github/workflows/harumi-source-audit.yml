@@ -1,0 +1,28 @@
+name: Harumi source-bound simulator audit
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/harumi-source-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Strict JIT go-second seed 1
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+      - name: Strict JIT go-first seed 2
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 2 --require-ready-by 4
+      - name: Matchup-flex go-second seed 3
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario matchup-flex-jit/go-second --seed 3 --require-ready-by 2
+      - name: Reverify confirmed issue 2293 seed 291
+        run: ./build/regidrago_sim --simulate-this --deck regidrago-shell --scenario strict-jit/go-first --seed 291

@@ -1,0 +1,2 @@
+Behavior-neutral CI trigger for the 2026-08-10 final main validation pass.
+This branch exists only to run pull-request CI against the current main source tree after cleanup.

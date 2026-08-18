@@ -61,8 +61,10 @@ void test_dde_sensitive_sequencing_uses_semantic_apex_payment() {
   require_text(issue1878, "!need_energy() || held_manual_energy_finishes",
                "Issue-1878 route lost DDE-aware completion admission guard");
 
+  // Tate's DDE-sensitive implementation is owned by the canonical route package:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/package.inc
   const std::string tate = read_source(
-      "src/trace_engine_v2/part_tate_blender_tate_override.inc");
+      "src/trace_engine_v2/core/tate/action_policy.inc");
   require_text(tate, "pokemon.double_dragon > 0 && pays_apex_energy_cost(pokemon)",
                "Dynamic DCI lost attached-DDE semantic completion guard");
   require_text(tate, "dde_completed_energy_line && !need_energy()",

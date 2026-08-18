@@ -51,6 +51,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 2026-08-18 cleanup checkpoint: `src/trace_engine_v2/core/regidrago_line_helpers.inc` remains a compatibility include at the post-search Arven boundary, but it no longer contains a fallback include to the retired `core/card_classification.inc` path. The canonical catalog is composed first and owns `is_regidrago_v_line()`. Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
 
+2026-08-18 Tate checkpoint: `src/trace_engine_v2/core/tate/package.inc` composes the canonical discard/recovery provenance, proactive attachment, and Tate action owners directly. The unreferenced root mirrors `part_discard_recovery_provenance_override.inc` and `part_tate_blender_attachment_override.inc` are retired after exact-blob and include-graph verification. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+
 ## Active card migrations
 
 No open migration issue is assumed by this plan. Before starting a card migration, search the current issue tracker and branch set for an existing owner. A migration should move intrinsic metadata and classification before printed resolution, then move printed resolution only after its live resolver and reusable `CardContext` operations are identified.
@@ -66,6 +68,8 @@ Keep strategic selection, DCI/UDP/AMR, Supporter contention, connector dominatio
 `src/trace_engine_v2/composition/post_014a_overrides.inc` owns the later Arven continuation that consumes the Regidrago-line compatibility seam. The shim now asserts that canonical classification was already composed instead of trying to reopen the retired classifier path.
 
 `src/trace_engine_v2/composition/steven_blender_overrides.inc` owns the Steven/Brilliant Blender macro-composition boundary. `src/trace_engine_v2/core/routes/steven/package.inc` is the canonical organized Steven route package. Retire remaining forwarders only when source-contract references and macro lifetime are both proven migrated.
+
+`src/trace_engine_v2/core/tate/package.inc` is the sole live Tate composition owner. Its `discard_recovery_provenance.inc`, `attachment_policy.inc`, and `action_policy.inc` children remain in established textual order; retired root mirrors must not be reintroduced. Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/package.inc
 
 ## Payload policy cleanup
 

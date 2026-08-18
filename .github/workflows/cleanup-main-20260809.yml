@@ -1,0 +1,61 @@
+name: Cleanup main 20260809
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  cleanup-and-validate:
+    if: github.head_ref == 'cleanup/harumi-20260809'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout cleanup driver
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          path: driver
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          path: repo
+      - name: Configure commit identity
+        working-directory: repo
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Cleanup commit 1
+        run: |
+          python driver/scripts/cleanup_setup_docs_20260809.py --repo-root repo --stage 1
+          cd repo
+          git add scripts/update_setup_docs.py
+          git commit -m 'Cleanup: extract setup report row partitioning'
+          git push origin HEAD:main
+      - name: Cleanup commit 2
+        run: |
+          python driver/scripts/cleanup_setup_docs_20260809.py --repo-root repo --stage 2
+          cd repo
+          git add scripts/update_setup_docs.py
+          git commit -m 'Cleanup: extract setup report input loading'
+          git push origin HEAD:main
+      - name: Cleanup commit 3
+        run: |
+          python driver/scripts/cleanup_setup_docs_20260809.py --repo-root repo --stage 3
+          cd repo
+          git add scripts/update_setup_docs.py
+          git commit -m 'Cleanup: extract setup document writing'
+          git push origin HEAD:main
+      - name: Validate generated-doc script
+        working-directory: repo
+        run: python scripts/update_setup_docs.py --repo-root .
+      - name: Configure Release
+        working-directory: repo
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        working-directory: repo
+        run: cmake --build build --parallel 2
+      - name: Full Release suite after cleanup
+        working-directory: repo
+        run: ctest --test-dir build --output-on-failure

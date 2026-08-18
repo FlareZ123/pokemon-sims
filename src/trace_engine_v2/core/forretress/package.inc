@@ -7,14 +7,11 @@
 // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
 #include "runtime.inc"
 
-// Public namespace-scope contract required by the Forretress scenario extension.
-// Keep these declarations at the package boundary before the shared registry policy
-// so this owner exposes its complete namespace-scope composition in one file.
+// Keep the namespace-scope scenario contract in a normal header while this package
+// remains responsible for textual runtime and extension composition.
 // C++ declaration rules: https://eel.is/c++draft/dcl.pre
-using ScenarioList = std::vector<Scenario>;
-using GarbodorScenarioSet = std::array<Scenario, 2>;
-ScenarioList all_scenarios();
-std::optional<Scenario> scenario_by_label(const std::string& label);
+// Contract owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/scenario_registry.hpp
+#include "scenario_registry.hpp"
 
 // Reuse the shared physical append/lookup and extension-first fallback mechanics.
 // Shared scenario policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/scenario_extension_policy.inc

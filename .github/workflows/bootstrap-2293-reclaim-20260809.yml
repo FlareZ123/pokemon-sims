@@ -1,0 +1,43 @@
+name: Bootstrap issue 2293 reclaim 20260809
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.head_ref == 'fix/2293-gladion-latias-reclaim-20260809'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply current-main source patch
+        run: python scripts/apply_issue_2293_reclaim_20260809.py
+      - name: Build and verify exact regression
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+          ctest --test-dir build -R 'trace_issue_2293_strict_first_seed291' --output-on-failure
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 291 --require-ready-by 4 | tee issue-2293-seed291.txt
+      - name: Run complete local test catalog
+        run: ctest --test-dir build --output-on-failure
+      - name: Refresh source-bound matrices
+        run: |
+          python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_setup_docs.py --repo-root .
+          python scripts/generate_multi_deck_comparison.py --exe build/regidrago_sim --out-dir results --trials 100000 --matrix-seed 20260705
+          python scripts/update_multi_deck_docs.py --repo-root .
+      - name: Commit materialized fix
+        run: |
+          git rm scripts/apply_issue_2293_reclaim_20260809.py .github/workflows/bootstrap-2293-reclaim-20260809.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Fix #2293 Gladion Latias T4 route'
+          git push origin HEAD:${{ github.head_ref }}

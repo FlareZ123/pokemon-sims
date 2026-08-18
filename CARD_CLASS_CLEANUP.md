@@ -51,6 +51,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 2026-08-18 cleanup checkpoint: `src/trace_engine_v2/core/regidrago_line_helpers.inc` remains a compatibility include at the post-search Arven boundary, but it no longer contains a fallback include to the retired `core/card_classification.inc` path. The canonical catalog is composed first and owns `is_regidrago_v_line()`. Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
 
+2026-08-18 search-connector checkpoint: `src/trace_engine_v2/core/routes/search_connector_helpers.inc` now gives post-search outlet feasibility explicit owners for card presence, survival of the current search discard, and Ultra Ball payability. Keep future K1 connector cleanup on these named helpers so route callers do not recreate hand-count and discard-cost arithmetic. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+
 ## Active card migrations
 
 No open migration issue is assumed by this plan. Before starting a card migration, search the current issue tracker and branch set for an existing owner. A migration should move intrinsic metadata and classification before printed resolution, then move printed resolution only after its live resolver and reusable `CardContext` operations are identified.

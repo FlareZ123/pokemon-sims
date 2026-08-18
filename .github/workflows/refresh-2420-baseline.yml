@@ -1,0 +1,48 @@
+name: Refresh issue 2420 simulation baseline
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: issue-2420-baseline-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.head_ref == 'fix/2420-team-yell-dde-readiness'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/2420-team-yell-dde-readiness
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Configure Release
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim regidrago_unified_tests --parallel 2
+      - name: Regenerate canonical shell matrix
+        run: ./build/regidrago_sim --trials 100000 --seed 20260705 --out results/simulation_results.csv
+      - name: Regenerate paired deck matrix
+        run: ./build/regidrago_sim --all-decks --trials 100000 --seed 20260705 --out results/multi_deck_comparison.csv
+      - name: Refresh source provenance
+        run: python3 -c "import json; from pathlib import Path; from scripts.baseline_provenance import simulator_policy_source_digest; p=Path('results/baseline_manifest.json'); d=json.loads(p.read_text(encoding='utf-8')); d['simulator_policy_source_sha256']=simulator_policy_source_digest(Path('.').resolve()); p.write_text(json.dumps(d, indent=2)+'\n', encoding='utf-8')"
+      - name: Validate baseline contracts
+        run: |
+          python3 tests/setup_report_contract_tests.py
+          python3 tests/multi_deck_report_contract_tests.py
+      - name: Commit refreshed baseline and remove temporary workflow
+        run: |
+          rm .github/workflows/refresh-2420-baseline.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "Refresh #2420 simulation provenance baseline"
+          git push origin HEAD:fix/2420-team-yell-dde-readiness

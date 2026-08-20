@@ -47,7 +47,10 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/board_state_policy.inc` owns reusable board traversal and board-index queries.
 - `src/trace_engine_v2/core/routes/search_connector_helpers.inc` owns complete K1 fallback selectors for Mysterious Treasure, Quick Ball, and Ultra Ball.
 - `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc` remains the live strategic target-priority owner composed by `part_009a.inc`. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+- `src/trace_engine_v2/core/locks/lock_mode_policy.inc` owns pure synthetic lock-mode classification and projected Item-lock timing. Engine retains state-dependent lock removal and action legality. Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
 - `src/trace_engine_v2/core/locks/garbodor_policy.inc` remains the sole Garbodor scenario-timing and Ability-lock policy owner. Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
+
+2026-08-21 lock-policy checkpoint: `part_003.inc` now delegates Supporter-lock classification, persistent T2 Item-lock timing, and Path-style Rule Box Ability-lock classification to `core/locks/lock_mode_policy.inc`. Keep future scenario-lock predicates on that pure owner, while physical Stadium removal and turn-state checks remain in Engine. Model contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock Path to the Peak: https://api.pokemontcg.io/v2/cards/swsh6-148
 
 2026-08-18 cleanup checkpoint: `src/trace_engine_v2/core/regidrago_line_helpers.inc` remains a compatibility include at the post-search Arven boundary, but it no longer contains a fallback include to the retired `core/card_classification.inc` path. The canonical catalog is composed first and owns `is_regidrago_v_line()`. Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
 
@@ -101,6 +104,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Search connector fallback order: `src/trace_engine_v2/core/routes/search_connector_helpers.inc`.
 - Mysterious Treasure strategic target order: `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc`.
 - Turn reset mechanics: `src/trace_engine_v2/core/turn_lifecycle.inc`.
+- Synthetic lock-mode classification and T2 Item-lock timing: `src/trace_engine_v2/core/locks/lock_mode_policy.inc`.
 - Scenario extension traversal: `src/trace_engine_v2/core/scenario_extension_policy.inc`.
 - Garbodor lock behavior: `src/trace_engine_v2/core/locks/garbodor_policy.inc`.
 - Card effect bridge: `src/trace_engine_v2/core/adapters/card_context_adapter.hpp`.
@@ -111,7 +115,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 2. Keep `core/mysterious_treasure_target_policy.inc` until `part_009a.inc` is migrated to a canonical organized route package. Preserve its target order and direct Mysterious Treasure card-data citation during that move.
 3. Continue moving complete route bodies from numbered `part_*` fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner.
 4. Keep card metadata and printed-effect migrations flowing through `src/cards/` and `src/rules/`; do not move DCI, UDP, AMR, connector domination, K0/K1, or opponent-pressure policy into card classes.
-5. Prefer one named policy owner for each reusable traversal or state-reset operation. Remove micro-forwarders after consumers use that owner directly.
+5. Prefer one named policy owner for each reusable traversal, lock classifier, or state-reset operation. Remove micro-forwarders after consumers use that owner directly.
 6. Preserve all source URLs beside rules-sensitive code during moves. Use the advanced manual for procedural rules and exact card records for printed effects.
 
 ## One-card workflow

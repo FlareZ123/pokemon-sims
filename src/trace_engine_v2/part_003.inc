@@ -187,11 +187,20 @@ class Engine {
     if (trace_ != nullptr) trace_->add(state_.turn, action, rules, detail);
   }
 
+  static bool uses_full_supporter_lock(const LockMode locks) {
+    return LockModePolicy::uses_full_supporter_lock(locks); // Owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/locks/lock_mode_policy.inc
+  }
+  static bool uses_turn_two_item_lock(const LockMode locks) {
+    return LockModePolicy::uses_turn_two_item_lock(locks); // Owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/locks/lock_mode_policy.inc
+  }
+  static bool uses_path_style_ability_lock(const LockMode locks) {
+    return LockModePolicy::uses_path_style_ability_lock(locks); // Path effect: https://api.pokemontcg.io/v2/cards/swsh6-148
+  }
   bool first_turn_going_first() const { return state_.turn == 1 && scenario_.going_first; }
   bool first_turn_going_second() const { return state_.turn == 1 && !scenario_.going_first; }
   bool supporter_allowed() const {
-    return !LockModePolicy::uses_full_supporter_lock(scenario_.locks) &&
-           !first_turn_going_first() && !state_.supporter_used && !state_.turn_ended;
+    return !uses_full_supporter_lock(scenario_.locks) && !first_turn_going_first() &&
+           !state_.supporter_used && !state_.turn_ended;
   }
   bool item_locked_on_turn(const int turn) const {
     // Keep current and projected Item-lock checks on one persistent-turn contract.
@@ -202,8 +211,7 @@ class Engine {
   bool rule_box_abilities_locked() const {
     // Path to the Peak suppresses Rule Box Pokémon Abilities only while that Stadium
     // remains in play: https://api.pokemontcg.io/v2/cards/swsh6-148
-    return LockModePolicy::uses_path_style_ability_lock(scenario_.locks) &&
-           !state_.path_lock_removed;
+    return uses_path_style_ability_lock(scenario_.locks) && !state_.path_lock_removed;
   }
   bool ability_available_for_pokemon(const Card card) const {
     return !is_rule_box_pokemon(card) || !rule_box_abilities_locked();

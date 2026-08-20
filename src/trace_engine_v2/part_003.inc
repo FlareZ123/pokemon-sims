@@ -1,3 +1,5 @@
+#include "core/locks/lock_mode_policy.inc"
+
 class Engine {
  public:
   friend struct EngineTestAccess;
@@ -185,36 +187,22 @@ class Engine {
     if (trace_ != nullptr) trace_->add(state_.turn, action, rules, detail);
   }
 
-  static bool uses_full_supporter_lock(const LockMode locks) {
-    return locks == LockMode::FullSupporter;
-  }
   bool first_turn_going_first() const { return state_.turn == 1 && scenario_.going_first; }
   bool first_turn_going_second() const { return state_.turn == 1 && !scenario_.going_first; }
   bool supporter_allowed() const {
-    return !uses_full_supporter_lock(scenario_.locks) && !first_turn_going_first() &&
-           !state_.supporter_used && !state_.turn_ended;
-  }
-  static bool uses_turn_two_item_lock(const LockMode locks) {
-    return locks == LockMode::TurnTwoItem || locks == LockMode::FullCombined;
+    return !LockModePolicy::uses_full_supporter_lock(scenario_.locks) &&
+           !first_turn_going_first() && !state_.supporter_used && !state_.turn_ended;
   }
   bool item_locked_on_turn(const int turn) const {
     // Keep current and projected Item-lock checks on one persistent-turn contract.
-    // `TurnTwoItem` and `FullCombined` begin on the player's second turn and remain
-    // active afterward: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
-    // `FullItem` remains the explicit synthetic/historical always-on fixture mode.
-    // Canonical Item timing background: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/mew_rulebook_en.pdf
-    // Historical aggregate-lock correction: https://github.com/FlareZ123/pokemon-sims/issues/2247
-    return scenario_.locks == LockMode::FullItem ||
-           (uses_turn_two_item_lock(scenario_.locks) && turn >= 2);
+    // Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/locks/lock_mode_policy.inc
+    return LockModePolicy::item_locked_on_turn(scenario_.locks, turn);
   }
   bool item_locked() const { return item_locked_on_turn(state_.turn); }
-  static bool uses_path_style_ability_lock(const LockMode locks) {
-    return locks == LockMode::FullRuleBoxAbility || locks == LockMode::FullCombined;
-  }
   bool rule_box_abilities_locked() const {
     // Path to the Peak suppresses Rule Box Pokémon Abilities only while that Stadium
     // remains in play: https://api.pokemontcg.io/v2/cards/swsh6-148
-    return uses_path_style_ability_lock(scenario_.locks) &&
+    return LockModePolicy::uses_path_style_ability_lock(scenario_.locks) &&
            !state_.path_lock_removed;
   }
   bool ability_available_for_pokemon(const Card card) const {

@@ -33,19 +33,31 @@
     return needed_grass_in_discard || needed_fire_in_discard;
   }
 
+  Pokemon* first_open_tool_holder(const bool allow_active,
+                                  const bool require_pokemon_v) {
+    // Keep physical open-Tool traversal in one place. Forest Seal Stone may be
+    // attached to any Pokémon, while its Star Alchemy access requires Pokémon V:
+    // https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Architecture contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+    const auto eligible = [require_pokemon_v](const Pokemon& pokemon) {
+      return pokemon.tool == Tool::None &&
+             (!require_pokemon_v || is_pokemon_v(pokemon.card));
+    };
+    if (allow_active && state_.active && eligible(*state_.active)) {
+      return &*state_.active;
+    }
+    for (Pokemon& pokemon : state_.bench) {
+      if (eligible(pokemon)) return &pokemon;
+    }
+    return nullptr;
+  }
+
   Pokemon* first_open_fss_v_holder(const bool allow_active) {
     // Strategy prefers a Pokémon V while Star Alchemy is still available. This is
     // a route preference, separate from the broader physical Tool legality below:
     // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
     // Architecture contract: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
-    if (allow_active && state_.active && is_pokemon_v(state_.active->card) &&
-        state_.active->tool == Tool::None) {
-      return &*state_.active;
-    }
-    for (Pokemon& pokemon : state_.bench) {
-      if (is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None) return &pokemon;
-    }
-    return nullptr;
+    return first_open_tool_holder(allow_active, true);
   }
 
   Pokemon* first_open_fss_holder(const bool allow_active) {
@@ -56,13 +68,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Confirmed legality bug: https://github.com/FlareZ123/pokemon-sims/issues/4158
     if (Pokemon* holder = first_open_fss_v_holder(allow_active)) return holder;
-    if (allow_active && state_.active && state_.active->tool == Tool::None) {
-      return &*state_.active;
-    }
-    for (Pokemon& pokemon : state_.bench) {
-      if (pokemon.tool == Tool::None) return &pokemon;
-    }
-    return nullptr;
+    return first_open_tool_holder(allow_active, false);
   }
 
   void attach_fss_to(Pokemon& target) {

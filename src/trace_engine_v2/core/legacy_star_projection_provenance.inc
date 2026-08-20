@@ -4,10 +4,13 @@
       removed_marker_ = card;
     }
 
-    [[nodiscard]] std::optional<Card> take_removed_marker() {
-      const std::optional<Card> marker = removed_marker_;
+    void restore_to(std::vector<Card>& discarded_this_turn) {
+      // Keep the marker consumption and reset owned by the provenance state so
+      // callers cannot restore the card while accidentally leaving stale state:
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+      if (!removed_marker_) return;
+      discarded_this_turn.push_back(*removed_marker_);
       removed_marker_.reset();
-      return marker;
     }
 
    private:
@@ -61,10 +64,7 @@
     // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://api.pokemontcg.io/v2/cards/sm9-152
     // https://github.com/FlareZ123/pokemon-sims/issues/936
-    const std::optional<Card> marker =
-        legacy_star_projection_provenance_.take_removed_marker();
-    if (!marker) return;
-    state_.discarded_this_turn.push_back(*marker);
+    legacy_star_projection_provenance_.restore_to(state_.discarded_this_turn);
   }
 
   std::optional<PokemonCommunicationPlan>

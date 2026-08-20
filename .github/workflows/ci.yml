@@ -79,12 +79,25 @@ jobs:
           grep -q "Searched up to 3 cards: Regidrago VSTAR, Brilliant Blender. Turn ended." trace-4.txt
           assert_absent "T3 | DISCARD.*Dragapult ex (Quick Ball cost)" trace-4.txt
           grep -q "T3 | READY" trace-4.txt
-          # Quick Ball must preserve the strict-JIT Dragon until the VSTAR card axis is reachable:
-          # https://api.pokemontcg.io/v2/cards/swsh1-179
-          # https://api.pokemontcg.io/v2/cards/swsh12-136
-          # https://www.pokemon.com/us/pokemon-tcg/rules
-          # https://github.com/FlareZ123/pokemon-sims/issues/953
-          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 19 --require-ready-by 3 | tee trace-5.txt
+          # Seed 42 going second is the current deterministic #953 witness: Quick Ball
+          # and Dragapult ex remain together while the VSTAR axis is deferred to the
+          # next-turn Arven -> Forest Seal Stone route, then Quick Ball may spend the
+          # Dragon payload only on the T3 ready turn.
+          # Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+          # Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+          # Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+          # Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+          # Strict-JIT and connector preservation: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+          # Advanced turn/search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+          # Original confirmed gameplay bug: https://github.com/FlareZ123/pokemon-sims/issues/953
+          # Confirmed stale regression witness: https://github.com/FlareZ123/pokemon-sims/issues/4318
+          ./build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 42 --require-ready-by 3 | tee trace-5.txt
+          grep -q "T2 | POLICY.*Start:.*Quick Ball, Dragapult ex" trace-5.txt
+          grep -q "T2 | PLAY SUPPORTER.*Exchanged Gladion for Arven to guarantee the next-turn Forest Seal Stone and Brilliant Blender route" trace-5.txt
+          assert_absent "T1 | DISCARD.*Dragapult ex (Quick Ball cost)" trace-5.txt
+          assert_absent "T2 | DISCARD.*Dragapult ex (Quick Ball cost)" trace-5.txt
+          grep -q "T3 | DISCARD.*Dragapult ex (Quick Ball cost)" trace-5.txt
+          grep -q "T3 | READY" trace-5.txt
           # Earthen Vessel must preserve its one-discard payload outlet until VSTAR is reachable:
           # https://api.pokemontcg.io/v2/cards/sv4-163
           # https://api.pokemontcg.io/v2/cards/swsh12-136

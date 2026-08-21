@@ -1,0 +1,2 @@
+Independent debug-mode CI marker for --simulate-this audit C.
+No simulator source, rules, card data, or strategy policy is changed.

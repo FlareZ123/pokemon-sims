@@ -53,6 +53,10 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 2026-08-18 search-connector checkpoint: `src/trace_engine_v2/core/routes/search_connector_helpers.inc` now gives post-search outlet feasibility explicit owners for card presence, survival of the current search discard, and Ultra Ball payability. Keep future K1 connector cleanup on these named helpers so route callers do not recreate hand-count and discard-cost arithmetic. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 
+2026-08-21 route-ownership checkpoint: `src/trace_engine_v2/part_earthen_vessel_vstar_window_override.inc` is now a compatibility include for `src/trace_engine_v2/core/routes/earthen_vessel_vstar_window_policy.inc`. The live Earthen Vessel / VSTAR timing-window body moved intact to the named route owner, with K0/K1, strict-JIT, Latias, Regidrago VSTAR, and Earthen Vessel source links preserved at the route. Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136 Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+
+2026-08-21 Tate composition checkpoint: `src/trace_engine_v2/part_008a.inc` is now a compatibility include for `src/trace_engine_v2/core/tate/opening_legacy_continuation.inc`. The move deliberately preserves the historical cross-fragment continuation from `part_007.inc` and the existing macro boundary owned by `composition/opening_engine_overrides.inc`. Retire the root forwarder only after all source-contract references to `part_008a.inc` have migrated.
+
 ## Active card migrations
 
 No open migration issue is assumed by this plan. Before starting a card migration, search the current issue tracker and branch set for an existing owner. A migration should move intrinsic metadata and classification before printed resolution, then move printed resolution only after its live resolver and reusable `CardContext` operations are identified.
@@ -109,7 +113,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 
 1. Continue deleting forwarding `.inc` files only after tracing them from `composition/engine_body.inc` and proving they are absent from the live include graph. A missing historical target is evidence of stale code, while composition reachability is the decisive check.
 2. Keep `core/mysterious_treasure_target_policy.inc` until `part_009a.inc` is migrated to a canonical organized route package. Preserve its target order and direct Mysterious Treasure card-data citation during that move.
-3. Continue moving complete route bodies from numbered `part_*` fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner.
+3. Continue moving complete route bodies from numbered `part_*` fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner. The new Earthen Vessel and Tate compatibility forwarders are explicit retirement candidates after source-contract references migrate.
 4. Keep card metadata and printed-effect migrations flowing through `src/cards/` and `src/rules/`; do not move DCI, UDP, AMR, connector domination, K0/K1, or opponent-pressure policy into card classes.
 5. Prefer one named policy owner for each reusable traversal or state-reset operation. Remove micro-forwarders after consumers use that owner directly.
 6. Preserve all source URLs beside rules-sensitive code during moves. Use the advanced manual for procedural rules and exact card records for printed effects.

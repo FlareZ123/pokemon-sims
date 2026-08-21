@@ -1,0 +1,44 @@
+#pragma once
+
+// Canonical Tapu Lele-GX connector policy package. Keep copy-aware Wonder Tag
+// admission and the adjacent historical connector aliases together at one route owner.
+// Tapu Lele-GX / Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
+// Strategy ownership: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+  class TapuConnectorPolicy final {
+   public:
+    [[nodiscard]] static constexpr bool species_presence_blocks_copy(
+        const bool card_is_in_play, const bool another_copy_is_known) {
+      // Wonder Tag belongs to the individual Tapu Lele-GX played from hand onto the Bench:
+      // https://api.pokemontcg.io/v2/cards/sm2-60
+      return card_is_in_play && !another_copy_is_known;
+    }
+  };
+
+  bool tapu_connector_copy_aware_in_play(const Card card) const {
+    // Wonder Tag belongs to the individual Tapu Lele-GX played from hand onto the
+    // Bench. Ignore species-level board presence only when another physical copy is
+    // proven in hand or in an inspected deck. K0 uncertainty alone must not displace
+    // a stronger deterministic route such as Team Yell's Cheer into Latias ex:
+    // https://api.pokemontcg.io/v2/cards/sm2-60
+    // https://www.pokemon.com/us/pokemon-tcg/rules
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // https://github.com/FlareZ123/pokemon-sims/issues/746
+    const bool another_tapu_copy_is_known =
+        card == Card::TapuLeleGX && has_known_hand_or_deck_copy(card);
+    return TapuConnectorPolicy::species_presence_blocks_copy(
+        in_play(card), another_tapu_copy_is_known);
+  }
+
+// Keep the legacy Tapu-adjacent aliases with the policy that consumes them so the
+// opening composition has one owner for this connector family.
+// Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+// Crobat V: https://api.pokemontcg.io/v2/cards/swsh3-104
+// Route history: https://github.com/FlareZ123/pokemon-sims/issues/1726
+#define bench_crobat_if_useful bench_crobat_if_useful_issue_1726_original
+
+// Preserve the completed #1605 implementation as the historical baseline while
+// #2645 installs the state-driven route after part_006.inc is parsed:
+// https://github.com/FlareZ123/pokemon-sims/issues/1605
+// https://github.com/FlareZ123/pokemon-sims/issues/2645
+#define issue_1605_arven_crobat_route_available issue_1605_arven_crobat_route_available_issue2645_original

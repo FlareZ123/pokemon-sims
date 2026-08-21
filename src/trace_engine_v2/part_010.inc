@@ -2,8 +2,12 @@
     state_.hand.push_back(*first);
     if (!second) return false;
 
-    remove_one(state_.hand, Card::UltraBall);
-    state_.discard.push_back(Card::UltraBall);
+    // The played Ultra Ball leaves ordinary hand before its printed two-card cost,
+    // then remains outside discard until its search and shuffle have finished.
+    // Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4339
+    if (!begin_legacy_item_resolution(Card::UltraBall)) return false;
     discard_from_hand(*first, "Ultra Ball cost", "R-UB-01");
     discard_from_hand(*second, "Ultra Ball cost", "R-UB-01");
     // Ultra Ball searches for any Pokémon after its two-card cost: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
@@ -23,6 +27,10 @@
                            (want_payload && is_payload(target));
       if (desired && move_deck_to_hand(target)) {
         shuffle(state_.deck);
+        // Ultra Ball is discarded only after its Item effect completes.
+        // Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+        // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+        if (!finish_legacy_item_resolution(Card::UltraBall)) return false;
         trace("PLAY ITEM", "R-UB-01; R-GAME-ITEM", "Searched a Pokémon: " + std::string(name(target)) + ".");
         return true;
       }
@@ -30,6 +38,10 @@
     const Card fallback = fallback_ultra_ball_target_after_search_started();
     const bool found_fallback = move_deck_to_hand(fallback);
     shuffle(state_.deck);
+    // Ultra Ball is discarded only after its Item effect completes.
+    // Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    if (!finish_legacy_item_resolution(Card::UltraBall)) return false;
     trace("PLAY ITEM", "R-UB-01; R-GAME-ITEM", found_fallback ? "No preferred target remained; legally searched " + std::string(name(fallback)) + "." : "No Pokémon remained after search.");
     return true;
   }
@@ -51,8 +63,12 @@
                               hand_payload_discard_outlet;
     if (!want_vstar && !want_payload) return false;
 
-    remove_one(state_.hand, Card::EvolutionIncense);
-    state_.discard.push_back(Card::EvolutionIncense);
+    // Evolution Incense is a played Item source, not a discard-zone card during
+    // its deck search. B-01 moves it to discard only after the shuffle completes.
+    // Evolution Incense: https://api.pokemontcg.io/v2/cards/swsh1-163
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4339
+    if (!begin_legacy_item_resolution(Card::EvolutionIncense)) return false;
     record_deck_search_knowledge("Evolution Incense");
     bool found = false;
     Card found_card = Card::RegidragoVstar;
@@ -76,6 +92,10 @@
     if (!found && move_deck_to_hand(Card::GoodraVstar)) { found = true; found_card = Card::GoodraVstar; }
     if (!found && move_deck_to_hand(Card::Dipplin)) { found = true; found_card = Card::Dipplin; }
     shuffle(state_.deck);
+    // Evolution Incense is discarded after its search and shuffle resolve.
+    // Evolution Incense: https://api.pokemontcg.io/v2/cards/swsh1-163
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    if (!finish_legacy_item_resolution(Card::EvolutionIncense)) return false;
     trace("PLAY ITEM", "R-EVOINCENSE-01; R-GAME-ITEM", found ? "Searched an Evolution Pokémon: " + std::string(name(found_card)) + "." : "No Evolution Pokémon remained in deck.");
     return true;
   }
@@ -179,10 +199,18 @@
       cost = choose_discard(can_jit_discard, true, true, Card::EarthenVessel);
     }
     if (!cost) return false;
-    remove_one(state_.hand, Card::EarthenVessel);
-    state_.discard.push_back(Card::EarthenVessel);
+    // Earthen Vessel is played before its mandatory "discard another card" cost;
+    // the source remains outside discard throughout the Basic Energy search.
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4339
+    if (!begin_legacy_item_resolution(Card::EarthenVessel)) return false;
     discard_from_hand(*cost, "Earthen Vessel cost", "R-EV-01");
     search_energy_to_hand(2, "R-EV-01; R-GAME-ITEM", "Earthen Vessel");
+    // Earthen Vessel reaches discard only after its search and shuffle complete.
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    if (!finish_legacy_item_resolution(Card::EarthenVessel)) return false;
     return true;
   }
 
@@ -192,14 +220,22 @@
     // later shuffle instead of consuming the Item on a dead payload route.
     if (item_locked() || hand_count(Card::BrilliantBlender) == 0 || !can_play_payload_this_turn() ||
         !payload_might_be_in_deck()) return false;
-    remove_one(state_.hand, Card::BrilliantBlender);
-    state_.discard.push_back(Card::BrilliantBlender);
+    // Brilliant Blender is outside hand and discard while its deck-discard effect
+    // resolves; B-01 step 4 moves the source to discard after the shuffle.
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4339
+    if (!begin_legacy_item_resolution(Card::BrilliantBlender)) return false;
     std::vector<Card> discarded;
     for (const Card payload : {Card::Appletun, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
       if (move_deck_to_discard(payload)) { discarded.push_back(payload); break; }
     }
     if (move_deck_to_discard(Card::Dipplin)) discarded.push_back(Card::Dipplin);
     shuffle(state_.deck);
+    // Brilliant Blender reaches discard only after its deck effect completes.
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    if (!finish_legacy_item_resolution(Card::BrilliantBlender)) return false;
     outcome_.used_blender = true;
     trace("PLAY ITEM", "R-BLENDER-01; R-GAME-ITEM; P-DCI-01", "Searched and discarded: " + join_cards(discarded) + ".");
     return true;

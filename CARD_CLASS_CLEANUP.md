@@ -53,6 +53,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 2026-08-18 search-connector checkpoint: `src/trace_engine_v2/core/routes/search_connector_helpers.inc` now gives post-search outlet feasibility explicit owners for card presence, survival of the current search discard, and Ultra Ball payability. Keep future K1 connector cleanup on these named helpers so route callers do not recreate hand-count and discard-cost arithmetic. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 
+2026-08-21 Steven-package checkpoint: `src/trace_engine_v2/core/routes/steven/package.inc` now owns the complete #1745 Steven/Latias T3 route body directly at the same textual position. The one-purpose `core/routes/steven_latias_t3_policy.inc` fragment is retired. Keep subsequent Steven route consolidation inside the package, preserve route order, and retain direct rule, card-data, K1, and issue URLs beside moved logic. Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145 Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76 Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
 ## Active card migrations
 
 No open migration issue is assumed by this plan. Before starting a card migration, search the current issue tracker and branch set for an existing owner. A migration should move intrinsic metadata and classification before printed resolution, then move printed resolution only after its live resolver and reusable `CardContext` operations are identified.
@@ -67,7 +69,7 @@ Keep strategic selection, DCI/UDP/AMR, Supporter contention, connector dominatio
 
 `src/trace_engine_v2/composition/post_014a_overrides.inc` owns the later Arven continuation that consumes the Regidrago-line compatibility seam. The shim now asserts that canonical classification was already composed instead of trying to reopen the retired classifier path.
 
-`src/trace_engine_v2/composition/steven_blender_overrides.inc` owns the Steven/Brilliant Blender macro-composition boundary. `src/trace_engine_v2/core/routes/steven/package.inc` is the canonical organized Steven route package. Retire remaining forwarders only when source-contract references and macro lifetime are both proven migrated.
+`src/trace_engine_v2/composition/steven_blender_overrides.inc` owns the Steven/Brilliant Blender macro-composition boundary. `src/trace_engine_v2/core/routes/steven/package.inc` is the canonical organized Steven route package and now directly owns the #1745 route body. Retire remaining forwarders only when source-contract references and macro lifetime are both proven migrated.
 
 ## Payload policy cleanup
 
@@ -109,7 +111,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 
 1. Continue deleting forwarding `.inc` files only after tracing them from `composition/engine_body.inc` and proving they are absent from the live include graph. A missing historical target is evidence of stale code, while composition reachability is the decisive check.
 2. Keep `core/mysterious_treasure_target_policy.inc` until `part_009a.inc` is migrated to a canonical organized route package. Preserve its target order and direct Mysterious Treasure card-data citation during that move.
-3. Continue moving complete route bodies from numbered `part_*` fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner.
+3. Continue moving complete route bodies from numbered `part_*` fragments and one-purpose route fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner. The #1745 Steven/Latias move is the reference pattern for direct package ownership.
 4. Keep card metadata and printed-effect migrations flowing through `src/cards/` and `src/rules/`; do not move DCI, UDP, AMR, connector domination, K0/K1, or opponent-pressure policy into card classes.
 5. Prefer one named policy owner for each reusable traversal or state-reset operation. Remove micro-forwarders after consumers use that owner directly.
 6. Preserve all source URLs beside rules-sensitive code during moves. Use the advanced manual for procedural rules and exact card records for printed effects.

@@ -114,22 +114,29 @@ void test_mysterious_treasure_finishes_in_discard_after_legal_search() {
   Fixture fixture;
   sim::State state;
   state.turn = 2;
+  state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 2, 1,
+                              sim::Tool::None};
   state.hand = {sim::Card::MysteriousTreasure, sim::Card::Channeler};
-  state.deck = {sim::Card::RegidragoV, sim::Card::Grass,
+  state.deck = {sim::Card::RegidragoVstar, sim::Card::Grass,
                 sim::Card::ErikasInvitation};
+  state.discard = {sim::Card::ProfessorBurnet, sim::Card::MegaDragonite};
+  state.discarded_this_turn = {sim::Card::MegaDragonite};
+  state.supporter_used = true;
   sim::EngineTestAccess::set_state(fixture.engine, state);
   sim::EngineTestAccess::set_deck_seen(fixture.engine, true);
 
-  // Mysterious Treasure discards one hand card, searches a Psychic or Dragon
-  // Pokémon, then shuffles. The played source is discarded only after that Item
-  // effect finishes under B-01.
+  // Professor Burnet has already established the strict current-turn Dragon
+  // payload, so Channeler is setup-dead and is a policy-legal Treasure cost while
+  // Regidrago VSTAR is the sole missing evolution axis.
   // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+  // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
   // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4339
   require(sim::EngineTestAccess::play_mysterious_treasure(fixture.engine),
           "Legal Mysterious Treasure search did not resolve.");
   const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
-  require(contains(after.hand, sim::Card::RegidragoV),
+  require(contains(after.hand, sim::Card::RegidragoVstar),
           "Mysterious Treasure did not search the legal Dragon target.");
   require(contains(after.discard, sim::Card::MysteriousTreasure),
           "Mysterious Treasure source did not enter discard after resolution.");

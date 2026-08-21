@@ -69,6 +69,8 @@ Keep strategic selection, DCI/UDP/AMR, Supporter contention, connector dominatio
 
 `src/trace_engine_v2/composition/steven_blender_overrides.inc` owns the Steven/Brilliant Blender macro-composition boundary. `src/trace_engine_v2/core/routes/steven/package.inc` is the canonical organized Steven route package. Retire remaining forwarders only when source-contract references and macro lifetime are both proven migrated.
 
+2026-08-21 Steven/Blender checkpoint: the composition owner now checks every temporary alias it creates before the legacy `part_010.inc` boundary and gives the issue-3202 bridge a dedicated entry/exit contract. Keep future `part_010*` retirement at this owner so macro lifetime remains mechanically auditable before any forwarding fragment is removed. C++ conditional preprocessing: https://eel.is/c++draft/cpp.cond Canonical composition owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/steven_blender_overrides.inc
+
 ## Payload policy cleanup
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner. Reuse `PayloadZonePolicy` only where physical-zone traversal, membership, and count semantics match exactly. Preserve physical order for observable first-match selection and preserve explicit strategic order for preference selection.

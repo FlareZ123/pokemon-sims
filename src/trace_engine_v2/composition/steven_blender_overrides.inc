@@ -8,8 +8,9 @@
 // Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
 
 #if defined(play_evolution_incense) || defined(play_earthen_vessel) || \
-    defined(play_brilliant_blender)
-#error "Steven/Blender composition requires search aliases to be undefined on entry"
+    defined(play_brilliant_blender) || defined(fss_target_after_search_started) || \
+    defined(attach_fss) || defined(should_play_steven)
+#error "Steven/Blender composition requires local aliases to be undefined on entry"
 #endif
 
 #define play_evolution_incense play_evolution_incense_original

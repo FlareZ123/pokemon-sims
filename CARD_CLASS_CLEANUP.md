@@ -41,6 +41,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` is the trace-engine bridge for reusable card effects.
 - `src/trace_engine_v2/core/card_catalog.inc` owns the shrinking unmigrated name and classification compatibility layer. Registered `CardDefinition` lookup stays the preferred metadata path.
 - `src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered composition spine: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
+- `src/trace_engine_v2/composition/opening_legacy_chain.inc` owns the complete `part_003.inc` -> `part_004.inc` -> `part_005.inc` textual continuation and intentionally exports only the cross-stage `begin_turn` and `ability_available_for_pokemon` aliases required by later composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_legacy_chain.inc
+- `src/trace_engine_v2/core/runtime/trace_formatting.inc` owns namespace-level card-list and Pokémon state-summary presentation used by trace output, keeping presentation helpers out of the ordered composition spine: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/runtime/trace_formatting.inc
 - `src/trace_engine_v2/core/turn_lifecycle.inc` owns turn-number assignment, action-state reset, transient lock reset, start-of-turn draw, and first-turn restriction tracing. Its reset orchestration has one `TurnLifecyclePolicy` owner.
 - `src/trace_engine_v2/core/deck_knowledge.inc` owns copy arithmetic after visibility is resolved. K0/K1 visibility decisions stay in Engine strategy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 - `src/trace_engine_v2/core/payload_hand_policy.inc` owns reusable Dragon-payload zone and preference traversal.
@@ -53,6 +55,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 2026-08-18 search-connector checkpoint: `src/trace_engine_v2/core/routes/search_connector_helpers.inc` now gives post-search outlet feasibility explicit owners for card presence, survival of the current search discard, and Ultra Ball payability. Keep future K1 connector cleanup on these named helpers so route callers do not recreate hand-count and discard-cost arithmetic. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 
+2026-08-21 composition checkpoint: namespace-level trace formatting now lives under `core/runtime/`, and the historical `part_003` through `part_005` continuation has one named composition owner. Future composition cleanup should preserve the new opening-chain export contract rather than reopening those split fragments directly. C++ textual include semantics: https://eel.is/c++draft/cpp.include
+
 ## Active card migrations
 
 No open migration issue is assumed by this plan. Before starting a card migration, search the current issue tracker and branch set for an existing owner. A migration should move intrinsic metadata and classification before printed resolution, then move printed resolution only after its live resolver and reusable `CardContext` operations are identified.
@@ -62,6 +66,8 @@ Keep strategic selection, DCI/UDP/AMR, Supporter contention, connector dominatio
 ## Composition ownership
 
 `src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered Engine composition owner. Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+
+`src/trace_engine_v2/composition/opening_legacy_chain.inc` owns the historical `part_003.inc` / `part_004.inc` / `part_005.inc` continuation at the exact former textual boundary. It releases only the temporary `might_be_unseen` alias locally. `begin_turn` remains live until `opening_engine_overrides.inc` consumes it, and `ability_available_for_pokemon` remains live until the late execution composition releases it. Preserve those macro lifetimes during further decomposition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/opening_legacy_chain.inc https://eel.is/c++draft/cpp.include
 
 `src/trace_engine_v2/composition/opening_engine_overrides.inc` owns the early override chain, including the live `part_009a.inc` Mysterious Treasure boundary. Do not infer that a root `.inc` is dead from naming or code-search absence alone. Prove its composition reachability from the ordered include spine before retirement.
 
@@ -104,15 +110,17 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Scenario extension traversal: `src/trace_engine_v2/core/scenario_extension_policy.inc`.
 - Garbodor lock behavior: `src/trace_engine_v2/core/locks/garbodor_policy.inc`.
 - Card effect bridge: `src/trace_engine_v2/core/adapters/card_context_adapter.hpp`.
+- Trace/state presentation: `src/trace_engine_v2/core/runtime/trace_formatting.inc`.
 
 ## Next cleanup steps
 
 1. Continue deleting forwarding `.inc` files only after tracing them from `composition/engine_body.inc` and proving they are absent from the live include graph. A missing historical target is evidence of stale code, while composition reachability is the decisive check.
 2. Keep `core/mysterious_treasure_target_policy.inc` until `part_009a.inc` is migrated to a canonical organized route package. Preserve its target order and direct Mysterious Treasure card-data citation during that move.
-3. Continue moving complete route bodies from numbered `part_*` fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner.
+3. Continue moving complete route bodies from numbered `part_*` fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner. Do not split the new `opening_legacy_chain.inc` until a complete function/member boundary is proven across `part_003` through `part_005`.
 4. Keep card metadata and printed-effect migrations flowing through `src/cards/` and `src/rules/`; do not move DCI, UDP, AMR, connector domination, K0/K1, or opponent-pressure policy into card classes.
 5. Prefer one named policy owner for each reusable traversal or state-reset operation. Remove micro-forwarders after consumers use that owner directly.
-6. Preserve all source URLs beside rules-sensitive code during moves. Use the advanced manual for procedural rules and exact card records for printed effects.
+6. Keep presentation-only helpers under `core/runtime/` or another explicit support owner rather than expanding `composition/engine_body.inc` with namespace-level implementation bodies.
+7. Preserve all source URLs beside rules-sensitive code during moves. Use the advanced manual for procedural rules and exact card records for printed effects.
 
 ## One-card workflow
 
@@ -131,4 +139,4 @@ If migration exposes gameplay behavior that is wrong, use the normal bug-confirm
 
 A cleanup PR is mergeable only when strict Release compilation succeeds, focused tests and the full regression suite show no new failure, sanitizer and structural checks show no new failure, representative `--simulate-this` traces preserve legal action ordering and readiness, the paired T2/T3 matrix has no unexplained drift, and the PR contains no gameplay behavior change.
 
-Known baseline failures must be tied to an existing issue and remain unchanged. Any newly discovered gameplay defect uses the separate bug-confirmation workflow.
+Known baseline failures must be tied to an existing issue and remain unchanged. Any newly discovered gameplay defect uses the separate bug-confirmation workflow and keep the behavior fix out of cleanup.

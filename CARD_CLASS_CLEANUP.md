@@ -53,6 +53,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 2026-08-18 search-connector checkpoint: `src/trace_engine_v2/core/routes/search_connector_helpers.inc` now gives post-search outlet feasibility explicit owners for card presence, survival of the current search discard, and Ultra Ball payability. Keep future K1 connector cleanup on these named helpers so route callers do not recreate hand-count and discard-cost arithmetic. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 
+2026-08-21 policy-centralization checkpoint: `PayloadPreferencePolicy` exposes one named preference-order accessor while preserving the existing `kOrder` compatibility surface, and canonical board traversal/index operations now call `BoardIndexPolicy` directly instead of routing internal mechanics back through legacy free wrappers. Keep the wrappers only until numbered fragments stop calling them, then remove those compatibility seams rather than adding another forwarding layer. Payload owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc Board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+
 ## Active card migrations
 
 No open migration issue is assumed by this plan. Before starting a card migration, search the current issue tracker and branch set for an existing owner. A migration should move intrinsic metadata and classification before printed resolution, then move printed resolution only after its live resolver and reusable `CardContext` operations are identified.
@@ -95,8 +97,8 @@ Keep `KnowledgeCopyPolicy` as a final arithmetic utility with no Engine or State
 
 Before adding a route-local loop or helper, reuse an existing owner when ordering and semantics match exactly:
 
-- Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.
-- Board traversal and indices: `src/trace_engine_v2/core/board_state_policy.inc`.
+- Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`; use `PayloadZonePolicy` for physical-zone mechanics and `PayloadPreferencePolicy::ordered_cards()` / preference helpers for strategic order.
+- Board traversal and indices: `src/trace_engine_v2/core/board_state_policy.inc`; new internal mechanics should call `BoardIndexPolicy` directly, leaving compatibility wrappers for legacy callers only.
 - K0/K1 copy arithmetic: `src/trace_engine_v2/core/deck_knowledge.inc`.
 - Search connector fallback order: `src/trace_engine_v2/core/routes/search_connector_helpers.inc`.
 - Mysterious Treasure strategic target order: `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc`.
@@ -111,7 +113,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 2. Keep `core/mysterious_treasure_target_policy.inc` until `part_009a.inc` is migrated to a canonical organized route package. Preserve its target order and direct Mysterious Treasure card-data citation during that move.
 3. Continue moving complete route bodies from numbered `part_*` fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner.
 4. Keep card metadata and printed-effect migrations flowing through `src/cards/` and `src/rules/`; do not move DCI, UDP, AMR, connector domination, K0/K1, or opponent-pressure policy into card classes.
-5. Prefer one named policy owner for each reusable traversal or state-reset operation. Remove micro-forwarders after consumers use that owner directly.
+5. Prefer one named policy owner for each reusable traversal or state-reset operation. Migrate remaining callers off payload/board compatibility wrappers, then remove those wrappers instead of extending them.
 6. Preserve all source URLs beside rules-sensitive code during moves. Use the advanced manual for procedural rules and exact card records for printed effects.
 
 ## One-card workflow

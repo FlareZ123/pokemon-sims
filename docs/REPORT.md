@@ -14,11 +14,11 @@ Seed: `20260705`.
 
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
-| Strict JIT, going first | 12.234% | 41.859% | 59.39% |
-| Matchup-flex JIT, going first | 17.152% | 50.658% | 68.089% |
+| Strict JIT, going first | 12.177% | 41.82% | 59.369% |
+| Matchup-flex JIT, going first | 17.216% | 50.825% | 68.234% |
 | No discard control, going first | 19.74% | 56.829% | 73.585% |
-| Strict JIT, going second | 29.793% | 55.668% | 67.498% |
-| Matchup-flex JIT, going second | 37.424% | 64.317% | 75.962% |
+| Strict JIT, going second | 29.856% | 55.696% | 67.607% |
+| Matchup-flex JIT, going second | 37.499% | 64.39% | 76.023% |
 | No discard control, going second | 40.448% | 68.575% | 80.147% |
 
 ## Lock stress tests
@@ -28,15 +28,15 @@ Turn-one full Item-lock rows are intentionally omitted and must not be reintrodu
 | Scenario | T2 | T3 | T4 |
 |---|---:|---:|---:|
 | Strict JIT, turn-two Item lock, first | 4.523% | 10.518% | 18.591% |
-| Strict JIT, Rule Box Ability lock, first | 4.545% | 28.165% | 43.128% |
+| Strict JIT, Rule Box Ability lock, first | 4.499% | 28.053% | 43.019% |
 | Strict JIT, turn-two Item + Rule Box Ability lock, first | 0.779% | 4.667% | 9.645% |
 | Strict JIT, turn-two Item lock, second | 14.077% | 28.453% | 37.255% |
-| Strict JIT, Rule Box Ability lock, second | 18.419% | 37.234% | 49.574% |
+| Strict JIT, Rule Box Ability lock, second | 18.54% | 37.31% | 49.713% |
 | Strict JIT, turn-two Item + Rule Box Ability lock, second | 3.874% | 14.683% | 20.372% |
-| Strict JIT, Supporter lock, first | 0.005% | 16.426% | 23.376% |
-| Strict JIT, Supporter lock, second | 7.852% | 20.358% | 26.736% |
-| Garbodor + Boost Shake Ability lock, first | 5.602% | 25.112% | 37.757% |
-| Garbodor + Boost Shake Ability lock, second | 15.436% | 30.671% | 41.931% |
+| Strict JIT, Supporter lock, first | 0.005% | 16.425% | 23.367% |
+| Strict JIT, Supporter lock, second | 7.918% | 20.453% | 26.831% |
+| Garbodor + Boost Shake Ability lock, first | 5.66% | 25.146% | 37.724% |
+| Garbodor + Boost Shake Ability lock, second | 15.438% | 30.684% | 41.874% |
 
 ## Interpretation boundary
 

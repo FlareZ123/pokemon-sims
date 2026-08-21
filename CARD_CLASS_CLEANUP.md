@@ -53,6 +53,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 2026-08-18 search-connector checkpoint: `src/trace_engine_v2/core/routes/search_connector_helpers.inc` now gives post-search outlet feasibility explicit owners for card presence, survival of the current search discard, and Ultra Ball payability. Keep future K1 connector cleanup on these named helpers so route callers do not recreate hand-count and discard-cost arithmetic. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 
+2026-08-21 Quick Ball projection checkpoint: `src/trace_engine_v2/core/routes/quick_ball/legacy_star_projection_policy.inc` now owns one typed `LegacyStarQuickBallPolicy::Projection` for the Legacy Star arbitration inputs instead of positional booleans spread across the issue-1016 wrapper. Keep future Quick Ball route cleanup on typed policy inputs so Engine wrappers supply observable state facts while the reusable route classifier owns their combination. Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Regidrago VSTAR / Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
+
 ## Active card migrations
 
 No open migration issue is assumed by this plan. Before starting a card migration, search the current issue tracker and branch set for an existing owner. A migration should move intrinsic metadata and classification before printed resolution, then move printed resolution only after its live resolver and reusable `CardContext` operations are identified.

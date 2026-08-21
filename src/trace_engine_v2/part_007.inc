@@ -115,15 +115,20 @@
     const int deck_fire = deck_count_after_search_started(Card::Fire);
     const bool deck_payload = std::any_of(
         state_.deck.begin(), state_.deck.end(), is_payload);
-    const bool route_cost_paid = count_of(state_.discard, Card::TateLiza) > 0 ||
-        count_of(state_.discard, Card::Lusamine) > 0;
-    // Quick Ball is the route's already-paid T1 Item, Steven's Resolve and Crispin
-    // consume future Supporter plays, and Earthen Vessel is the required T3 Item.
-    // Evaluate each action class at the turn where the route uses it:
-    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // This is a post-search selector. Tapu in play, K1, and the still-live T1-T3
+    // resources below prove the route without replaying the historical Quick Ball
+    // source or cost identity. A dead Dipplin is an equally legal paid cost in this
+    // submitted no-Applin list, so discard fingerprints cannot define route validity:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Dipplin: https://api.pokemontcg.io/v2/cards/sv6-127
+    // K1 / DCI / earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed state-relative regression: https://github.com/FlareZ123/pokemon-sims/issues/4343
+    // Steven's Resolve and Crispin consume future Supporter plays, and Earthen Vessel
+    // is the required T3 Item. Evaluate each action class on the turn that uses it:
     // https://api.pokemontcg.io/v2/cards/sm7-145
     // https://api.pokemontcg.io/v2/cards/sv7-133
     // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-interpretation
     const bool t1_quick_ball_allowed = !item_locked_on_turn(1);
@@ -149,7 +154,6 @@
         state_.active && state_.active->card == Card::RegidragoV &&
         state_.active->grass == 0 && state_.active->fire == 0 &&
         state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368
-        count_of(state_.discard, Card::QuickBall) > 0 && route_cost_paid &&
         in_play(Card::TapuLeleGX) &&
         ability_available_for_pokemon(Card::TapuLeleGX) &&
         hand_count(Card::RegidragoVstar) > 0 && hand_count(Card::Grass) >= 2 &&

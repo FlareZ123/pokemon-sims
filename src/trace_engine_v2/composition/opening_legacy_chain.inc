@@ -39,6 +39,8 @@
 #error "Opening composition leaked the temporary might_be_unseen alias"
 #endif
 
+// The next stages deliberately consume these aliases; this owner must not release
+// them early. C++ macro replacement lifecycle: https://eel.is/c++draft/cpp.replace
 #if !defined(begin_turn) || !defined(ability_available_for_pokemon)
 #error "Opening legacy chain must export begin_turn and ability_available_for_pokemon"
 #endif

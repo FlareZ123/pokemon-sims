@@ -53,6 +53,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 2026-08-18 search-connector checkpoint: `src/trace_engine_v2/core/routes/search_connector_helpers.inc` now gives post-search outlet feasibility explicit owners for card presence, survival of the current search discard, and Ultra Ball payability. Keep future K1 connector cleanup on these named helpers so route callers do not recreate hand-count and discard-cost arithmetic. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 
+2026-08-21 shared-policy checkpoint: K1 fallback wrappers now share one `fallback_target_after_search_started()` deck-count adapter in `core/routes/search_connector_helpers.inc`, while `core/board_state_policy.inc` routes Active-first and Bench-only first-match discovery through one index-aware traversal owner. Keep card-specific target order, DCI/JIT admission, and board predicates at their current strategy callers. These abstractions are mechanical cleanup seams and must remain behavior-neutral. Search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md C++ traversal semantics: https://eel.is/c++draft/alg.find
+
 ## Active card migrations
 
 No open migration issue is assumed by this plan. Before starting a card migration, search the current issue tracker and branch set for an existing owner. A migration should move intrinsic metadata and classification before printed resolution, then move printed resolution only after its live resolver and reusable `CardContext` operations are identified.
@@ -96,9 +98,9 @@ Keep `KnowledgeCopyPolicy` as a final arithmetic utility with no Engine or State
 Before adding a route-local loop or helper, reuse an existing owner when ordering and semantics match exactly:
 
 - Dragon payload queries: `src/trace_engine_v2/core/payload_hand_policy.inc`.
-- Board traversal and indices: `src/trace_engine_v2/core/board_state_policy.inc`.
+- Board traversal and indices: `src/trace_engine_v2/core/board_state_policy.inc`. First-match board queries should reuse the index-aware traversal owner rather than duplicate Active/Bench loops.
 - K0/K1 copy arithmetic: `src/trace_engine_v2/core/deck_knowledge.inc`.
-- Search connector fallback order: `src/trace_engine_v2/core/routes/search_connector_helpers.inc`.
+- Search connector fallback order: `src/trace_engine_v2/core/routes/search_connector_helpers.inc`. Post-search wrappers should reuse the shared deck-count adapter.
 - Mysterious Treasure strategic target order: `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc`.
 - Turn reset mechanics: `src/trace_engine_v2/core/turn_lifecycle.inc`.
 - Scenario extension traversal: `src/trace_engine_v2/core/scenario_extension_policy.inc`.
@@ -110,9 +112,10 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 1. Continue deleting forwarding `.inc` files only after tracing them from `composition/engine_body.inc` and proving they are absent from the live include graph. A missing historical target is evidence of stale code, while composition reachability is the decisive check.
 2. Keep `core/mysterious_treasure_target_policy.inc` until `part_009a.inc` is migrated to a canonical organized route package. Preserve its target order and direct Mysterious Treasure card-data citation during that move.
 3. Continue moving complete route bodies from numbered `part_*` fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner.
-4. Keep card metadata and printed-effect migrations flowing through `src/cards/` and `src/rules/`; do not move DCI, UDP, AMR, connector domination, K0/K1, or opponent-pressure policy into card classes.
-5. Prefer one named policy owner for each reusable traversal or state-reset operation. Remove micro-forwarders after consumers use that owner directly.
-6. Preserve all source URLs beside rules-sensitive code during moves. Use the advanced manual for procedural rules and exact card records for printed effects.
+4. Reuse the shared search fallback adapter and board index-aware traversal before introducing route-local loops; if a caller needs different semantics, keep the distinction explicit at the named policy boundary.
+5. Keep card metadata and printed-effect migrations flowing through `src/cards/` and `src/rules/`; do not move DCI, UDP, AMR, connector domination, K0/K1, or opponent-pressure policy into card classes.
+6. Prefer one named policy owner for each reusable traversal or state-reset operation. Remove micro-forwarders after consumers use that owner directly.
+7. Preserve all source URLs beside rules-sensitive code during moves. Use the advanced manual for procedural rules and exact card records for printed effects.
 
 ## One-card workflow
 

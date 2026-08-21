@@ -91,6 +91,21 @@ sim::State t1_state() {
   return state;
 }
 
+sim::State wonder_tag_post_search_state(
+    const bool include_quick_ball_history = true,
+    const sim::Card paid_cost = sim::Card::Dipplin) {
+  sim::State state = t1_state();
+  state.hand.erase(std::find(state.hand.begin(), state.hand.end(),
+                             sim::Card::QuickBall));
+  if (include_quick_ball_history) state.discard.push_back(sim::Card::QuickBall);
+  state.discard.push_back(paid_cost);
+  state.bench.push_back(sim::Pokemon{sim::Card::TapuLeleGX, 1, 0, 0,
+                                     sim::Tool::None});
+  state.deck.erase(std::find(state.deck.begin(), state.deck.end(),
+                             sim::Card::TapuLeleGX));
+  return state;
+}
+
 struct Fixture {
   sim::Scenario scenario_value;
   sim::DeckRecipe recipe;
@@ -165,6 +180,118 @@ void wonder_tag_banks_steven_going_first() {
   expect(sim::EngineTestAccess::supporter_target(fixture.engine) ==
              sim::Card::StevensResolve,
          "Wonder Tag did not bank Steven's Resolve on T1");
+}
+
+void wonder_tag_accepts_dead_dipplin_quick_ball_cost() {
+  Fixture fixture;
+  sim::State state = wonder_tag_post_search_state();
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // Quick Ball permits any other hand card as its paid discard cost. Dipplin is a
+  // Stage 1 that evolves from Applin and the registered no-Applin list makes it dead
+  // discard fuel, so the post-search selector must depend on the live route state:
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://api.pokemontcg.io/v2/cards/sv6-127
+  // https://api.pokemontcg.io/v2/cards/sm2-60
+  // https://api.pokemontcg.io/v2/cards/sm7-145
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://api.pokemontcg.io/v2/cards/swsh12-136
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // https://github.com/FlareZ123/pokemon-sims/issues/4343
+  expect(sim::EngineTestAccess::wonder_tag_route(fixture.engine),
+         "Wonder Tag rejected the complete route after a legal Dipplin cost");
+  expect(sim::EngineTestAccess::supporter_target(fixture.engine) ==
+             sim::Card::StevensResolve,
+         "Wonder Tag did not bank Steven after the legal Dipplin cost");
+}
+
+void wonder_tag_accepts_complete_state_without_quick_ball_history() {
+  Fixture fixture;
+  sim::State state = wonder_tag_post_search_state(false);
+  state.discard.pop_back();
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // Wonder Tag itself establishes K1 by inspecting the deck, and Tapu Lele-GX can
+  // have reached the Bench from hand without Quick Ball. The post-search choice is
+  // therefore state-relative rather than tied to a discarded Quick Ball witness:
+  // https://api.pokemontcg.io/v2/cards/sm2-60
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // https://github.com/FlareZ123/pokemon-sims/issues/4343
+  expect(sim::EngineTestAccess::wonder_tag_route(fixture.engine),
+         "Wonder Tag required historical Quick Ball discard provenance");
+  expect(sim::EngineTestAccess::supporter_target(fixture.engine) ==
+             sim::Card::StevensResolve,
+         "Wonder Tag missed Steven in the complete no-history state");
+}
+
+void wonder_tag_k0_rejects_state_relative_route() {
+  Fixture fixture;
+  sim::EngineTestAccess::set_state(
+      fixture.engine, wonder_tag_post_search_state(), false);
+  // K1 begins only after a legal deck or Prize inspection:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // https://github.com/FlareZ123/pokemon-sims/issues/4343
+  expect(!sim::EngineTestAccess::wonder_tag_route(fixture.engine),
+         "The state-relative Wonder Tag route read hidden zones at K0");
+}
+
+void wonder_tag_missing_vessel_rejects_state_relative_route() {
+  Fixture fixture;
+  sim::State state = wonder_tag_post_search_state();
+  state.deck.erase(std::remove(state.deck.begin(), state.deck.end(),
+                               sim::Card::EarthenVessel), state.deck.end());
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+  // Earthen Vessel is the T3 strict-JIT discard outlet for the Steven payload:
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://github.com/FlareZ123/pokemon-sims/issues/4343
+  expect(!sim::EngineTestAccess::wonder_tag_route(fixture.engine),
+         "The state-relative Wonder Tag route invented Earthen Vessel");
+}
+
+void wonder_tag_ability_lock_rejects_state_relative_route() {
+  Fixture fixture{scenario(sim::LockMode::FullRuleBoxAbility)};
+  sim::EngineTestAccess::set_state(fixture.engine, wonder_tag_post_search_state());
+  // Wonder Tag is an Ability on Tapu Lele-GX and cannot be projected through the
+  // modeled Rule Box Ability lock:
+  // https://api.pokemontcg.io/v2/cards/sm2-60
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment
+  expect(!sim::EngineTestAccess::wonder_tag_route(fixture.engine),
+         "The state-relative Wonder Tag route ignored Ability lock");
+}
+
+void wonder_tag_future_item_lock_rejects_state_relative_route() {
+  Fixture fixture{scenario(sim::LockMode::TurnTwoItem)};
+  sim::EngineTestAccess::set_state(fixture.engine, wonder_tag_post_search_state());
+  // The persistent turn-two Item lock also blocks the required T3 Earthen Vessel:
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#turn-2-item-lock
+  // https://api.pokemontcg.io/v2/cards/sv4-163
+  // https://github.com/FlareZ123/pokemon-sims/issues/4343
+  expect(!sim::EngineTestAccess::wonder_tag_route(fixture.engine),
+         "The state-relative Wonder Tag route projected Vessel through Item lock");
+}
+
+void wonder_tag_supporter_lock_rejects_state_relative_route() {
+  Fixture fixture{scenario(sim::LockMode::FullSupporter)};
+  sim::EngineTestAccess::set_state(fixture.engine, wonder_tag_post_search_state());
+  // Steven's Resolve and Crispin are future Supporter plays in this route:
+  // https://api.pokemontcg.io/v2/cards/sm7-145
+  // https://api.pokemontcg.io/v2/cards/sv7-133
+  // https://github.com/FlareZ123/pokemon-sims/issues/4343
+  expect(!sim::EngineTestAccess::wonder_tag_route(fixture.engine),
+         "The state-relative Wonder Tag route projected through Supporter lock");
+}
+
+void wonder_tag_expired_horizon_rejects_state_relative_route() {
+  Fixture fixture{scenario(sim::LockMode::None, 2)};
+  sim::EngineTestAccess::set_state(fixture.engine, wonder_tag_post_search_state());
+  // The complete Steven/Crispin/Vessel line first reaches readiness on T3:
+  // https://github.com/FlareZ123/pokemon-sims/issues/1797
+  // https://github.com/FlareZ123/pokemon-sims/issues/4343
+  expect(!sim::EngineTestAccess::wonder_tag_route(fixture.engine),
+         "The state-relative Wonder Tag route exceeded the T3 horizon");
 }
 
 void k0_rejects_route() {
@@ -316,6 +443,14 @@ int main() {
     quick_ball_selects_tapu_and_low_dci_cost();
     lusamine_is_legal_fallback_cost();
     wonder_tag_banks_steven_going_first();
+    wonder_tag_accepts_dead_dipplin_quick_ball_cost();
+    wonder_tag_accepts_complete_state_without_quick_ball_history();
+    wonder_tag_k0_rejects_state_relative_route();
+    wonder_tag_missing_vessel_rejects_state_relative_route();
+    wonder_tag_ability_lock_rejects_state_relative_route();
+    wonder_tag_future_item_lock_rejects_state_relative_route();
+    wonder_tag_supporter_lock_rejects_state_relative_route();
+    wonder_tag_expired_horizon_rejects_state_relative_route();
     k0_rejects_route();
     missing_discard_cost_rejects_route();
     missing_tapu_rejects_route();

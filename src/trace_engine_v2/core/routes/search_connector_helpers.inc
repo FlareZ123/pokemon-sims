@@ -105,25 +105,33 @@
             search_outlet_present_after_current_search(Card::Serena, excluded));
   }
 
+  template <std::size_t N>
+  [[nodiscard]] Card fallback_target_after_search_started(
+      const std::array<Card, N>& targets, const Card fallback) const {
+    // Keep the post-search deck-count adapter in one owner so connector wrappers
+    // carry only their printed target order and fallback identity.
+    // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#shared-policy-owners
+    return SearchConnectorFallbackPolicy::first_available(
+        targets, fallback,
+        [this](const Card card) { return deck_count_after_search_started(card); });
+  }
+
   Card fallback_mysterious_target_after_search_started() const {
     // Legal K1 fallback coverage remains separate from strategic route priority.
     // Confirmed fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1253 https://github.com/FlareZ123/pokemon-sims/issues/1949
-    return SearchConnectorFallbackPolicy::first_available(
+    return fallback_target_after_search_started(
         SearchConnectorFallbackPolicy::mysterious_treasure_targets(),
-        Card::RegidragoV,
-        [this](const Card card) { return deck_count_after_search_started(card); });
+        Card::RegidragoV);
   }
 
   Card fallback_quick_ball_target_after_search_started() const {
     // Confirmed Pineco fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1958
-    return SearchConnectorFallbackPolicy::first_available(
-        SearchConnectorFallbackPolicy::quick_ball_targets(), Card::RegidragoV,
-        [this](const Card card) { return deck_count_after_search_started(card); });
+    return fallback_target_after_search_started(
+        SearchConnectorFallbackPolicy::quick_ball_targets(), Card::RegidragoV);
   }
 
   Card fallback_ultra_ball_target_after_search_started() const {
     // Confirmed fallback coverage: https://github.com/FlareZ123/pokemon-sims/issues/1254 https://github.com/FlareZ123/pokemon-sims/issues/1952
-    return SearchConnectorFallbackPolicy::first_available(
-        SearchConnectorFallbackPolicy::ultra_ball_targets(), Card::RegidragoV,
-        [this](const Card card) { return deck_count_after_search_started(card); });
+    return fallback_target_after_search_started(
+        SearchConnectorFallbackPolicy::ultra_ball_targets(), Card::RegidragoV);
   }

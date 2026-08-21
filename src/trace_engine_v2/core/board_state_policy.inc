@@ -78,15 +78,18 @@
   }
 
   template <typename ActiveZone, typename BenchZone, typename Predicate>
-  [[nodiscard]] static OptionalBoardIndex board_index_matching_in_zones(
+  [[nodiscard]] static OptionalBoardIndex
+  board_index_matching_with_index_in_zones(
       const ActiveZone& active, const BenchZone& bench, Predicate predicate) {
-    // Keep index discovery on the same Active-first mapping used by lookup.
-    // C++ container indexing semantics: https://eel.is/c++draft/vector.capacity
+    // Keep all first-match index discovery on one Active-first traversal. Callers
+    // may inspect the canonical board index without recreating the visitation loop.
+    // C++20 traversal semantics: https://eel.is/c++draft/alg.find
+    // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#shared-policy-owners
     OptionalBoardIndex match;
     (void)visit_board_pokemon_in_zones(
         active, bench,
         [&](const BoardIndex index, const Pokemon& pokemon) {
-          if (!predicate(pokemon)) return true;
+          if (!predicate(index, pokemon)) return true;
           match = index;
           return false;
         });
@@ -94,22 +97,30 @@
   }
 
   template <typename ActiveZone, typename BenchZone, typename Predicate>
+  [[nodiscard]] static OptionalBoardIndex board_index_matching_in_zones(
+      const ActiveZone& active, const BenchZone& bench, Predicate predicate) {
+    // Keep index discovery on the same Active-first mapping used by lookup.
+    // C++ container indexing semantics: https://eel.is/c++draft/vector.capacity
+    return board_index_matching_with_index_in_zones(
+        active, bench,
+        [&predicate](const BoardIndex, const Pokemon& pokemon) {
+          return predicate(pokemon);
+        });
+  }
+
+  template <typename ActiveZone, typename BenchZone, typename Predicate>
   [[nodiscard]] static OptionalBoardIndex benched_pokemon_index_matching_in_zones(
       const ActiveZone& active, const BenchZone& bench, Predicate predicate) {
-    // Bench-only route queries use the same board-index mapping and traversal as
-    // every other board lookup. This replaces route-local std::find_if/std::any_of
-    // scans without changing Bench order or strategy-owned predicates.
+    // Bench-only route queries reuse the canonical index-aware first-match owner.
+    // This preserves Bench order while keeping strategy-owned predicates outside
+    // the physical board traversal abstraction.
     // C++20 traversal semantics: https://eel.is/c++draft/alg.find
-    // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
-    OptionalBoardIndex match;
-    (void)visit_board_pokemon_in_zones(
+    // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#shared-policy-owners
+    return board_index_matching_with_index_in_zones(
         active, bench,
-        [&](const BoardIndex index, const Pokemon& pokemon) {
-          if (board_index_is_active(index) || !predicate(pokemon)) return true;
-          match = index;
-          return false;
+        [&predicate](const BoardIndex index, const Pokemon& pokemon) {
+          return board_index_is_benched(index) && predicate(pokemon);
         });
-    return match;
   }
 
   template <typename ActiveZone, typename BenchZone, typename Predicate,

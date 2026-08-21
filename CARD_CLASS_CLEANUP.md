@@ -48,10 +48,13 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/routes/search_connector_helpers.inc` owns complete K1 fallback selectors for Mysterious Treasure, Quick Ball, and Ultra Ball.
 - `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc` remains the live strategic target-priority owner composed by `part_009a.inc`. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
 - `src/trace_engine_v2/core/locks/garbodor_policy.inc` remains the sole Garbodor scenario-timing and Ability-lock policy owner. Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
+- `src/trace_engine_v2/core/forest_seal_stone_attachment_policy.inc` owns Engine strategy for Forest Seal Stone holder selection, Powerglass Tool-slot reservation, and the physical attachment resolution boundary. Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156 Advanced Pokémon Tool procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
 2026-08-18 cleanup checkpoint: `src/trace_engine_v2/core/regidrago_line_helpers.inc` remains a compatibility include at the post-search Arven boundary, but it no longer contains a fallback include to the retired `core/card_classification.inc` path. The canonical catalog is composed first and owns `is_regidrago_v_line()`. Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
 
 2026-08-18 search-connector checkpoint: `src/trace_engine_v2/core/routes/search_connector_helpers.inc` now gives post-search outlet feasibility explicit owners for card presence, survival of the current search discard, and Ultra Ball payability. Keep future K1 connector cleanup on these named helpers so route callers do not recreate hand-count and discard-cost arithmetic. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+
+2026-08-21 Forest Seal Stone checkpoint: `src/trace_engine_v2/core/forest_seal_stone_attachment_policy.inc` is now the named behavioral owner for the attachment policy that previously lived in `part_010_attach_fss_override.inc`. The historical file remains a forwarding compatibility seam at the same Engine-member boundary, preserving declaration order and macro lifetime while the live implementation stops reopening the retired `core/card_classification.inc` path. A later cleanup may switch `composition/opening_engine_overrides.inc` to include the canonical owner directly after source-contract references are migrated, then delete the forwarding shim. Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156 Advanced Pokémon Tool procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
 ## Active card migrations
 
@@ -68,6 +71,8 @@ Keep strategic selection, DCI/UDP/AMR, Supporter contention, connector dominatio
 `src/trace_engine_v2/composition/post_014a_overrides.inc` owns the later Arven continuation that consumes the Regidrago-line compatibility seam. The shim now asserts that canonical classification was already composed instead of trying to reopen the retired classifier path.
 
 `src/trace_engine_v2/composition/steven_blender_overrides.inc` owns the Steven/Brilliant Blender macro-composition boundary. `src/trace_engine_v2/core/routes/steven/package.inc` is the canonical organized Steven route package. Retire remaining forwarders only when source-contract references and macro lifetime are both proven migrated.
+
+`src/trace_engine_v2/part_010_attach_fss_override.inc` is now only the historical composition seam for the canonical Forest Seal Stone attachment policy. Keep its include at the established opening-override member boundary until direct composition and source-contract migration are performed together. Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forest_seal_stone_attachment_policy.inc
 
 ## Payload policy cleanup
 
@@ -103,16 +108,18 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Turn reset mechanics: `src/trace_engine_v2/core/turn_lifecycle.inc`.
 - Scenario extension traversal: `src/trace_engine_v2/core/scenario_extension_policy.inc`.
 - Garbodor lock behavior: `src/trace_engine_v2/core/locks/garbodor_policy.inc`.
+- Forest Seal Stone attachment strategy and resolution boundary: `src/trace_engine_v2/core/forest_seal_stone_attachment_policy.inc`.
 - Card effect bridge: `src/trace_engine_v2/core/adapters/card_context_adapter.hpp`.
 
 ## Next cleanup steps
 
 1. Continue deleting forwarding `.inc` files only after tracing them from `composition/engine_body.inc` and proving they are absent from the live include graph. A missing historical target is evidence of stale code, while composition reachability is the decisive check.
-2. Keep `core/mysterious_treasure_target_policy.inc` until `part_009a.inc` is migrated to a canonical organized route package. Preserve its target order and direct Mysterious Treasure card-data citation during that move.
-3. Continue moving complete route bodies from numbered `part_*` fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner.
-4. Keep card metadata and printed-effect migrations flowing through `src/cards/` and `src/rules/`; do not move DCI, UDP, AMR, connector domination, K0/K1, or opponent-pressure policy into card classes.
-5. Prefer one named policy owner for each reusable traversal or state-reset operation. Remove micro-forwarders after consumers use that owner directly.
-6. Preserve all source URLs beside rules-sensitive code during moves. Use the advanced manual for procedural rules and exact card records for printed effects.
+2. Retire `part_010_attach_fss_override.inc` after `composition/opening_engine_overrides.inc` and source-contract consumers point directly at `core/forest_seal_stone_attachment_policy.inc`; preserve the established member boundary during that final move. Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+3. Keep `core/mysterious_treasure_target_policy.inc` until `part_009a.inc` is migrated to a canonical organized route package. Preserve its target order and direct Mysterious Treasure card-data citation during that move.
+4. Continue moving complete route bodies from numbered `part_*` fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner.
+5. Keep card metadata and printed-effect migrations flowing through `src/cards/` and `src/rules/`; do not move DCI, UDP, AMR, connector domination, K0/K1, or opponent-pressure policy into card classes.
+6. Prefer one named policy owner for each reusable traversal or state-reset operation. Remove micro-forwarders after consumers use that owner directly.
+7. Preserve all source URLs beside rules-sensitive code during moves. Use the advanced manual for procedural rules and exact card records for printed effects.
 
 ## One-card workflow
 

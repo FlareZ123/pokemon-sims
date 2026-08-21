@@ -8,8 +8,9 @@
         needs_tapu_connector() || needs_oricorio_connector();
     const bool payload_search_chain = might_be_unseen(Card::DialgaGX) &&
         has_payable_payload_outlet_after_costed_search(Card::QuickBall);
-    return LegacyStarQuickBallPolicy::connector_route_live(
-        basic_connector_live, payload_search_chain);
+    const LegacyStarQuickBallPolicy::Projection projection{
+        false, false, basic_connector_live, payload_search_chain};
+    return LegacyStarQuickBallPolicy::connector_route_live(projection);
   }
 
   bool quick_ball_is_inert_before_legacy_star() {
@@ -31,9 +32,10 @@
     // Regidrago VSTAR and Legacy Star: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Decision priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1016
-    return LegacyStarQuickBallPolicy::inert_before_legacy_star(
+    const LegacyStarQuickBallPolicy::Projection projection{
         can_attempt_quick_ball, can_jit_discard,
-        quick_ball_has_live_connector_route());
+        quick_ball_has_live_connector_route(), false};
+    return LegacyStarQuickBallPolicy::inert_before_legacy_star(projection);
   }
 
   bool use_legacy_star() {

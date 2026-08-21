@@ -121,23 +121,24 @@
     const bool payload_in_hand =
         std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
     const bool vessel_payload_completes_current_turn =
-        strict_payload_timing() && need_payload() && need_energy() &&
+        prizes_known() && strict_payload_timing() && need_payload() && need_energy() &&
         !state_.manual_energy_used && state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
         hand_count(Card::RegidragoVstar) > 0 && payload_in_hand &&
         completing_basic_energy_for(*state_.active, [this](const Card card) {
-          return might_be_unseen(card);
+          return deck_count_after_search_started(card) > 0;
         }).has_value();
     // Earthen Vessel's printed condition depends only on discarding another card,
     // then it may search up to two Basic Energy. A strict-JIT Dragon is therefore
-    // the mandatory strategic cost when the observable state proves that the same
-    // Vessel search plus the unused manual attachment completes GGF, the held VSTAR
-    // can evolve the prior-turn Regidrago V, and the Dragon supplies Apex's discard
-    // payload. No previously played connector is part of that decision boundary:
+    // the mandatory strategic cost only after K1 proves that the same Vessel search
+    // plus the unused manual attachment completes GGF, the held VSTAR can evolve the
+    // prior-turn Regidrago V, and the Dragon supplies Apex's discard payload. No
+    // previously played connector is part of that decision boundary:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Item, discard, search, attachment, and evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
     // Strict-JIT and earliest-completion policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed systemic overfit: https://github.com/FlareZ123/pokemon-sims/issues/4325
@@ -166,7 +167,7 @@
         }
       }
     }
-    // When Vessel itself is the proved current-turn payload outlet, spend that
+    // When Vessel itself is the K1-proved current-turn payload outlet, spend that
     // Dragon before generic low-DCI fodder. Otherwise the Dragon remains in hand
     // and the otherwise complete VSTAR + one-Basic GGF route misses strict-JIT:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163

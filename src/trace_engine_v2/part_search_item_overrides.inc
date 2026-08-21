@@ -303,8 +303,12 @@
     }
     if (!first || !second) return false;
 
-    remove_one(state_.hand, Card::UltraBall);
-    state_.discard.push_back(Card::UltraBall);
+    // B-01 keeps the played Ultra Ball outside discard while its mandatory costs,
+    // deck search, and shuffle resolve. The two other cost cards enter discard first.
+    // Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4339
+    if (!begin_legacy_item_resolution(Card::UltraBall)) return false;
     discard_from_hand(*first, "Ultra Ball cost", "R-UB-01");
     discard_from_hand(*second, "Ultra Ball cost", "R-UB-01");
     // Ultra Ball searches for any Pokémon after its two-card cost: https://api.pokemontcg.io/v2/cards/swsh12pt5-146
@@ -329,6 +333,7 @@
                            (want_payload && is_payload(target));
       if (desired && move_deck_to_hand(target)) {
         shuffle(state_.deck);
+        if (!finish_legacy_item_resolution(Card::UltraBall)) return false;
         trace("PLAY ITEM", "R-UB-01; R-GAME-ITEM", "Searched a Pokémon: " + std::string(name(target)) + ".");
         return true;
       }
@@ -336,6 +341,7 @@
     const Card fallback = fallback_ultra_ball_target_after_search_started();
     const bool found_fallback = move_deck_to_hand(fallback);
     shuffle(state_.deck);
+    if (!finish_legacy_item_resolution(Card::UltraBall)) return false;
     trace("PLAY ITEM", "R-UB-01; R-GAME-ITEM", found_fallback ? "No preferred target remained; legally searched " + std::string(name(fallback)) + "." : "No Pokémon remained after search.");
     return true;
   }
@@ -381,8 +387,12 @@
                               !payload_already_held && hand_payload_discard_outlet;
     if (!want_vstar && !want_payload) return false;
 
-    remove_one(state_.hand, Card::EvolutionIncense);
-    state_.discard.push_back(Card::EvolutionIncense);
+    // Evolution Incense has no additional cost. Stage the played source through its
+    // search and shuffle, then discard it only after the printed effect completes.
+    // Evolution Incense: https://api.pokemontcg.io/v2/cards/swsh1-163
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4339
+    if (!begin_legacy_item_resolution(Card::EvolutionIncense)) return false;
     record_deck_search_knowledge("Evolution Incense");
     bool found = false;
     Card found_card = Card::RegidragoVstar;
@@ -436,6 +446,7 @@
       }
     }
     shuffle(state_.deck);
+    if (!finish_legacy_item_resolution(Card::EvolutionIncense)) return false;
     trace("PLAY ITEM", "R-EVOINCENSE-01; R-GAME-ITEM", found ? "Searched an Evolution Pokémon: " + std::string(name(found_card)) + "." : "No Evolution Pokémon remained in deck.");
     return true;
   }

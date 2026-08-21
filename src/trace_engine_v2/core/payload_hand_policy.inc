@@ -71,7 +71,9 @@
 
   class PayloadPreferencePolicy final {
    public:
-    inline static constexpr std::array<Card, 5> kOrder{{
+    using PreferenceOrder = std::array<Card, 5>;
+
+    inline static constexpr PreferenceOrder kOrder{{
         Card::Appletun,
         Card::MegaDragonite,
         Card::Dragapult,
@@ -79,10 +81,17 @@
         Card::DialgaGX,
     }};
 
+    [[nodiscard]] static constexpr const PreferenceOrder& ordered_cards() {
+      // Keep every strategic payload-order traversal on one named accessor while
+      // preserving kOrder as the compatibility surface for existing callers.
+      // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+      return kOrder;
+    }
+
     template <typename Predicate>
     [[nodiscard]] static std::optional<Card> first_preferred(
         const Predicate& present) {
-      for (const Card card : kOrder) {
+      for (const Card card : ordered_cards()) {
         if (present(card)) return card;
       }
       return std::nullopt;

@@ -54,10 +54,13 @@
   template <typename ActiveZone, typename BenchZone, typename Visitor>
   [[nodiscard]] static bool visit_board_pokemon_in_zones(
       const ActiveZone& active, const BenchZone& bench, Visitor visitor) {
-    if (active && !visitor(kActiveBoardIndex, *active)) return false;
+    // Internal traversal calls the canonical index policy directly. The free
+    // wrappers above remain only as compatibility surfaces for legacy fragments.
+    // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
+    if (active && !visitor(BoardIndexPolicy::kActive, *active)) return false;
     for (BoardIndex bench_position = 0; bench_position < bench.size();
          ++bench_position) {
-      if (!visitor(board_index_for_bench_position(bench_position),
+      if (!visitor(BoardIndexPolicy::for_bench_position(bench_position),
                    bench[bench_position])) {
         return false;
       }
@@ -72,8 +75,9 @@
     // Centralize the historical Exploding Energy destination mapping before
     // callers migrate away from raw Active/Bench index arithmetic.
     // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
-    if (board_index_is_active(index)) return active ? &*active : nullptr;
-    const BoardIndex bench_position = bench_position_from_board_index(index);
+    if (BoardIndexPolicy::is_active(index)) return active ? &*active : nullptr;
+    const BoardIndex bench_position =
+        BoardIndexPolicy::bench_position_from_index(index);
     return bench_position < bench.size() ? &bench[bench_position] : nullptr;
   }
 
@@ -105,7 +109,7 @@
     (void)visit_board_pokemon_in_zones(
         active, bench,
         [&](const BoardIndex index, const Pokemon& pokemon) {
-          if (board_index_is_active(index) || !predicate(pokemon)) return true;
+          if (BoardIndexPolicy::is_active(index) || !predicate(pokemon)) return true;
           match = index;
           return false;
         });
@@ -225,7 +229,7 @@
     // Cleanup plan: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md
     return board_index_best_matching(
         [](const BoardIndex index, const Pokemon&) {
-          return board_index_is_benched(index);
+          return BoardIndexPolicy::is_benched(index);
         },
         rank);
   }

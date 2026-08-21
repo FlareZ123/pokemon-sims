@@ -34,6 +34,10 @@ struct EngineTestAccess {
   static bool play_earthen_vessel(Engine& engine) {
     return engine.play_earthen_vessel(false);
   }
+  static bool resolve_pokemon_communication(
+      Engine& engine, const Card returned, const Card target) {
+    return engine.resolve_pokemon_communication(returned, target);
+  }
 };
 }  // namespace sim
 
@@ -166,11 +170,41 @@ void test_earthen_vessel_uses_same_source_lifecycle() {
           "Earthen Vessel remained resolving after its effect finished.");
 }
 
+void test_pokemon_communication_uses_same_source_lifecycle() {
+  Fixture fixture;
+  sim::State state;
+  state.turn = 2;
+  state.hand = {sim::Card::PokemonCommunication, sim::Card::Dipplin};
+  state.deck = {sim::Card::RegidragoV, sim::Card::Grass,
+                sim::Card::ErikasInvitation};
+  sim::EngineTestAccess::set_state(fixture.engine, state);
+
+  // Pokémon Communication returns a Pokémon to the deck, searches for a Pokémon,
+  // and shuffles. B-01 keeps the played Item outside discard until that printed
+  // effect has completed, while the returned Pokémon is already in the searched deck.
+  // Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
+  // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4339
+  require(sim::EngineTestAccess::resolve_pokemon_communication(
+              fixture.engine, sim::Card::Dipplin, sim::Card::RegidragoV),
+          "Legal Pokémon Communication exchange did not resolve.");
+  const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+  require(contains(after.hand, sim::Card::RegidragoV),
+          "Pokémon Communication did not search the selected Pokémon.");
+  require(contains(after.deck, sim::Card::Dipplin),
+          "Pokémon Communication did not return the revealed Pokémon to deck.");
+  require(contains(after.discard, sim::Card::PokemonCommunication),
+          "Pokémon Communication source did not enter discard after resolution.");
+  require(sim::EngineTestAccess::resolving_sources(fixture.engine).empty(),
+          "Pokémon Communication remained resolving after its shuffle finished.");
+}
+
 }  // namespace
 
 int main() {
   test_shared_lifecycle_keeps_played_item_out_of_hand_and_discard();
   test_mysterious_treasure_finishes_in_discard_after_legal_search();
   test_earthen_vessel_uses_same_source_lifecycle();
+  test_pokemon_communication_uses_same_source_lifecycle();
   return 0;
 }

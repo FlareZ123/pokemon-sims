@@ -41,6 +41,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/adapters/card_context_adapter.hpp` is the trace-engine bridge for reusable card effects.
 - `src/trace_engine_v2/core/card_catalog.inc` owns the shrinking unmigrated name and classification compatibility layer. Registered `CardDefinition` lookup stays the preferred metadata path.
 - `src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered composition spine: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
+- `src/trace_engine_v2/core/trace_formatting.inc` owns Engine trace-card and in-play Pokémon formatting while remaining textually composed as Engine members: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/trace_formatting.inc
 - `src/trace_engine_v2/core/turn_lifecycle.inc` owns turn-number assignment, action-state reset, transient lock reset, start-of-turn draw, and first-turn restriction tracing. Its reset orchestration has one `TurnLifecyclePolicy` owner.
 - `src/trace_engine_v2/core/deck_knowledge.inc` owns copy arithmetic after visibility is resolved. K0/K1 visibility decisions stay in Engine strategy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 - `src/trace_engine_v2/core/payload_hand_policy.inc` owns reusable Dragon-payload zone and preference traversal.
@@ -52,6 +53,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 2026-08-18 cleanup checkpoint: `src/trace_engine_v2/core/regidrago_line_helpers.inc` remains a compatibility include at the post-search Arven boundary, but it no longer contains a fallback include to the retired `core/card_classification.inc` path. The canonical catalog is composed first and owns `is_regidrago_v_line()`. Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
 
 2026-08-18 search-connector checkpoint: `src/trace_engine_v2/core/routes/search_connector_helpers.inc` now gives post-search outlet feasibility explicit owners for card presence, survival of the current search discard, and Ultra Ball payability. Keep future K1 connector cleanup on these named helpers so route callers do not recreate hand-count and discard-cost arithmetic. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+
+2026-08-21 trace-formatting checkpoint: `src/trace_engine_v2/core/trace_formatting.inc` now owns the two trace-only presentation helpers previously embedded in `composition/engine_body.inc`. Keep presentation-only helpers in named owners so the composition spine remains focused on include order, macro lifetime, and Engine assembly. Preserve textual placement when moving Engine member implementations. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
 ## Active card migrations
 

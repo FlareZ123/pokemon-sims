@@ -120,23 +120,26 @@
 
     const bool current_turn_payload_completion = [this]() {
       if (!prizes_known() || !strict_payload_timing() || !need_payload() ||
-          state_.manual_energy_used || !state_.active ||
+          state_.manual_energy_used ||
           std::none_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
         return false;
       }
-      const bool vstar_card_live = state_.active->card == Card::RegidragoVstar ||
-          (state_.active->card == Card::RegidragoV &&
-           state_.active->entered_turn < state_.turn &&
+      const Pokemon* target = target_regi();
+      if (target == nullptr) return false;
+      const bool vstar_card_live = target->card == Card::RegidragoVstar ||
+          (target->card == Card::RegidragoV &&
+           target->entered_turn < state_.turn &&
            hand_count(Card::RegidragoVstar) > 0);
       if (!vstar_card_live || !can_play_payload_this_turn()) return false;
-      return completing_basic_energy_for(*state_.active, [this](const Card card) {
+      return completing_basic_energy_for(*target, [this](const Card card) {
         return might_be_unseen(card);
       }).has_value();
     }();
     // Earthen Vessel's printed cost is simply another card from hand. Under K1,
     // force the Dragon cost only when that discard completes strict-JIT payload and
     // a searched Basic Energy plus the unused manual attachment completes Apex now.
-    // No previously played card is part of this legality or strategy predicate:
+    // The canonical target_regi() selector covers Active and Benched attackers, so
+    // no previously played card or Active-position fingerprint controls this route:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Core search, discard, evolution, and Energy-attachment procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md

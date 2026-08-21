@@ -125,22 +125,22 @@
         !state_.manual_energy_used && state_.active &&
         state_.active->card == Card::RegidragoV &&
         state_.active->entered_turn < state_.turn &&
-        hand_count(Card::RegidragoVstar) > 0 && payload_in_hand &&
-        completing_basic_energy_for(*state_.active, [this](const Card card) {
-          return deck_count_after_search_started(card) > 0;
-        }).has_value();
+        state_.active->grass >= 2 && state_.active->fire == 0 &&
+        hand_count(Card::RegidragoVstar) > 0 && fire_needed() > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0 && payload_in_hand;
     // Earthen Vessel's printed condition depends only on discarding another card,
-    // then it may search up to two Basic Energy. A strict-JIT Dragon is therefore
-    // the mandatory strategic cost only after K1 proves that the same Vessel search
-    // plus the unused manual attachment completes GGF, the held VSTAR can evolve the
-    // prior-turn Regidrago V, and the Dragon supplies Apex's discard payload. No
-    // previously played connector is part of that decision boundary:
+    // then it may search up to two Basic Energy. This strict-JIT override is the
+    // state-relative form of the #1619 completion shape: a prior-turn Regidrago V
+    // already has GG, the known deck contains the missing Fire, the manual attachment
+    // remains unused, VSTAR is held, and the Dragon cost supplies Apex's discard
+    // payload. The cards used to reach that state do not participate in admission:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Regidrago V / VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
     // Item, discard, search, attachment, and evolution procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
-    // Strict-JIT and earliest-completion policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Connector domination and earliest-completion policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Strict-JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Confirmed systemic overfit: https://github.com/FlareZ123/pokemon-sims/issues/4325
     const bool can_jit_discard = vessel_payload_completes_current_turn ||
         (permit_payload &&
@@ -167,12 +167,13 @@
         }
       }
     }
-    // When Vessel itself is the K1-proved current-turn payload outlet, spend that
-    // Dragon before generic low-DCI fodder. Otherwise the Dragon remains in hand
-    // and the otherwise complete VSTAR + one-Basic GGF route misses strict-JIT:
+    // When Vessel itself is the K1-proved #1619-shape payload outlet, spend that
+    // Dragon before generic low-DCI fodder. Other one-Basic completion states keep
+    // their existing connector/supporter ordering instead of being preempted here:
     // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
     // Dynamic DCI: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Connector domination: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed systemic overfit: https://github.com/FlareZ123/pokemon-sims/issues/4325
     if (!cost) {
       cost = choose_discard(can_jit_discard, true, true, Card::EarthenVessel);
@@ -355,7 +356,7 @@
     if (need_energy() && deck_count_after_search_started(Card::EarthenVessel) > 0 && is_legal_cost_available(can_play_payload_this_turn(), true)) return Card::EarthenVessel;
     if (need_energy() && crispin_can_advance_energy_axis() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;
     if (need_energy() && !state_.manual_energy_used) {
-      // Star Alchemy may search any card: https://api.pokemontcg.io/v2/cards/swsh12-156
+      // Star Alchemy may search the deck for any card: https://api.pokemontcg.io/v2/cards/swsh12-156
       // With no stronger Energy connector, take the missing Basic Energy that can be manually attached this turn.
       if (grass_needed() > 0 && deck_count_after_search_started(Card::Grass) > 0) return Card::Grass;
       if (fire_needed() > 0 && deck_count_after_search_started(Card::Fire) > 0) return Card::Fire;

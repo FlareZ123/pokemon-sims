@@ -1,5 +1,4 @@
-#ifndef SIM_TRACE_REGIDRAGO_LINE_HELPERS_INCLUDED
-#define SIM_TRACE_REGIDRAGO_LINE_HELPERS_INCLUDED
+#pragma once
 
 // Compatibility seam for the post-search Arven composition boundary. Intrinsic
 // Regidrago line identity is already owned by the canonical card catalog before
@@ -11,5 +10,3 @@
 #ifndef SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
 #error "Regidrago line helpers require canonical card classification to be composed first"
 #endif
-
-#endif  // SIM_TRACE_REGIDRAGO_LINE_HELPERS_INCLUDED

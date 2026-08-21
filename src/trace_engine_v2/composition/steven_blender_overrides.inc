@@ -32,6 +32,14 @@
   Card choose_supporter_after_search_started_issue3202_const_fallback() const {
     return choose_supporter_after_search_started();
   }
+
+// The issue-3202 bridge has its own temporary wrapper family. Keep its entry and
+// exit contracts adjacent so later part_010 retirement cannot inherit a stale macro.
+// C++ conditional preprocessing: https://eel.is/c++draft/cpp.cond
+#if defined(late_steven_vstar_vessel_route_available) || \
+    defined(choose_supporter_after_search_started) || defined(should_play_steven)
+#error "Issue-3202 Steven route requires local aliases to be undefined on entry"
+#endif
 #define late_steven_vstar_vessel_route_available late_steven_vstar_vessel_route_available_issue3202_original
 #define choose_supporter_after_search_started choose_supporter_after_search_started_issue3202_original
 #define should_play_steven should_play_steven_issue3202_original
@@ -39,6 +47,10 @@
 #undef should_play_steven
 #undef choose_supporter_after_search_started
 #undef late_steven_vstar_vessel_route_available
+#if defined(late_steven_vstar_vessel_route_available) || \
+    defined(choose_supporter_after_search_started) || defined(should_play_steven)
+#error "Issue-3202 Steven route leaked a local wrapper alias"
+#endif
 // Canonical issue-3202 route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven_vstar_vessel_route_policy.inc
 #include "../core/routes/steven_vstar_vessel_route_policy.inc"
 #undef play_brilliant_blender

@@ -46,10 +46,11 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/payload_hand_policy.inc` owns reusable Dragon-payload zone and preference traversal.
 - `src/trace_engine_v2/core/board_state_policy.inc` owns reusable board traversal and board-index queries.
 - `src/trace_engine_v2/core/routes/search_connector_helpers.inc` owns complete K1 fallback selectors for Mysterious Treasure, Quick Ball, and Ultra Ball.
-- `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc` remains the live strategic target-priority owner composed by `part_009a.inc`. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+- `src/trace_engine_v2/core/routes/mysterious_treasure/target_policy.inc` owns Mysterious Treasure strategic target priority. `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc` is now only a compatibility include for the still-numbered `part_009a.inc` composition boundary. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+- `src/trace_engine_v2/core/routes/arven/regidrago_line_helpers.inc` owns the post-search Arven Regidrago-line composition contract. `src/trace_engine_v2/core/regidrago_line_helpers.inc` is now only its compatibility include. Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
 - `src/trace_engine_v2/core/locks/garbodor_policy.inc` remains the sole Garbodor scenario-timing and Ability-lock policy owner. Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
 
-2026-08-18 cleanup checkpoint: `src/trace_engine_v2/core/regidrago_line_helpers.inc` remains a compatibility include at the post-search Arven boundary, but it no longer contains a fallback include to the retired `core/card_classification.inc` path. The canonical catalog is composed first and owns `is_regidrago_v_line()`. Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+2026-08-21 route-localization checkpoint: the Mysterious Treasure target policy and Arven Regidrago-line seam have canonical owners under `core/routes/`. Their former root paths remain forwarding compatibility includes so live textual composition order does not change. The next deletion step is to retarget the composition consumers directly and remove each forwarder in the same validated change.
 
 2026-08-18 search-connector checkpoint: `src/trace_engine_v2/core/routes/search_connector_helpers.inc` now gives post-search outlet feasibility explicit owners for card presence, survival of the current search discard, and Ultra Ball payability. Keep future K1 connector cleanup on these named helpers so route callers do not recreate hand-count and discard-cost arithmetic. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 
@@ -63,9 +64,9 @@ Keep strategic selection, DCI/UDP/AMR, Supporter contention, connector dominatio
 
 `src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered Engine composition owner. Mechanical `.inc` cleanup must preserve `#define` / `#include` / `#undef` order, declaration order, member boundaries, and relative include roots. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
-`src/trace_engine_v2/composition/opening_engine_overrides.inc` owns the early override chain, including the live `part_009a.inc` Mysterious Treasure boundary. Do not infer that a root `.inc` is dead from naming or code-search absence alone. Prove its composition reachability from the ordered include spine before retirement.
+`src/trace_engine_v2/composition/opening_engine_overrides.inc` owns the early override chain, including the live `part_009a.inc` Mysterious Treasure boundary. `part_009a.inc` still reaches the route-local target policy through the root compatibility include. Retarget that one consumer before deleting the forwarder; do not infer that a root `.inc` is dead from naming or code-search absence alone.
 
-`src/trace_engine_v2/composition/post_014a_overrides.inc` owns the later Arven continuation that consumes the Regidrago-line compatibility seam. The shim now asserts that canonical classification was already composed instead of trying to reopen the retired classifier path.
+`src/trace_engine_v2/composition/post_014a_overrides.inc` owns the later Arven continuation that consumes the Regidrago-line compatibility seam. The canonical contract is route-local and still asserts that canonical classification was composed first. Retarget this composition include directly before deleting the root forwarder.
 
 `src/trace_engine_v2/composition/steven_blender_overrides.inc` owns the Steven/Brilliant Blender macro-composition boundary. `src/trace_engine_v2/core/routes/steven/package.inc` is the canonical organized Steven route package. Retire remaining forwarders only when source-contract references and macro lifetime are both proven migrated.
 
@@ -75,7 +76,7 @@ Keep strategic selection, DCI/UDP/AMR, Supporter contention, connector dominatio
 
 `PayloadZonePolicy` and `PayloadPreferencePolicy` remain final utility classes with static operations. Physical-zone mechanics belong to the zone policy, strategic payload ordering belongs to the preference policy, and route-specific DCI/JIT admission remains outside both. Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
 
-Mysterious Treasure keeps strategic Dragon/Psychic target preference in `core/mysterious_treasure_target_policy.inc`; post-search K1 fallback legality and order stay in `core/routes/search_connector_helpers.inc`. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+Mysterious Treasure keeps strategic Dragon/Psychic target preference in `core/routes/mysterious_treasure/target_policy.inc`; post-search K1 fallback legality and order stay in `core/routes/search_connector_helpers.inc`. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
 
 ## Setup lifecycle cleanup
 
@@ -99,7 +100,8 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Board traversal and indices: `src/trace_engine_v2/core/board_state_policy.inc`.
 - K0/K1 copy arithmetic: `src/trace_engine_v2/core/deck_knowledge.inc`.
 - Search connector fallback order: `src/trace_engine_v2/core/routes/search_connector_helpers.inc`.
-- Mysterious Treasure strategic target order: `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc`.
+- Mysterious Treasure strategic target order: `src/trace_engine_v2/core/routes/mysterious_treasure/target_policy.inc`.
+- Arven Regidrago-line composition contract: `src/trace_engine_v2/core/routes/arven/regidrago_line_helpers.inc`.
 - Turn reset mechanics: `src/trace_engine_v2/core/turn_lifecycle.inc`.
 - Scenario extension traversal: `src/trace_engine_v2/core/scenario_extension_policy.inc`.
 - Garbodor lock behavior: `src/trace_engine_v2/core/locks/garbodor_policy.inc`.
@@ -107,12 +109,13 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 
 ## Next cleanup steps
 
-1. Continue deleting forwarding `.inc` files only after tracing them from `composition/engine_body.inc` and proving they are absent from the live include graph. A missing historical target is evidence of stale code, while composition reachability is the decisive check.
-2. Keep `core/mysterious_treasure_target_policy.inc` until `part_009a.inc` is migrated to a canonical organized route package. Preserve its target order and direct Mysterious Treasure card-data citation during that move.
-3. Continue moving complete route bodies from numbered `part_*` fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner.
-4. Keep card metadata and printed-effect migrations flowing through `src/cards/` and `src/rules/`; do not move DCI, UDP, AMR, connector domination, K0/K1, or opponent-pressure policy into card classes.
-5. Prefer one named policy owner for each reusable traversal or state-reset operation. Remove micro-forwarders after consumers use that owner directly.
-6. Preserve all source URLs beside rules-sensitive code during moves. Use the advanced manual for procedural rules and exact card records for printed effects.
+1. Continue deleting forwarding `.inc` files only after tracing them from `composition/engine_body.inc` and proving the direct replacement preserves textual composition order. A missing historical target is evidence of stale code, while composition reachability is the decisive check.
+2. Retarget `part_009a.inc` directly to `core/routes/mysterious_treasure/target_policy.inc`, then delete `core/mysterious_treasure_target_policy.inc` in the same validated change. Preserve target order and the direct Mysterious Treasure card-data citation: https://api.pokemontcg.io/v2/cards/sm6-113
+3. Retarget the post-`part_014a` Arven composition directly to `core/routes/arven/regidrago_line_helpers.inc`, then delete `core/regidrago_line_helpers.inc` in the same validated change. Preserve the classification-order assertion and direct Regidrago print citations: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+4. Continue moving complete route bodies from numbered `part_*` fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner.
+5. Keep card metadata and printed-effect migrations flowing through `src/cards/` and `src/rules/`; do not move DCI, UDP, AMR, connector domination, K0/K1, or opponent-pressure policy into card classes.
+6. Prefer one named policy owner for each reusable traversal or state-reset operation. Remove micro-forwarders after consumers use that owner directly.
+7. Preserve all source URLs beside rules-sensitive code during moves. Use the advanced manual for procedural rules and exact card records for printed effects.
 
 ## One-card workflow
 

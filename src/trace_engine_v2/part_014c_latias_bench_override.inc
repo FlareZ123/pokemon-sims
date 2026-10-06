@@ -799,6 +799,14 @@ void run_turn() {
       }
     }
     resolve_final_promotion_and_attachment();
+    trace("DEBUG4358", "P-AXIS-01",
+          std::string("probe pknown=") + (prizes_known() ? "1" : "0") +
+          " activeNeed=" + (need_active_vstar() ? "1" : "0") +
+          " energyNeed=" + (need_energy() ? "1" : "0") +
+          " retreat=" + (state_.retreat_used ? "1" : "0") +
+          " benchSpace=" + std::to_string(bench_space()) +
+          " latiasDeck=" + std::to_string(prizes_known() ? deck_count_after_search_started(Card::LatiasEx) : -1) +
+          " treasure=" + std::to_string(hand_count(Card::MysteriousTreasure)));
 
     // Legacy Star can recover the final Basic Energy after the earlier Item fixed
     // point. If that late manual attachment completes GGF, immediately re-evaluate

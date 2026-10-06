@@ -25,6 +25,9 @@ struct EngineTestAccess {
   static std::optional<Card> vs_target(const Engine& engine) {
     return engine.issue_3545_vs_seeker_target();
   }
+  static bool compressor_should_play(const Engine& engine) {
+    return engine.issue_4359_battle_compressor_should_play();
+  }
   static bool play_compressor(Engine& engine) {
     return engine.play_battle_compressor();
   }
@@ -244,6 +247,60 @@ void test_bc_vs_rejects_redundant_burnet_and_accepts_crispin_synergy() {
   }
 }
 
+void test_k0_admission_is_invariant_to_hidden_payload_location() {
+  // Two K0 states with the same public information must make the same decision to
+  // commit Battle Compressor even when the usable Dragon is in deck in one hidden
+  // allocation and Prized in the other. Exact targets may diverge only after the
+  // legal search establishes K1.
+  // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+  // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Advanced Item/search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4359
+  std::mt19937_64 rng_a{4359};
+  std::mt19937_64 rng_b{4359};
+  sim::Engine deck_engine = make_engine(sim::DciProfile::StrictJit,
+                                        sim::LockMode::None, rng_a);
+  sim::Engine prize_engine = make_engine(sim::DciProfile::StrictJit,
+                                         sim::LockMode::None, rng_b);
+
+  sim::State deck_state;
+  deck_state.turn = 2;
+  deck_state.active = sim::Pokemon{sim::Card::RegidragoVstar, 1, 2, 1};
+  deck_state.hand = {sim::Card::BattleCompressor};
+  deck_state.deck = {sim::Card::MegaDragonite, sim::Card::Grass,
+                     sim::Card::Fire};
+  deck_state.prizes = {sim::Card::Dragapult};
+
+  sim::State prize_state = deck_state;
+  prize_state.deck = {sim::Card::Grass, sim::Card::Fire, sim::Card::PathToPeak};
+  prize_state.prizes = {sim::Card::MegaDragonite};
+
+  sim::EngineTestAccess::set_state(deck_engine, std::move(deck_state), false);
+  sim::EngineTestAccess::set_state(prize_engine, std::move(prize_state), false);
+
+  expect(sim::EngineTestAccess::compressor_should_play(deck_engine),
+         "K0 BC admission rejected the public payload route when payload was in deck.");
+  expect(sim::EngineTestAccess::compressor_should_play(prize_engine),
+         "K0 BC admission leaked hidden Prize placement.");
+
+  expect(sim::EngineTestAccess::play_compressor(deck_engine),
+         "BC did not resolve in the payload-in-deck allocation.");
+  expect(sim::EngineTestAccess::play_compressor(prize_engine),
+         "BC did not resolve consistently after the same K0 commitment.");
+
+  const sim::State& deck_after = sim::EngineTestAccess::state(deck_engine);
+  const sim::State& prize_after = sim::EngineTestAccess::state(prize_engine);
+  expect(std::count(deck_after.discard.begin(), deck_after.discard.end(),
+                    sim::Card::MegaDragonite) == 1,
+         "K1 BC target selection missed the actual deck payload.");
+  expect(std::count(prize_after.discard.begin(), prize_after.discard.end(),
+                    sim::Card::MegaDragonite) == 0,
+         "K1 BC target selection illegally discarded a Prized payload.");
+  expect(sim::EngineTestAccess::deck_seen(deck_engine) &&
+             sim::EngineTestAccess::deck_seen(prize_engine),
+         "BC did not establish K1 in both hidden allocations.");
+}
+
 void test_vs_future_bank_before_persistent_item_lock() {
   // After the current Supporter has been used, VS Seeker may still legally recover a
   // future Supporter. Spending it now is strategically justified when the modeled
@@ -278,6 +335,7 @@ int main() {
     test_payload_connector_domination();
     test_vs_seeker_immediate_recovery();
     test_bc_vs_rejects_redundant_burnet_and_accepts_crispin_synergy();
+    test_k0_admission_is_invariant_to_hidden_payload_location();
     test_vs_future_bank_before_persistent_item_lock();
     std::cout << "Issue 3545 BC / VS Seeker tests passed\n";
     return 0;

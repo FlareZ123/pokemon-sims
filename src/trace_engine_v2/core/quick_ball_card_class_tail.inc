@@ -69,10 +69,15 @@
       trace("PLAY SUPPORTER", "R-ARVEN-01; R-GAME-SUPPORTER; P-CONNECTOR-01",
             "Arven searched Forest Seal Stone and Earthen Vessel for the proven current-turn route.");
 
-      if (!remove_one(state_.hand, Card::EarthenVessel)) {
+      auto vessel_context = make_runtime_card_context();
+      // B-01 plays Earthen Vessel from hand, resolves its discard/search text,
+      // then discards the Item after the effect finishes.
+      // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+      // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+      // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4388
+      if (!vessel_context.move_hand_to_resolving(Card::EarthenVessel)) {
         throw std::logic_error("issue-2289 Earthen Vessel disappeared before play");
       }
-      state_.discard.push_back(Card::EarthenVessel);
       if (!discard_from_hand(
               Card::Fire,
               "Earthen Vessel issue-2289 route-surplus Fire cost",
@@ -84,6 +89,10 @@
         throw std::logic_error("issue-2289 Grass target disappeared");
       }
       shuffle(state_.deck);
+      if (!vessel_context.move_resolving_to_discard(Card::EarthenVessel)) {
+        throw std::logic_error(
+            "issue-2289 Earthen Vessel source disappeared before B-01 step 4");
+      }
       trace("EARTHEN VESSEL", "R-EV-01; R-GAME-ITEM; P-DCI-01; P-CONNECTOR-01",
             "Discarded route-surplus Fire Energy and searched Grass Energy for the unused manual attachment.");
       return true;

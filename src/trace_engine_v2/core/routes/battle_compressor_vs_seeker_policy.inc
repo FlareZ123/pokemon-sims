@@ -354,9 +354,48 @@
     return targets;
   }
 
+  bool issue_4359_public_compressor_route_available() const {
+    // At K0, the player knows the fixed list and public zones but cannot know which
+    // unresolved copies are in deck versus Prizes. Build a public possibility deck
+    // from unresolved copy counts and run the existing strategic planner on that
+    // belief state. Exact physical targets are chosen only after the legal search
+    // establishes K1.
+    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+    // Deck search / Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // K0/K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed hidden-information bug: https://github.com/FlareZ123/pokemon-sims/issues/4359
+    std::mt19937_64 shadow_rng = rng_;
+    Engine projected = issue_3545_projection(shadow_rng);
+    projected.state_.deck.clear();
+    for (const auto& [card, copies] : recipe_) {
+      const int unresolved =
+          std::min(copies, unresolved_fixed_list_copy_count(card));
+      for (int copy = 0; copy < unresolved; ++copy) {
+        projected.state_.deck.push_back(card);
+      }
+    }
+    return !projected.issue_3545_battle_compressor_targets().empty();
+  }
+
   bool play_battle_compressor() {
+    const bool knowledge_established = deck_seen_ || prizes_revealed_;
+    if (!knowledge_established && !issue_4359_public_compressor_route_available()) {
+      return false;
+    }
+
+    // The K0 commit decision above uses only public information. Starting the legal
+    // deck search establishes K1 before exact target selection, so hidden
+    // deck-versus-Prize placement may change the selected cards without changing
+    // whether this already-committed Item was played.
+    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+    // Deck search / Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // K0/K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4359
+    if (!knowledge_established) {
+      record_deck_search_knowledge("Battle Compressor");
+    }
     const std::vector<Card> targets = issue_3545_battle_compressor_targets();
-    if (targets.empty()) return false;
+    if (knowledge_established && targets.empty()) return false;
 
     // Resolve the printed effect exactly: search the deck for up to three cards,
     // discard the selected cards, then shuffle. The legal deck inspection establishes
@@ -370,7 +409,9 @@
       throw std::logic_error("projected Battle Compressor disappeared");
     }
     state_.discard.push_back(Card::BattleCompressor);
-    record_deck_search_knowledge("Battle Compressor");
+    if (knowledge_established) {
+      record_deck_search_knowledge("Battle Compressor");
+    }
 
     std::vector<Card> discarded;
     for (const Card target : targets) {

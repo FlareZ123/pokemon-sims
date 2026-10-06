@@ -189,6 +189,20 @@
     }
     if (pay_tapu_retreat_to_ready_benched_vstar()) return true;
     attach_manual();
+    // Legacy Star can recover the final Basic Energy after the prior Item fixed
+    // point. Once that attachment completes GGF, re-evaluate the existing
+    // Mysterious Treasure -> Latias ex route before the turn ends.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR / Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Item, attachment, Bench, Ability, and retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Same-turn JIT and earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4358
+    if (post_attach_treasure_latias_route_available()) {
+      play_items_until_stable(true);
+      play_basics_from_hand();
+    }
     return retreat_to_benched_vstar_with_latias();
   }
 

@@ -145,6 +145,8 @@ The Regidrago-line compatibility forwarder is complete. Keep future cleanup at t
 
 If migration exposes gameplay behavior that is wrong, use the normal bug-confirmation workflow and keep the behavior fix out of cleanup.
 
+2026-10-06 cleanup checkpoint: Mysterious Treasure target intent remains strategy-owned while target-order data stays centralized in `core/mysterious_treasure_target_policy.inc`. Preserve direct card-data citations while consolidating route-selection boilerplate. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+
 ## Validation gate
 
 A cleanup PR is mergeable only when strict Release compilation succeeds, focused tests and the full regression suite show no new failure, sanitizer and structural checks show no new failure, representative `--simulate-this` traces preserve legal action ordering and readiness, the paired T2/T3 matrix has no unexplained drift, and the PR contains no gameplay behavior change.

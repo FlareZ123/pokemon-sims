@@ -266,30 +266,38 @@
   }
 
   bool post_attach_treasure_latias_route_available() {
-    const Pokemon* target = target_regi();
-    if (!strict_payload_timing() || item_locked() || target == nullptr ||
-        target->card != Card::RegidragoVstar ||
-        !pays_apex_energy_cost(*target) || // https://github.com/FlareZ123/pokemon-sims/issues/2442
-        !need_active_vstar() || state_.retreat_used ||
-        !state_.active || !is_basic(state_.active->card) || bench_space() == 0 ||
-        !ability_available_for_pokemon(Card::LatiasEx) || in_play(Card::LatiasEx) ||
-        hand_count(Card::LatiasEx) > 0 || !might_be_unseen(Card::LatiasEx) ||
-        hand_count(Card::MysteriousTreasure) == 0 ||
-        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+    // This late connector is about the specific Benched VSTAR that Skyliner will
+    // promote. Do not route through target_regi(), whose general attacker score can
+    // describe a different Pokémon than the promotion target.
+    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed post-Legacy transition bug: https://github.com/FlareZ123/pokemon-sims/issues/4358
+    if (!strict_payload_timing() || item_locked() || !prizes_known() ||
+        !need_active_vstar() || !benched_vstar_promotion_ready() ||
+        state_.retreat_used || !state_.active || !is_basic(state_.active->card) ||
+        bench_space() == 0 || !ability_available_for_pokemon(Card::LatiasEx) ||
+        in_play(Card::LatiasEx) || hand_count(Card::LatiasEx) > 0 ||
+        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        hand_count(Card::MysteriousTreasure) == 0) {
       return false;
     }
 
-    // A manual attachment can complete GGF on the prior-turn Regidrago VSTAR.
-    // Mysterious Treasure may then discard the held Dragon payload, search Latias
-    // ex, and Skyliner may immediately promote that VSTAR before the unused
-    // Supporter slot is considered. This is the shortest observable complete route:
+    const bool payload_already_ready = !need_payload();
+    const auto cost = choose_discard(!payload_already_ready, true, true,
+                                     Card::MysteriousTreasure);
+    if (!cost) return false;
+
+    // When strict-JIT payload is still missing, Treasure's paid cost itself must
+    // establish that axis. If Legacy Star or another legal action already placed a
+    // current-turn payload in discard, any ordinary DCI-approved Treasure cost can
+    // be used for the remaining Latias mobility axis.
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
-    // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Core Item, Bench, Ability, and retreat procedure: https://www.pokemon.com/us/pokemon-tcg/rules
-    // Earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1145
-    return choose_discard(true, true, true, Card::MysteriousTreasure).has_value();
+    // Strict-JIT / DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Dynamic DCI model: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+    // Item, Bench, Ability and Retreat procedures: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4358
+    return payload_already_ready || is_payload(*cost);
   }
 
   bool late_supporter_quick_ball_latias_completion_available() const {

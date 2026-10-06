@@ -66,6 +66,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 2026-10-06 cleanup checkpoint: setup recipe metadata policy is now co-located with its sole consumer in `src/trace_engine_v2/core/setup_lifecycle.inc`, and the one-consumer `core/setup/policies.inc` seam is retired. Keep future setup-only metadata and setup state-transition helpers together unless another independent consumer appears. Setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
+2026-10-06 cleanup checkpoint: Forest Seal Stone attachment strategy now has a canonical owner at `src/trace_engine_v2/core/routes/forest_seal_stone_attachment_policy.inc`. The historical `part_010_attach_fss_override.inc` path is a compatibility seam only, while holder selection reuses `core/board_state_policy.inc` for Active-first and Bench-only traversal. Preserve the existing V-first strategy while Star Alchemy is unused and the broader legal Tool-holder fallback after the VSTAR Power is spent. Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156 C++ textual include semantics: https://eel.is/c++draft/cpp.include
+
 ## Active card migrations
 
 No open migration issue is assumed by this plan. Before starting a card migration, search the current issue tracker and branch set for an existing owner. A migration should move intrinsic metadata and classification before printed resolution, then move printed resolution only after its live resolver and reusable `CardContext` operations are identified.

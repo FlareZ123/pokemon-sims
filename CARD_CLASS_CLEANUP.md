@@ -47,7 +47,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/board_state_policy.inc` owns reusable board traversal and board-index queries.
 - `src/trace_engine_v2/core/formatting/trace_formatting.inc` owns presentation-only card-list and Pokémon-state rendering used by trace output. Keep strategy and state transitions outside this formatting owner.
 - `src/trace_engine_v2/core/routes/search_connector_helpers.inc` owns complete K1 fallback selectors for Mysterious Treasure, Quick Ball, and Ultra Ball.
-- `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc` remains the live strategic target-priority owner composed by `part_009a.inc`. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+- `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc` remains the live strategic target-priority owner composed by `core/routes/mysterious_treasure_route.inc`. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
 - `src/trace_engine_v2/core/locks/garbodor_policy.inc` remains the sole Garbodor scenario-timing and Ability-lock policy owner. Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
 
 2026-10-06 cleanup checkpoint: `src/trace_engine_v2/core/formatting/trace_formatting.inc` now owns `join_cards()` and `pokemon_summary()`, and `composition/engine_body.inc` composes that owner immediately after the runtime state definitions. This removes presentation helpers from the composition spine while preserving their declaration order and behavior. C++ textual include semantics: https://eel.is/c++draft/cpp.include
@@ -68,6 +68,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 
 2026-10-06 cleanup checkpoint: Forest Seal Stone holder selection now reuses the canonical Active-first board traversal in `core/board_state_policy.inc`. The board owner exposes mutable and const Bench-only lookups, `part_010_attach_fss_override.inc` delegates its V-preferred and generic Tool-slot selection to those helpers, and `part_011.inc` no longer maintains a separate Star Alchemy holder scan. Preserve V-first FSS strategy in the route layer while keeping physical board traversal centralized. Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156 Board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+
+2026-10-06 cleanup checkpoint: the live Mysterious Treasure route body now resides in `src/trace_engine_v2/core/routes/mysterious_treasure_route.inc`, `composition/opening_engine_overrides.inc` composes it directly at the historical alias boundary, and the numbered `part_009a.inc` compatibility seam is retired. Strategic target ordering remains in `core/mysterious_treasure_target_policy.inc`; the move preserves direct card/rules citations and the original textual continuation into the following fragment. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 C++ textual include semantics: https://eel.is/c++draft/cpp.include
 
 ## Active card migrations
 
@@ -95,7 +97,7 @@ Mysterious Treasure keeps strategic Dragon/Psychic target preference in `core/my
 
 ## Setup lifecycle cleanup
 
-`src/trace_engine_v2/core/setup/policies.inc` owns pure setup recipe predicates, setup constants, and scenario labels. `src/trace_engine_v2/core/setup_lifecycle.inc` owns physical opening-deck initialization, mulligan handling, Prize dealing, and setup trace emission. `src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn reset and start-of-turn mechanics.
+`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup recipe metadata together with physical opening-deck initialization, mulligan handling, Prize dealing, and setup trace emission. The former one-consumer `core/setup/policies.inc` seam is retired. `src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn reset and start-of-turn mechanics.
 
 Keep setup and turn mechanics source-linked to the advanced manual and official rules. Advanced manual: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
 
@@ -126,7 +128,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 The Regidrago-line compatibility forwarder is complete. Keep future cleanup at the actual composition consumer and canonical catalog owner rather than recreating a helper include solely to assert include order.
 
 1. Continue deleting forwarding `.inc` files only after tracing them from `composition/engine_body.inc` and proving they are absent from the live include graph. A missing historical target is evidence of stale code, while composition reachability is the decisive check.
-2. Keep `core/mysterious_treasure_target_policy.inc` until `part_009a.inc` is migrated to a canonical organized route package. Preserve its target order and direct Mysterious Treasure card-data citation during that move.
+2. Keep `core/mysterious_treasure_target_policy.inc` as the strategy-only target-order owner used by `core/routes/mysterious_treasure_route.inc`. Preserve its target order and direct Mysterious Treasure card-data citation during future card-class migration.
 3. Continue moving complete route bodies from numbered `part_*` fragments into `core/routes/` packages at identical textual boundaries, with macro lifetime documented at the composition owner.
 4. Keep card metadata and printed-effect migrations flowing through `src/cards/` and `src/rules/`; do not move DCI, UDP, AMR, connector domination, K0/K1, or opponent-pressure policy into card classes.
 5. Prefer one named policy owner for each reusable traversal or state-reset operation. Remove micro-forwarders after consumers use that owner directly.

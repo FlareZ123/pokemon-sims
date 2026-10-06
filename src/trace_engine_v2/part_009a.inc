@@ -79,10 +79,6 @@
 
 #include "core/mysterious_treasure_target_policy.inc"
 
-  static constexpr std::array<Card, 10> preferred_mysterious_treasure_targets() {
-    return MysteriousTreasureTargetPolicy::preferred_targets();
-  }
-
   bool play_mysterious_treasure(const bool permit_payload) {
     if (item_locked() || hand_count(Card::MysteriousTreasure) == 0) return false;
     const bool bank_for_deterministic_next_turn_payload =
@@ -131,16 +127,24 @@
     // contain the desired Psychic or Dragon Pokémon before spending both cards:
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
-    const bool want_regi = need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV);
-    const bool want_vstar = need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
-                            might_be_unseen(Card::RegidragoVstar);
-    const bool want_latias = need_active_vstar() && bench_space() > 0 && ability_available_for_pokemon(Card::LatiasEx) &&
-                             !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
-                             might_be_unseen(Card::LatiasEx);
-    const bool want_tapu = hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) && bench_space() > 0 &&
-                           needs_tapu_connector() && might_be_unseen(Card::TapuLeleGX);
-    const bool want_oricorio = hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) && bench_space() > 0 &&
-                                  needs_oricorio_connector() && might_be_unseen(Card::Oricorio);
+    const bool want_regi =
+        need_regi() && bench_space() > 0 && might_be_unseen(Card::RegidragoV);
+    const bool want_vstar =
+        need_vstar() && hand_count(Card::RegidragoVstar) == 0 &&
+        might_be_unseen(Card::RegidragoVstar);
+    const bool want_latias =
+        need_active_vstar() && bench_space() > 0 &&
+        ability_available_for_pokemon(Card::LatiasEx) &&
+        !in_play(Card::LatiasEx) && hand_count(Card::LatiasEx) == 0 &&
+        might_be_unseen(Card::LatiasEx);
+    const bool want_tapu =
+        hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
+        bench_space() > 0 && needs_tapu_connector() &&
+        might_be_unseen(Card::TapuLeleGX);
+    const bool want_oricorio =
+        hand_count(Card::Oricorio) == 0 && !in_play(Card::Oricorio) &&
+        bench_space() > 0 && needs_oricorio_connector() &&
+        might_be_unseen(Card::Oricorio);
     // Treasure must pay its discard before the fetched payload reaches hand. A later
     // Ultra Ball route is live only when its own two-card cost remains payable:
     // https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh12pt5-146
@@ -164,7 +168,10 @@
                               !payload_already_held &&
                               !has_live_serena_hand_payload_line() &&
                               has_payable_payload_outlet_after_costed_search(Card::MysteriousTreasure);
-    if (!can_jit_discard && !want_regi && !want_vstar && !want_latias && !want_tapu && !want_oricorio && !want_payload) return false;
+    if (!can_jit_discard && !want_regi && !want_vstar && !want_latias &&
+        !want_tapu && !want_oricorio && !want_payload) {
+      return false;
+    }
     // The Mysterious Treasure being played cannot discard itself. A distinct held
     // Ultra Ball remains a legal card from hand for Treasure's discard cost, even
     // when that Ultra Ball is not itself payable because it needs two other cards:
@@ -251,7 +258,7 @@
     // https://api.pokemontcg.io/v2/cards/sm6-113
     // https://api.pokemontcg.io/v2/cards/sv8-140
     // https://github.com/FlareZ123/pokemon-sims/issues/1253
-    for (const Card target : preferred_mysterious_treasure_targets()) {
+    for (const Card target : MysteriousTreasureTargetPolicy::preferred_targets()) {
       const bool desired = (target == Card::RegidragoV && want_regi) ||
                            (target == Card::RegidragoVstar && want_vstar) ||
                            (target == Card::LatiasEx && want_latias) ||
@@ -279,8 +286,12 @@
     const bool found_tapu_for_gladion = prized_regi_axis && bench_space() > 0 &&
         hand_count(Card::TapuLeleGX) == 0 && !in_play(Card::TapuLeleGX) &&
         move_deck_to_hand(Card::TapuLeleGX);
-    const Card fallback = found_tapu_for_gladion ? Card::TapuLeleGX : fallback_mysterious_target_after_search_started();
-    const bool found_fallback = found_tapu_for_gladion || move_deck_to_hand(fallback);
+    const Card fallback =
+        found_tapu_for_gladion
+            ? Card::TapuLeleGX
+            : fallback_mysterious_target_after_search_started();
+    const bool found_fallback =
+        found_tapu_for_gladion || move_deck_to_hand(fallback);
     shuffle(state_.deck);
     // Mysterious Treasure remains outside discard until its effect and shuffle end.
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113

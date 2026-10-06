@@ -109,7 +109,7 @@
 #include "../part_issue_1595_gladion_grass_turo_blender_override.inc"
 #undef play_gladion
 
-#include "../part_issue_1608_burnet_before_dead_crispin_override.inc"
+#include "../core/routes/gladion_burnet_crispin_continuation.inc" // Canonical continuation owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/gladion_burnet_crispin_continuation.inc
 
 #if defined(play_gladion)
 #error "Gladion composition leaked play_gladion"

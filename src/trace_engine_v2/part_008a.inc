@@ -42,13 +42,25 @@
     return true;
   }
 
-  void consume_tate_liza_supporter() {
-    // Tate & Liza is a Supporter; playing it consumes the turn's Supporter action:
-    // https://api.pokemontcg.io/v2/cards/sm7-148
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-    remove_one(state_.hand, Card::TateLiza);
-    state_.discard.push_back(Card::TateLiza);
+  bool begin_supporter_resolution(const Card source) {
+    // B-03 step 2 plays and reveals the Supporter before its effect resolves.
+    // Keep that source outside ordinary hand and discard until step 4.
+    // Supporter procedure B-03: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4348
+    if (!ResolvingTrainerSourcePolicy::move_from_hand(
+            state_.hand, resolving_trainer_sources_, source)) {
+      return false;
+    }
     state_.supporter_used = true;
+    return true;
+  }
+
+  bool finish_supporter_resolution(const Card source) {
+    // B-03 step 4 discards the Supporter only after its printed effect finishes.
+    // Supporter procedure B-03: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4348
+    return ResolvingTrainerSourcePolicy::move_to_discard(
+        resolving_trainer_sources_, state_.discard, source);
   }
 
   bool play_tate_switch() {
@@ -57,8 +69,14 @@
         !need_active_vstar()) {
       return false;
     }
-    if (!promote_best_benched_vstar()) return false;
-    consume_tate_liza_supporter();
+    Pokemon* target = best_benched_vstar_for_promotion();
+    if (target == nullptr) return false;
+    // Stage Tate & Liza before its switch effect and discard it afterward.
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Supporter procedure B-03: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    if (!begin_supporter_resolution(Card::TateLiza)) return false;
+    std::swap(*state_.active, *target);
+    if (!finish_supporter_resolution(Card::TateLiza)) return false;
     // Tate & Liza may switch any Benched Pokémon Active. Select the Regidrago
     // VSTAR that best satisfies Apex Dragon's GGF cost before spending Supporter:
     // https://api.pokemontcg.io/v2/cards/sm7-148
@@ -79,11 +97,15 @@
     // https://api.pokemontcg.io/v2/cards/sm7-148
     // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
     if (state_.deck.empty() && state_.hand.size() == 1U) return false;
-    consume_tate_liza_supporter();
+    // Its own source must be outside the hand being shuffled.
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Supporter procedure B-03: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    if (!begin_supporter_resolution(Card::TateLiza)) return false;
     state_.deck.insert(state_.deck.end(), state_.hand.begin(), state_.hand.end());
     state_.hand.clear();
     shuffle(state_.deck);
     for (int draw = 0; draw < 5; ++draw) draw_card("Tate & Liza");
+    if (!finish_supporter_resolution(Card::TateLiza)) return false;
     trace("PLAY SUPPORTER", "R-TATE-01; R-GAME-SUPPORTER",
           "Tate & Liza draw mode: shuffled remaining hand and drew 5.");
     return true;

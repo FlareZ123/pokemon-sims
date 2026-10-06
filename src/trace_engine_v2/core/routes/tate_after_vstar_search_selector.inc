@@ -78,8 +78,13 @@
     // Connector-domination and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
     // Confirmed T1 going-second witness: https://github.com/FlareZ123/pokemon-sims/issues/3961
     // Established later-turn Latias connector witness: https://github.com/FlareZ123/pokemon-sims/issues/1403
+    // Stage Tate & Liza before the switch and discard it after the effect.
+    // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+    // Supporter procedure B-03: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4348
+    if (!begin_supporter_resolution(Card::TateLiza)) return false;
     std::swap(*state_.active, *promoted);
-    consume_tate_liza_supporter();
+    if (!finish_supporter_resolution(Card::TateLiza)) return false;
     trace("PLAY SUPPORTER", "R-TATE-01; R-GAME-SUPPORTER; P-COMPRESS-01",
           "Tate & Liza switch mode preserved the held Regidrago VSTAR and promoted an energized same-turn Regidrago V for the confirmed T1 Celestial Roar route.");
     return true;

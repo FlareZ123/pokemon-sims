@@ -18,9 +18,9 @@ T1 | PLAY SUPPORTER | rules: R-ARVEN-01; R-SECRET-BOX-01 | Arven banked the next
 T1 | ATTACH TOOL | rules: R-FSS-01; R-GAME-TOOL | Attached Forest Seal Stone to Regidrago V.
 T1 | HOLD VSTAR POWER | rules: R-FSS-01; R-SECRET-BOX-01; P-AXIS-01 | Held Star Alchemy as the next-turn Secret Box Fire channel.
 T1 | PLAY STADIUM | rules: R-FOREST-VITALITY-01; R-GAME-EVOLUTION | Played Forest of Vitality. Grass Pokémon may evolve during their entry turn after the first turn.
-T1 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | End Pineco policy: Active=Tapu Lele-GX [-] | Bench=Regidrago V [-] + Forest Seal Stone | Hand=Gladion, Hisuian Goodra VSTAR, Secret Box | Discard=Mysterious Treasure, Wishful Baton, Arven
+T1 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | End Pineco policy: Active=Tapu Lele-GX [-] | Bench=Regidrago V [-] + Forest Seal Stone | Hand=Gladion, Hisuian Goodra VSTAR, Secret Box | Discard=Wishful Baton, Mysterious Treasure, Arven
 T2 | DRAW | rules: R-GAME-DRAW | start-of-turn: Mega Dragonite ex
-T2 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | Start Pineco policy: Active=Tapu Lele-GX [-] | Bench=Regidrago V [-] + Forest Seal Stone | Hand=Gladion, Hisuian Goodra VSTAR, Secret Box, Mega Dragonite ex | Discard=Mysterious Treasure, Wishful Baton, Arven
+T2 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | Start Pineco policy: Active=Tapu Lele-GX [-] | Bench=Regidrago V [-] + Forest Seal Stone | Hand=Gladion, Hisuian Goodra VSTAR, Secret Box, Mega Dragonite ex | Discard=Wishful Baton, Mysterious Treasure, Arven
 T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Mega Dragonite ex (Secret Box cost)
 T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Hisuian Goodra VSTAR (Secret Box cost)
 T2 | DISCARD | rules: R-SECRET-BOX-01; P-DCI-01 | Gladion (Secret Box cost)
@@ -35,5 +35,5 @@ T2 | ATTACH | rules: R-GAME-ENERGY | Fire Energy manually to Regidrago V.
 T2 | DISCARD | rules: R-MT-01; R-SECRET-BOX-01; P-DCI-01 | Dragapult ex (Mysterious Treasure completion cost)
 T2 | PLAY ITEM | rules: R-MT-01; R-GAME-ITEM; R-SECRET-BOX-01 | Mysterious Treasure used the proven dead or payload cost and searched Regidrago VSTAR after GGF became complete.
 T2 | EVOLVE | rules: R-GAME-EVOLVE | Evolved Regidrago V into Regidrago VSTAR.
-T2 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | Direct Regidrago route completed before future-route banking: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=Tapu Lele-GX [-] | Hand=(none) | Discard=Mysterious Treasure, Wishful Baton, Arven, Mega Dragonite ex, Hisuian Goodra VSTAR, Gladion, Secret Box, Dawn, Forretress ex, Pineco, Grass Energy, Mysterious Treasure, Dragapult ex
+T2 | POLICY | rules: P-AXIS-01; R-SECRET-BOX-01 | Direct Regidrago route completed before future-route banking: Active=Regidrago VSTAR [GGF] + Forest Seal Stone | Bench=Tapu Lele-GX [-] | Hand=(none) | Discard=Wishful Baton, Mysterious Treasure, Arven, Mega Dragonite ex, Hisuian Goodra VSTAR, Gladion, Secret Box, Dawn, Forretress ex, Pineco, Grass Energy, Mysterious Treasure, Dragapult ex
 T2 | READY | rules: R-RVS-01; P-JIT-01 | Active Regidrago VSTAR has GGF and a permitted Dragon payload in discard.

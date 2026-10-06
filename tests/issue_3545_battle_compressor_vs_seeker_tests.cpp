@@ -30,6 +30,15 @@ struct EngineTestAccess {
   }
   static bool play_vs(Engine& engine) { return engine.play_vs_seeker(); }
   static const State& state(const Engine& engine) { return engine.state_; }
+  static const std::vector<Card>& resolving_sources(const Engine& engine) {
+    return engine.resolving_trainer_sources_;
+  }
+  static bool begin_item_resolution(Engine& engine, const Card card) {
+    return engine.begin_legacy_item_resolution(card);
+  }
+  static bool finish_item_resolution(Engine& engine, const Card card) {
+    return engine.finish_legacy_item_resolution(card);
+  }
   static bool deck_seen(const Engine& engine) { return engine.deck_seen_; }
 };
 }  // namespace sim
@@ -54,6 +63,46 @@ sim::Engine make_engine(const sim::DciProfile dci, const sim::LockMode locks,
                         std::mt19937_64& rng, const int max_turn = 4) {
   sim::Scenario scenario{"issue-3545", dci, locks, false, max_turn};
   return sim::Engine{scenario, sim::baseline_recipe(), rng};
+}
+
+void test_issue_4366_shared_item_source_lifecycle() {
+  // B-01 keeps a played Item outside ordinary hand and discard while its text
+  // resolves, then moves the source to discard after the effect finishes.
+  // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+  // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+  // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed defect: https://github.com/FlareZ123/pokemon-sims/issues/4366
+  for (const sim::Card source :
+       {sim::Card::BattleCompressor, sim::Card::VsSeeker}) {
+    std::mt19937_64 rng{4366};
+    sim::Engine engine = make_engine(sim::DciProfile::StrictJit,
+                                     sim::LockMode::None, rng);
+    sim::State state;
+    state.turn = 2;
+    state.hand = {source};
+    sim::EngineTestAccess::set_state(engine, std::move(state));
+
+    expect(sim::EngineTestAccess::begin_item_resolution(engine, source),
+           "Item did not enter the resolving-source zone.");
+    const sim::State& resolving = sim::EngineTestAccess::state(engine);
+    expect(std::count(resolving.hand.begin(), resolving.hand.end(), source) == 0,
+           "Resolving Item remained in ordinary hand.");
+    expect(std::count(resolving.discard.begin(), resolving.discard.end(), source) == 0,
+           "Resolving Item became discard-visible before effect completion.");
+    expect(std::count(sim::EngineTestAccess::resolving_sources(engine).begin(),
+                      sim::EngineTestAccess::resolving_sources(engine).end(),
+                      source) == 1,
+           "Resolving Item source was not retained.");
+
+    expect(sim::EngineTestAccess::finish_item_resolution(engine, source),
+           "Resolved Item did not move to discard.");
+    expect(std::count(sim::EngineTestAccess::state(engine).discard.begin(),
+                      sim::EngineTestAccess::state(engine).discard.end(),
+                      source) == 1,
+           "Resolved Item source did not end in discard.");
+    expect(sim::EngineTestAccess::resolving_sources(engine).empty(),
+           "Resolved Item leaked from the resolving-source zone.");
+  }
 }
 
 void test_registered_metadata() {
@@ -115,7 +164,9 @@ void test_exact_resolution_and_up_to_three() {
   const sim::State& after = sim::EngineTestAccess::state(engine);
   expect(sim::EngineTestAccess::deck_seen(engine), "BC search did not establish K1.");
   expect(std::count(after.discard.begin(), after.discard.end(), sim::Card::BattleCompressor) == 1,
-         "Played BC did not enter discard.");
+         "Played BC did not enter discard after its effect completed.");
+  expect(sim::EngineTestAccess::resolving_sources(engine).empty(),
+         "Battle Compressor remained in the resolving-source zone.");
   expect(std::count(after.discard.begin(), after.discard.end(), sim::Card::MegaDragonite) == 1,
          "Selected Dragon did not enter discard.");
   expect(after.discarded_this_turn == std::vector<sim::Card>{sim::Card::MegaDragonite},
@@ -197,7 +248,9 @@ void test_vs_seeker_immediate_recovery() {
   expect(std::count(after.hand.begin(), after.hand.end(), sim::Card::ProfessorBurnet) == 1,
          "VS Seeker did not recover Burnet to hand.");
   expect(std::count(after.discard.begin(), after.discard.end(), sim::Card::VsSeeker) == 1,
-         "VS Seeker did not enter discard after use.");
+         "VS Seeker did not enter discard after its effect completed.");
+  expect(sim::EngineTestAccess::resolving_sources(engine).empty(),
+         "VS Seeker remained in the resolving-source zone.");
 }
 
 void test_bc_vs_rejects_redundant_burnet_and_accepts_crispin_synergy() {
@@ -318,6 +371,8 @@ void test_k0_play_decision_does_not_read_hidden_payload_placement() {
     expect(std::none_of(after.discard.begin(), after.discard.end(),
                         sim::is_payload),
            "K1 BC invented a Dragon payload absent from the inspected deck.");
+    expect(sim::EngineTestAccess::resolving_sources(engine).empty(),
+           "Zero-target K0 BC source leaked from the resolving-source zone.");
   }
 
   // Once K1 already proves the same no-payload deck, preserving Battle Compressor
@@ -341,6 +396,7 @@ void test_k0_play_decision_does_not_read_hidden_payload_placement() {
 
 int main() {
   try {
+    test_issue_4366_shared_item_source_lifecycle();
     test_registered_metadata();
     test_jit_profile_payload_counts();
     test_exact_resolution_and_up_to_three();

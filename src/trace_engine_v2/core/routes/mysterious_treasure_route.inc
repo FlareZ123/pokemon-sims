@@ -77,7 +77,7 @@
     });
   }
 
-#include "core/mysterious_treasure_target_policy.inc"
+#include "../mysterious_treasure_target_policy.inc"
 
   static constexpr std::array<Card, 10> preferred_mysterious_treasure_targets() {
     return MysteriousTreasureTargetPolicy::preferred_targets();

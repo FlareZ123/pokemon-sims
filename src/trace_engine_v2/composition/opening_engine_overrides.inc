@@ -108,7 +108,8 @@
 // https://api.pokemontcg.io/v2/cards/sm2-60
 // https://github.com/FlareZ123/pokemon-sims/issues/746
 #define in_play tapu_connector_copy_aware_in_play
-#include "../part_009a.inc"
+// Mysterious Treasure route owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/mysterious_treasure_route.inc
+#include "../core/routes/mysterious_treasure_route.inc"
 #undef in_play
 #undef play_mysterious_treasure
 

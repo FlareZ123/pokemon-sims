@@ -80,11 +80,13 @@
 #error "Tate legacy composition leaked a local alias"
 #endif
 
-// Keep post-evolution discard provenance and Tate handling behind one canonical
-// package while preserving the established member-fragment order exactly.
-// Canonical package: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/package.inc
+// Compose Tate provenance and action owners directly at the Engine boundary.
+// Their historical order remains explicit here, removing the forwarding-only
+// package include without changing member declaration order.
 // C++ preprocessing include semantics: https://eel.is/c++draft/cpp.include
-#include "../core/tate/package.inc"
+#include "../core/tate/discard_recovery_provenance.inc" // Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/discard_recovery_provenance.inc
+#include "../core/tate/attachment_policy.inc" // Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/attachment_policy.inc
+#include "../core/tate/action_policy.inc" // Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/action_policy.inc
 
 #if defined(play_mysterious_treasure) || defined(play_heavy_ball) || \
     defined(play_quick_ball) || defined(play_ultra_ball) || defined(in_play)

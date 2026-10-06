@@ -200,6 +200,12 @@
   }
 
   template <typename Predicate>
+  [[nodiscard]] Pokemon* find_benched_pokemon_matching(Predicate predicate) {
+    const OptionalBoardIndex index = benched_pokemon_index_matching(predicate);
+    return index ? board_pokemon_at_index(*index) : nullptr;
+  }
+
+  template <typename Predicate>
   [[nodiscard]] const Pokemon* find_benched_pokemon_matching(
       Predicate predicate) const {
     const OptionalBoardIndex index = benched_pokemon_index_matching(predicate);

@@ -1,0 +1,154 @@
+  int issue_1772_completion_turn_{0};
+
+  const Pokemon* issue_1772_prepared_fire_regidrago() const {
+    const int current_turn = state_.turn;
+    return find_benched_pokemon_matching(
+        [this, current_turn](const Pokemon& pokemon) {
+          return pokemon.card == Card::RegidragoV &&
+              pokemon_entered_before_turn(pokemon, current_turn) &&
+              ((pokemon.grass == 0 && pokemon.fire >= 1) ||
+               (pokemon.double_dragon > 0 && !pays_apex_energy_cost(pokemon)));
+              // https://github.com/FlareZ123/pokemon-sims/issues/2424
+              // Canonical Bench/evolution query owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+        });
+  }
+
+  bool issue_1772_steven_t3_package_available() const {
+    const bool payload_in_known_deck = payload_zone_contains(state_.deck);
+    // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+    // Apex Dragon payload semantics: https://api.pokemontcg.io/v2/cards/swsh12-136
+    const bool payload_held = payload_zone_contains(state_.hand);
+    // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+
+    // Full Prize inspection establishes the same fixed-list K1 as a resolved
+    // deck search, so this route must use the repository-wide knowledge predicate:
+    // Hisuian Heavy Ball: https://api.pokemontcg.io/v2/cards/swsh10-146
+    // K1 specification: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed provenance bug: https://github.com/FlareZ123/pokemon-sims/issues/2066
+    const Pokemon* prepared_regi = issue_1772_prepared_fire_regidrago();
+    const bool dde_one_basic_finish = prepared_regi != nullptr &&
+        prepared_regi->double_dragon > 0 && !pays_apex_energy_cost(*prepared_regi) &&
+        basic_attachment_completes_apex(*prepared_regi, Card::Grass);
+    const int projected_completion_turn = state_.turn + 1;
+
+    // The package is a relative bank-now / finish-next-turn route. Steven is the
+    // current Supporter, while Earthen Vessel must still be legal on the recorded
+    // following turn. Project that Item window directly instead of requiring the
+    // historical absolute T2 witness.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Advanced Supporter and Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // JIT, K1, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed relative-continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/3278
+    if (!prizes_known() || !strict_payload_timing() || !supporter_allowed() ||
+        item_locked() || item_locked_on_turn(projected_completion_turn) ||
+        projected_completion_turn > scenario_.max_turn ||
+        !state_.active || !is_basic(state_.active->card) ||
+        state_.active->card == Card::RegidragoV || state_.retreat_used ||
+        bench_space() == 0 || prepared_regi == nullptr ||
+        !need_energy() || !need_payload() || state_.manual_energy_used ||
+        hand_count(Card::StevensResolve) == 0 || hand_count(Card::Gladion) == 0 ||
+        (!dde_one_basic_finish && hand_count(Card::Crispin) == 0) ||
+        hand_count(Card::EarthenVessel) == 0 ||
+        hand_count(Card::RegidragoVstar) == 0 || hand_count(Card::Grass) > 0 ||
+        hand_count(Card::LatiasEx) > 0 || in_play(Card::LatiasEx) || payload_held ||
+        !ability_available_for_pokemon(Card::LatiasEx)) {
+      return false;
+    }
+
+    // Steven banks the three public cards that complete the next-turn route.
+    // Crispin attaches one searched Grass, Steven's Grass is the manual attachment,
+    // Earthen Vessel discards Steven's Dragon payload, the held VSTAR evolves the
+    // prior-turn Basic, and Latias ex promotes it. Gladion taking the prized ACE SPEC
+    // solves only the payload axis and loses this deterministic compression line:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Gladion: https://api.pokemontcg.io/v2/cards/sm4-95
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago V and VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-135 https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official search, Supporter, Item, attachment, evolution, Ability, and retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // K1, dynamic DCI, supporter contention, JIT, and earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // Original confirmed route: https://github.com/FlareZ123/pokemon-sims/issues/1772
+    // Relative-continuation follow-up: https://github.com/FlareZ123/pokemon-sims/issues/3278
+    if (dde_one_basic_finish) {
+      return deck_count_after_search_started(Card::Grass) > 0 &&
+          deck_count_after_search_started(Card::LatiasEx) > 0 && payload_in_known_deck;
+    }
+    return deck_count_after_search_started(Card::Grass) >= 2 &&
+        deck_count_after_search_started(Card::Fire) > 0 &&
+        deck_count_after_search_started(Card::LatiasEx) > 0 && payload_in_known_deck;
+  }
+
+  bool play_issue_1772_steven_t3_package() {
+    if (!issue_1772_steven_t3_package_available()) return false;
+
+    const auto payload = first_payload_card_in_zone(state_.deck);
+    if (!payload) {
+      throw std::logic_error("Issue-1772 payload disappeared");
+    }
+    const Card selected_payload = *payload;
+
+    remove_one(state_.hand, Card::StevensResolve);
+    state_.discard.push_back(Card::StevensResolve);
+    state_.supporter_used = true;
+    state_.turn_ended = true;
+    outcome_.used_steven = true;
+    record_deck_search_knowledge("Steven's Resolve issue-1772 route");
+
+    if (!move_deck_to_hand(Card::Grass) || !move_deck_to_hand(Card::LatiasEx) ||
+        !move_deck_to_hand(selected_payload)) {
+      throw std::logic_error("Issue-1772 Steven target disappeared");
+    }
+    shuffle(state_.deck);
+    issue_1772_completion_turn_ = state_.turn + 1;
+
+    // Steven's printed "up to 3" search selects the exact Energy, promotion, and
+    // discard-payload package and records the immediately following completion turn:
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Dragapult ex: https://api.pokemontcg.io/v2/cards/sv6-130
+    // Official search/end-turn procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Original route: https://github.com/FlareZ123/pokemon-sims/issues/1772
+    // Confirmed relative-continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/3278
+    trace("PLAY SUPPORTER",
+          "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
+          "Searched the deterministic T" +
+              std::to_string(issue_1772_completion_turn_) +
+              " Grass-Latias-payload package. Turn ended.");
+    return true;
+  }
+
+  bool issue_1772_t3_crispin_completion_available() const {
+    const bool payload_held = payload_zone_contains(state_.hand);
+    // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
+    // Apex Dragon payload semantics: https://api.pokemontcg.io/v2/cards/swsh12-136
+    const Pokemon* prepared_regi = issue_1772_prepared_fire_regidrago();
+    // Reuse the same prepared-bench witness throughout this pure predicate: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven/issue_1772_steven_t3_package_override.inc
+
+    // Only the package banked by this helper on the immediately preceding turn may
+    // unlock its specialized Crispin/Vessel continuation. The recorded relative turn
+    // prevents a later unrelated hand state from reactivating the route.
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Official attachment, Item, Ability, evolution, and Retreat procedure: https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/rulebook/par_rulebook_en.pdf
+    // Advanced procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // JIT / lock / earliest-route policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#scenario-lock-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed relative-continuation bug: https://github.com/FlareZ123/pokemon-sims/issues/3278
+    return issue_1772_completion_turn_ == state_.turn && deck_seen_ &&
+        strict_payload_timing() && supporter_allowed() && !item_locked() &&
+        state_.turn <= scenario_.max_turn && state_.active &&
+        is_basic(state_.active->card) && state_.active->card != Card::RegidragoV &&
+        !state_.retreat_used && bench_space() > 0 && prepared_regi != nullptr &&
+        prepared_regi->double_dragon == 0 &&
+        hand_count(Card::Gladion) > 0 && hand_count(Card::Crispin) > 0 &&
+        hand_count(Card::EarthenVessel) > 0 &&
+        hand_count(Card::RegidragoVstar) > 0 && hand_count(Card::Grass) > 0 &&
+        hand_count(Card::LatiasEx) > 0 && payload_held &&
+        !state_.manual_energy_used && need_energy() && need_payload() &&
+        ability_available_for_pokemon(Card::LatiasEx) &&
+        deck_count_after_search_started(Card::Grass) > 0 &&
+        deck_count_after_search_started(Card::Fire) > 0;
+  }

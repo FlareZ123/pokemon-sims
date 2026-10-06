@@ -98,6 +98,21 @@
                     }}});
   }
 
+  template <typename Effect>
+  bool resolve_item_source_lifecycle(const Card source, Effect effect) {
+    // B-01 keeps the played Item outside ordinary hand and discard until its
+    // printed effect has finished, then discards the used Item:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Shared lifecycle defect coverage: https://github.com/FlareZ123/pokemon-sims/issues/4387
+    auto context = make_runtime_card_context();
+    if (!context.move_hand_to_resolving(source)) return false;
+    effect();
+    if (!context.move_resolving_to_discard(source)) {
+      throw std::logic_error("Resolved Item source disappeared before B-01 step 4");
+    }
+    return true;
+  }
+
   cards::QuickBall::Resolution resolve_quick_ball_card_action(
       const Card discard, void* search_context,
       const cards::QuickBall::SearchTargetSelector selector,

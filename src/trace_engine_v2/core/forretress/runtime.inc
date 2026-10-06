@@ -602,16 +602,24 @@ bool Engine::play_quick_ball_for_pineco() {
   const auto cost = choose_discard(false, true, true, Card::QuickBall);
   if (!cost) return false;
 
-  remove_one(state_.hand, Card::QuickBall);
-  state_.discard.push_back(Card::QuickBall);
-  discard_from_hand(*cost, "Quick Ball cost", "R-QB-01");
-  record_deck_search_knowledge("Quick Ball");
   Card target = Card::Pineco;
-  if (deck_count_after_search_started(target) == 0) {
-    target = fallback_combo_basic_after_search_started();
+  bool found = false;
+  // Quick Ball's source stays resolving through its discard cost, search, and
+  // shuffle, then enters discard under B-01 step 4:
+  // https://api.pokemontcg.io/v2/cards/swsh1-179
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // https://github.com/FlareZ123/pokemon-sims/issues/4387
+  if (!resolve_item_source_lifecycle(Card::QuickBall, [&] {
+        discard_from_hand(*cost, "Quick Ball cost", "R-QB-01");
+        record_deck_search_knowledge("Quick Ball");
+        if (deck_count_after_search_started(target) == 0) {
+          target = fallback_combo_basic_after_search_started();
+        }
+        found = move_deck_to_hand(target);
+        shuffle(state_.deck);
+      })) {
+    return false;
   }
-  const bool found = move_deck_to_hand(target);
-  shuffle(state_.deck);
   trace("PLAY ITEM", "R-QB-01; R-GAME-ITEM; R-FORRETRESS-01",
         found ? "Searched a Basic Pokémon: " + std::string(name(target)) +
                     "."
@@ -635,17 +643,25 @@ bool Engine::play_ultra_ball_for_forretress_combo() {
   state_.hand.push_back(*first);
   if (!second) return false;
 
-  remove_one(state_.hand, Card::UltraBall);
-  state_.discard.push_back(Card::UltraBall);
-  discard_from_hand(*first, "Ultra Ball first cost", "R-UB-01");
-  discard_from_hand(*second, "Ultra Ball second cost", "R-UB-01");
-  record_deck_search_knowledge("Ultra Ball");
   Card target = preferred;
-  if (deck_count_after_search_started(target) == 0) {
-    target = fallback_combo_pokemon_after_search_started();
+  bool found = false;
+  // Ultra Ball's source stays resolving through both discard costs, search, and
+  // shuffle, then enters discard under B-01 step 4:
+  // https://api.pokemontcg.io/v2/cards/sv1-196
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // https://github.com/FlareZ123/pokemon-sims/issues/4387
+  if (!resolve_item_source_lifecycle(Card::UltraBall, [&] {
+        discard_from_hand(*first, "Ultra Ball first cost", "R-UB-01");
+        discard_from_hand(*second, "Ultra Ball second cost", "R-UB-01");
+        record_deck_search_knowledge("Ultra Ball");
+        if (deck_count_after_search_started(target) == 0) {
+          target = fallback_combo_pokemon_after_search_started();
+        }
+        found = move_deck_to_hand(target);
+        shuffle(state_.deck);
+      })) {
+    return false;
   }
-  const bool found = move_deck_to_hand(target);
-  shuffle(state_.deck);
   trace("PLAY ITEM", "R-UB-01; R-GAME-ITEM; R-FORRETRESS-01",
         found ? "Searched a Pokémon: " + std::string(name(target)) + "."
               : "No Pokémon remained after search.");
@@ -657,26 +673,34 @@ bool Engine::play_evolution_incense_for_forretress() {
       hand_count(Card::EvolutionIncense) == 0) {
     return false;
   }
-  remove_one(state_.hand, Card::EvolutionIncense);
-  state_.discard.push_back(Card::EvolutionIncense);
-  record_deck_search_knowledge("Evolution Incense");
   Card target = Card::ForretressEx;
-  if (deck_count_after_search_started(target) == 0) {
-    // Evolution Incense searches any Evolution Pokémon, including Appletun:
-    // https://api.pokemontcg.io/v2/cards/swsh1-163
-    // https://api.pokemontcg.io/v2/cards/sv8-140
-    // https://github.com/FlareZ123/pokemon-sims/issues/1255
-    for (const Card fallback : {Card::RegidragoVstar,
-                                Card::MegaDragonite, Card::Dragapult,
-                                Card::GoodraVstar, Card::Appletun}) {
-      if (deck_count_after_search_started(fallback) > 0) {
-        target = fallback;
-        break;
-      }
-    }
+  bool found = false;
+  // Evolution Incense's source stays resolving through its search and shuffle,
+  // then enters discard under B-01 step 4:
+  // https://api.pokemontcg.io/v2/cards/swsh1-163
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // https://github.com/FlareZ123/pokemon-sims/issues/4387
+  if (!resolve_item_source_lifecycle(Card::EvolutionIncense, [&] {
+        record_deck_search_knowledge("Evolution Incense");
+        if (deck_count_after_search_started(target) == 0) {
+          // Evolution Incense searches any Evolution Pokémon, including Appletun:
+          // https://api.pokemontcg.io/v2/cards/swsh1-163
+          // https://api.pokemontcg.io/v2/cards/sv8-140
+          // https://github.com/FlareZ123/pokemon-sims/issues/1255
+          for (const Card fallback : {Card::RegidragoVstar,
+                                      Card::MegaDragonite, Card::Dragapult,
+                                      Card::GoodraVstar, Card::Appletun}) {
+            if (deck_count_after_search_started(fallback) > 0) {
+              target = fallback;
+              break;
+            }
+          }
+        }
+        found = move_deck_to_hand(target);
+        shuffle(state_.deck);
+      })) {
+    return false;
   }
-  const bool found = move_deck_to_hand(target);
-  shuffle(state_.deck);
   trace("PLAY ITEM", "R-EVOINCENSE-01; R-GAME-ITEM; R-FORRETRESS-01",
         found ? "Searched an Evolution Pokémon: " +
                     std::string(name(target)) + "."

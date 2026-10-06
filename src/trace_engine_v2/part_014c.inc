@@ -327,7 +327,7 @@
 // https://api.pokemontcg.io/v2/cards/sv4pt5-1
 // https://api.pokemontcg.io/v2/cards/sv4pt5-2
 // https://github.com/FlareZ123/pokemon-sims/issues/972
-#include "part_forretress_ex_combo.inc"
+#include "core/forretress/package.inc" // Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/forretress/package.inc
 
 DeckRecipe baseline_recipe() {
   return DeckRecipe(kDeckRecipe.begin(), kDeckRecipe.end());

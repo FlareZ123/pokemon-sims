@@ -221,10 +221,9 @@
     }
 
     const bool unused_fss_route = !state_.vstar_power_used &&
-        ((state_.active && state_.active->tool == Tool::ForestSealStone) ||
-         std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
-           return pokemon.tool == Tool::ForestSealStone;
-         }));
+        board_has_pokemon_matching([](const Pokemon& pokemon) {
+          return pokemon.tool == Tool::ForestSealStone;
+        });
 
     // Steven's Resolve is legal on every Supporter-legal turn and may search any
     // three cards. When Regidrago V is absent, no payable same-turn Basic search or

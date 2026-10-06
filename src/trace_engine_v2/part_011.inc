@@ -78,9 +78,12 @@
     const bool deck_has_grass = deck_count_after_search_started(Card::Grass) > 0;
     const bool deck_has_fire = deck_count_after_search_started(Card::Fire) > 0;
 
-    remove_one(state_.hand, Card::Crispin);
-    state_.discard.push_back(Card::Crispin);
-    state_.supporter_used = true;
+    // B-03 step 2 plays Crispin before its search/attachment effect, and step 4
+    // discards the Supporter after that effect finishes.
+    // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+    // Supporter procedure B-03: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4348
+    if (!begin_supporter_resolution(Card::Crispin)) return false;
 
     // Crispin still inspects the whole deck if only one or no type exists.
     // Card text source: https://api.pokemontcg.io/v2/cards/sv7-133
@@ -89,6 +92,7 @@
       if (deck_has_grass) move_deck_to_hand(Card::Grass);
       else if (deck_has_fire) move_deck_to_hand(Card::Fire);
       shuffle(state_.deck);
+      if (!finish_supporter_resolution(Card::Crispin)) return false;
       trace("PLAY SUPPORTER", "R-CRISPIN-01; R-GAME-SUPPORTER", "Only one Basic Energy type was searchable; put it into hand and attached none.");
       return true;
     }
@@ -101,6 +105,7 @@
     }
     if (attach == Card::Grass) ++target->grass; else ++target->fire;
     shuffle(state_.deck);
+    if (!finish_supporter_resolution(Card::Crispin)) return false;
     trace("PLAY SUPPORTER", "R-CRISPIN-01; R-GAME-SUPPORTER", "Searched " + std::string(name(attach)) + " and " + std::string(name(to_hand)) + "; attached " + std::string(name(attach)) + " to " + std::string(name(target->card)) + " and put " + std::string(name(to_hand)) + " into hand.");
     return true;
   }
@@ -110,15 +115,19 @@
     // K1 must preserve the Supporter slot once the inspected deck has no payload.
     if (!supporter_allowed() || hand_count(Card::ProfessorBurnet) == 0 || !can_play_payload_this_turn() ||
         !payload_might_be_in_deck()) return false;
-    remove_one(state_.hand, Card::ProfessorBurnet);
-    state_.discard.push_back(Card::ProfessorBurnet);
-    state_.supporter_used = true;
+    // Professor Burnet remains in the resolving-source zone while the selected
+    // deck cards move to discard, then B-03 step 4 discards Burnet afterward.
+    // Professor Burnet: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
+    // Supporter procedure B-03: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4348
+    if (!begin_supporter_resolution(Card::ProfessorBurnet)) return false;
     std::vector<Card> discarded;
     for (const Card card : {Card::Appletun, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
       if (move_deck_to_discard(card)) { discarded.push_back(card); break; }
     }
     if (move_deck_to_discard(Card::Dipplin)) discarded.push_back(Card::Dipplin);
     shuffle(state_.deck);
+    if (!finish_supporter_resolution(Card::ProfessorBurnet)) return false;
     trace("PLAY SUPPORTER", "R-BURNET-01; R-GAME-SUPPORTER; P-DCI-01", "Searched and discarded: " + join_cards(discarded) + ".");
     return true;
   }
@@ -224,9 +233,12 @@
         late_steven_vstar_grass_with_held_blender_k0_route_available();
     const bool late_burnet_vstar_grass =
         late_steven_vstar_grass_with_held_burnet_route_available();
-    remove_one(state_.hand, Card::StevensResolve);
-    state_.discard.push_back(Card::StevensResolve);
-    state_.supporter_used = true;
+    // Steven's Resolve is played into the resolving-source zone before its deck
+    // search and remains outside discard until the search and shuffle finish.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Supporter procedure B-03: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4348
+    if (!begin_supporter_resolution(Card::StevensResolve)) return false;
     outcome_.used_steven = true;
 
     // Card text source: https://api.pokemontcg.io/v2/cards/sm7-145

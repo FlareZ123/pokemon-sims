@@ -12,6 +12,11 @@
       }
     }
     shuffle(state_.deck);
+    // B-03 step 4 discards Steven's Resolve after its printed search finishes.
+    // Steven's Resolve: https://api.pokemontcg.io/v2/cards/sm7-145
+    // Supporter procedure B-03: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4348
+    if (!finish_supporter_resolution(Card::StevensResolve)) return false;
     state_.turn_ended = true;
     trace("PLAY SUPPORTER", "R-STEVEN-01; R-GAME-SUPPORTER", "Searched up to 3 cards: " + join_cards(found) + ". Turn ended.");
     return true;

@@ -267,6 +267,70 @@ void test_vs_future_bank_before_persistent_item_lock() {
   expect(sim::EngineTestAccess::vs_target(engine) == sim::Card::Crispin,
          "VS Seeker failed to bank Crispin before scheduled persistent Item lock.");
 }
+
+void test_k0_play_decision_does_not_read_hidden_payload_placement() {
+  sim::State payload_in_deck = ready_attacker_state();
+  payload_in_deck.deck = {sim::Card::MegaDragonite, sim::Card::Grass,
+                          sim::Card::Fire, sim::Card::PathToPeak,
+                          sim::Card::Arven};
+
+  sim::State payload_not_in_deck = ready_attacker_state();
+  payload_not_in_deck.deck = {sim::Card::Grass, sim::Card::Fire,
+                              sim::Card::PathToPeak, sim::Card::Arven,
+                              sim::Card::Channeler};
+
+  // These K0 states expose identical public zones and differ only in hidden
+  // deck-versus-Prize placement. Battle Compressor must make the same play decision.
+  // Its legal search then establishes K1, which may change the exact target list.
+  // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+  // Deck-search / Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // K0/K1 knowledge contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Future-card oracle prohibition: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4359
+  {
+    std::mt19937_64 rng{43590};
+    sim::Engine engine = make_engine(sim::DciProfile::StrictJit,
+                                     sim::LockMode::None, rng);
+    sim::EngineTestAccess::set_state(engine, payload_in_deck, false);
+    expect(sim::EngineTestAccess::play_compressor(engine),
+           "K0 BC must commit when public state admits a live payload route.");
+    const sim::State& after = sim::EngineTestAccess::state(engine);
+    expect(sim::EngineTestAccess::deck_seen(engine),
+           "K0 BC did not establish K1 when its search began.");
+    expect(std::count(after.discard.begin(), after.discard.end(),
+                      sim::Card::MegaDragonite) == 1,
+           "K1 BC did not select the available Dragon payload.");
+  }
+  {
+    std::mt19937_64 rng{43591};
+    sim::Engine engine = make_engine(sim::DciProfile::StrictJit,
+                                     sim::LockMode::None, rng);
+    sim::EngineTestAccess::set_state(engine, payload_not_in_deck, false);
+    expect(sim::EngineTestAccess::play_compressor(engine),
+           "K0 BC leaked hidden placement by declining the same public route.");
+    const sim::State& after = sim::EngineTestAccess::state(engine);
+    expect(sim::EngineTestAccess::deck_seen(engine),
+           "K0 BC did not establish K1 in the no-payload hidden state.");
+    expect(std::count(after.discard.begin(), after.discard.end(),
+                      sim::Card::BattleCompressor) == 1,
+           "Committed K0 BC did not finish resolving when K1 found no useful target.");
+    expect(std::none_of(after.discard.begin(), after.discard.end(),
+                        sim::is_payload),
+           "K1 BC invented a Dragon payload absent from the inspected deck.");
+  }
+  {
+    std::mt19937_64 rng{43592};
+    sim::Engine engine = make_engine(sim::DciProfile::StrictJit,
+                                     sim::LockMode::None, rng);
+    sim::EngineTestAccess::set_state(engine, payload_not_in_deck, true);
+    expect(!sim::EngineTestAccess::play_compressor(engine),
+           "Known-deck BC should be preserved when K1 proves no useful target.");
+    expect(std::count(sim::EngineTestAccess::state(engine).hand.begin(),
+                      sim::EngineTestAccess::state(engine).hand.end(),
+                      sim::Card::BattleCompressor) == 1,
+           "Known-deck no-target BC was consumed.");
+  }
+}
 }  // namespace
 
 int main() {
@@ -274,6 +338,7 @@ int main() {
     test_registered_metadata();
     test_jit_profile_payload_counts();
     test_exact_resolution_and_up_to_three();
+    test_k0_play_decision_does_not_read_hidden_payload_placement();
     test_existing_payload_and_item_lock_hold_compressor();
     test_payload_connector_domination();
     test_vs_seeker_immediate_recovery();

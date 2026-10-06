@@ -45,12 +45,14 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/deck_knowledge.inc` owns copy arithmetic after visibility is resolved. K0/K1 visibility decisions stay in Engine strategy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 - `src/trace_engine_v2/core/payload_hand_policy.inc` owns reusable Dragon-payload zone and preference traversal.
 - `src/trace_engine_v2/core/board_state_policy.inc` owns reusable board traversal and board-index queries.
-- `src/trace_engine_v2/core/trace_formatting.inc` owns presentation-only card-list and Pokémon-state rendering used by trace output. Keep strategy and state transitions outside this formatting owner.
+- `src/trace_engine_v2/core/formatting/trace_formatting.inc` owns presentation-only card-list and Pokémon-state rendering used by trace output. Keep strategy and state transitions outside this formatting owner.
 - `src/trace_engine_v2/core/routes/search_connector_helpers.inc` owns complete K1 fallback selectors for Mysterious Treasure, Quick Ball, and Ultra Ball.
 - `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc` remains the live strategic target-priority owner composed by `part_009a.inc`. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
 - `src/trace_engine_v2/core/locks/garbodor_policy.inc` remains the sole Garbodor scenario-timing and Ability-lock policy owner. Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
 
-2026-10-06 cleanup checkpoint: `src/trace_engine_v2/core/trace_formatting.inc` now owns `join_cards()` and `pokemon_summary()`, and `composition/engine_body.inc` composes that owner immediately after the runtime state definitions. This removes presentation helpers from the composition spine while preserving their declaration order and behavior. C++ textual include semantics: https://eel.is/c++draft/cpp.include
+2026-10-06 cleanup checkpoint: `src/trace_engine_v2/core/formatting/trace_formatting.inc` now owns `join_cards()` and `pokemon_summary()`, and `composition/engine_body.inc` composes that owner immediately after the runtime state definitions. This removes presentation helpers from the composition spine while preserving their declaration order and behavior. C++ textual include semantics: https://eel.is/c++draft/cpp.include
+
+2026-10-06 cleanup checkpoint: trace formatting now has a dedicated `core/formatting/` boundary, and `composition/engine_body.inc` guards that textual composition with `SIM_TRACE_FORMATTING_INCLUDED`. Keep future presentation-only helpers behind this owner instead of adding rendering logic to numbered route fragments. C++ textual include semantics: https://eel.is/c++draft/cpp.include
 
 2026-10-06 cleanup checkpoint: the forwarding-only `src/trace_engine_v2/core/regidrago_line_helpers.inc` compatibility seam has been retired. The post-search Arven composition boundary now checks the canonical classification feature marker directly, while `src/trace_engine_v2/core/card_catalog.inc` remains the sole owner of `is_regidrago_v_line()`. This removes one textual include hop without changing route policy or card behavior. Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
 

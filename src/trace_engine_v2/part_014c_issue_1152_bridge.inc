@@ -1,5 +1,4 @@
-#include "part_issue_1199_steven_package_override.inc"
-#include "part_issue_1478_arven_vessel_completion.inc"
+// Compose the canonical issue-1199 Steven package directly at this historical\n// bridge boundary. The forwarding-only root seam no longer owns behavior.\n// Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1199_steven_package_policy.inc\n// C++ textual include semantics: https://eel.is/c++draft/cpp.include\n#include "core/routes/issue_1199_steven_package_policy.inc"\n#include "part_issue_1478_arven_vessel_completion.inc"
 
   bool issue_1481_hold_serena_for_free_latias_completion() const {
     // Once Brilliant Blender has established the strict-JIT payload and a Benched

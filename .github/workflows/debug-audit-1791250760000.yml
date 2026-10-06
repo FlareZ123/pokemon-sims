@@ -17,3 +17,18 @@ jobs:
         run: build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4
       - name: Simulate pass 3 rulebox lock
         run: build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3
+      - name: Upload source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-snapshot
+          path: |
+            src
+            tests
+            docs
+            scripts
+            data
+            CMakeLists.txt
+            SIM-PLAN.md
+            CARD_CLASS_CLEANUP.md
+            EN_advanced_manual-2025-transcription-structured.md
+          retention-days: 1

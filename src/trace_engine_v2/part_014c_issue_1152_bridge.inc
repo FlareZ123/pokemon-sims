@@ -1,4 +1,8 @@
-#include "part_issue_1199_steven_package_override.inc"
+// Compose the canonical issue-1199 Steven package directly at this historical
+// bridge boundary. The forwarding-only root seam no longer owns behavior.
+// Canonical owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1199_steven_package_policy.inc
+// C++ textual include semantics: https://eel.is/c++draft/cpp.include
+#include "core/routes/issue_1199_steven_package_policy.inc"
 #include "part_issue_1478_arven_vessel_completion.inc"
 
   bool issue_1481_hold_serena_for_free_latias_completion() const {

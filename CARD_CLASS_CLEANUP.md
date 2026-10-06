@@ -69,6 +69,8 @@ Keep strategic selection, DCI/UDP/AMR, Supporter contention, connector dominatio
 
 `src/trace_engine_v2/composition/steven_blender_overrides.inc` owns the Steven/Brilliant Blender macro-composition boundary. `src/trace_engine_v2/core/routes/steven/package.inc` is the canonical organized Steven route package. Retire remaining forwarders only when source-contract references and macro lifetime are both proven migrated.
 
+2026-10-06 issue-1199 cleanup checkpoint: `src/trace_engine_v2/part_014c_issue_1152_bridge.inc` now composes `core/routes/issue_1199_steven_package_policy.inc` directly at the existing historical boundary. The forwarding-only `part_issue_1199_steven_package_override.inc` seam is retired. Keep subsequent route-owner cleanup on the same pattern: preserve the textual position, retain direct source URLs at the live boundary, then remove the root forwarder after its consumer is migrated.
+
 ## Payload policy cleanup
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner. Reuse `PayloadZonePolicy` only where physical-zone traversal, membership, and count semantics match exactly. Preserve physical order for observable first-match selection and preserve explicit strategic order for preference selection.

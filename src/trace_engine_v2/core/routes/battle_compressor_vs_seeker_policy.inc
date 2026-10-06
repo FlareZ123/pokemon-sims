@@ -205,12 +205,19 @@
     // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
     // Item / Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
-    if (!remove_one(state_.hand, Card::VsSeeker)) {
+    // B-01 step 2 removes the played Item from ordinary hand. Step 4
+    // moves the source to discard only after the printed effect finishes.
+    // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4366
+    if (!begin_legacy_item_resolution(Card::VsSeeker)) {
       throw std::logic_error("projected VS Seeker disappeared");
     }
-    state_.discard.push_back(Card::VsSeeker);
     if (!recover_discard_to_hand(*target)) {
       throw std::logic_error("projected VS Seeker Supporter target disappeared");
+    }
+    if (!finish_legacy_item_resolution(Card::VsSeeker)) {
+      throw std::logic_error("resolving VS Seeker source disappeared");
     }
     trace("PLAY ITEM", "R-VS-SEEKER-01; R-GAME-ITEM; P-COMPRESS-01",
           "Recovered " + std::string(name(*target)) + " from the discard pile.");
@@ -379,38 +386,28 @@
 
   bool play_battle_compressor() {
     const bool knowledge_established = deck_seen_ || prizes_revealed_;
-    if (!knowledge_established && !issue_4359_public_compressor_route_available()) {
+    std::vector<Card> targets;
+    if (knowledge_established) {
+      targets = issue_3545_battle_compressor_targets();
+      if (targets.empty()) return false;
+    } else if (!issue_4359_public_compressor_route_available()) {
       return false;
     }
 
-    // The K0 commit decision above uses only public information. Starting the legal
-    // deck search establishes K1 before exact target selection, so hidden
-    // deck-versus-Prize placement may change the selected cards without changing
-    // whether this already-committed Item was played.
+    // The K0 commitment above uses public information only. B-01 then stages the
+    // Item outside ordinary hand/discard, and the printed search establishes K1
+    // before exact physical targets are chosen. "Up to 3" permits zero targets.
     // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
-    // Deck search / Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Item/deck-search procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // K0/K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4359
-    if (!knowledge_established) {
-      record_deck_search_knowledge("Battle Compressor");
-    }
-    const std::vector<Card> targets = issue_3545_battle_compressor_targets();
-    if (knowledge_established && targets.empty()) return false;
-
-    // Resolve the printed effect exactly: search the deck for up to three cards,
-    // discard the selected cards, then shuffle. The legal deck inspection establishes
-    // K1. Current-turn Dragon discards are recorded for strict-JIT provenance.
-    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
-    // Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-    // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    // JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
-    if (!remove_one(state_.hand, Card::BattleCompressor)) {
+    // Confirmed hidden-information bug: https://github.com/FlareZ123/pokemon-sims/issues/4359
+    // Confirmed source-lifecycle bug: https://github.com/FlareZ123/pokemon-sims/issues/4366
+    if (!begin_legacy_item_resolution(Card::BattleCompressor)) {
       throw std::logic_error("projected Battle Compressor disappeared");
     }
-    state_.discard.push_back(Card::BattleCompressor);
-    if (knowledge_established) {
-      record_deck_search_knowledge("Battle Compressor");
+    record_deck_search_knowledge("Battle Compressor");
+    if (!knowledge_established) {
+      targets = issue_3545_battle_compressor_targets();
     }
 
     std::vector<Card> discarded;
@@ -425,6 +422,9 @@
       discarded.push_back(target);
     }
     shuffle(state_.deck);
+    if (!finish_legacy_item_resolution(Card::BattleCompressor)) {
+      throw std::logic_error("resolving Battle Compressor source disappeared");
+    }
     trace("PLAY ITEM",
           "R-BATTLE-COMPRESSOR-01; R-GAME-ITEM; P-JIT-01; P-DCI-01; P-KNOWLEDGE-01",
           "Searched and discarded: " + join_cards(discarded) + ".");

@@ -152,14 +152,17 @@ void test_earthen_vessel_uses_same_source_lifecycle() {
   state.turn = 2;
   state.active = sim::Pokemon{sim::Card::RegidragoV, 1, 0, 0,
                               sim::Tool::None};
-  state.hand = {sim::Card::EarthenVessel, sim::Card::Channeler};
+  state.hand = {sim::Card::EarthenVessel, sim::Card::Dipplin};
   state.deck = {sim::Card::Grass, sim::Card::Fire,
                 sim::Card::ErikasInvitation};
   sim::EngineTestAccess::set_state(fixture.engine, state);
   sim::EngineTestAccess::set_deck_seen(fixture.engine, true);
 
   // Earthen Vessel requires discarding another card, searches up to two Basic
-  // Energy, and shuffles. Its played Item source follows the same B-01 lifecycle.
+  // Energy, and shuffles. Dipplin is setup-dead in the registered no-Applin list,
+  // so it is a policy-legal DCI cost and keeps this fixture focused on B-01 source
+  // timing rather than Supporter preservation. Its played Item source follows the
+  // same B-01 lifecycle.
   // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
   // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
   // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4339
@@ -171,7 +174,7 @@ void test_earthen_vessel_uses_same_source_lifecycle() {
           "Earthen Vessel did not move its legal Basic Energy targets to hand.");
   require(contains(after.discard, sim::Card::EarthenVessel),
           "Earthen Vessel source did not enter discard after resolution.");
-  require(contains(after.discard, sim::Card::Channeler),
+  require(contains(after.discard, sim::Card::Dipplin),
           "Earthen Vessel mandatory cost did not enter discard.");
   require(sim::EngineTestAccess::resolving_sources(fixture.engine).empty(),
           "Earthen Vessel remained resolving after its effect finished.");

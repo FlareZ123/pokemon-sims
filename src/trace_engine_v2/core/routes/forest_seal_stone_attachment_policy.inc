@@ -55,7 +55,7 @@
     if (Pokemon* holder = first_open_fss_v_holder(allow_active)) return holder;
 
     const auto open_slot = [](const Pokemon& pokemon) {
-      return pokemon_has_open_tool_slot(pokemon);
+      return pokemon.tool == Tool::None;
     };
     if (allow_active) return find_board_pokemon_matching(open_slot);
 

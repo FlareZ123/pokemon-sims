@@ -91,6 +91,21 @@ sim::State t1_state() {
   return state;
 }
 
+sim::State wonder_tag_post_search_state(
+    const bool include_quick_ball_history = true,
+    const sim::Card paid_cost = sim::Card::Dipplin) {
+  sim::State state = t1_state();
+  state.hand.erase(std::find(state.hand.begin(), state.hand.end(),
+                             sim::Card::QuickBall));
+  if (include_quick_ball_history) state.discard.push_back(sim::Card::QuickBall);
+  state.discard.push_back(paid_cost);
+  state.bench.push_back(sim::Pokemon{sim::Card::TapuLeleGX, 1, 0, 0,
+                                     sim::Tool::None});
+  state.deck.erase(std::find(state.deck.begin(), state.deck.end(),
+                             sim::Card::TapuLeleGX));
+  return state;
+}
+
 struct Fixture {
   sim::Scenario scenario_value;
   sim::DeckRecipe recipe;
@@ -165,6 +180,51 @@ void wonder_tag_banks_steven_going_first() {
   expect(sim::EngineTestAccess::supporter_target(fixture.engine) ==
              sim::Card::StevensResolve,
          "Wonder Tag did not bank Steven's Resolve on T1");
+}
+
+void wonder_tag_accepts_state_relative_paid_cost() {
+  Fixture fixture;
+  sim::EngineTestAccess::set_state(fixture.engine, wonder_tag_post_search_state());
+
+  // A completed K1 route is defined by the live state, not by the historical
+  // identity of the Quick Ball discard. Dipplin is dead in this no-Applin list.
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Dipplin: https://api.pokemontcg.io/v2/cards/sv6-127
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // Repository policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4343
+  expect(sim::EngineTestAccess::wonder_tag_route(fixture.engine),
+         "Wonder Tag rejected the complete route after a legal dead Dipplin cost");
+  expect(sim::EngineTestAccess::supporter_target(fixture.engine) ==
+             sim::Card::StevensResolve,
+         "Wonder Tag did not select Steven on the state-relative complete route");
+}
+
+void wonder_tag_accepts_complete_state_without_quick_ball_provenance() {
+  Fixture fixture;
+  sim::State state = wonder_tag_post_search_state(false);
+  state.discard.pop_back();
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // Wonder Tag is already resolving after Tapu Lele-GX reached the Bench, so the
+  // current K1 state can prove the route without a historical Quick Ball witness.
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4343
+  expect(sim::EngineTestAccess::wonder_tag_route(fixture.engine),
+         "Wonder Tag required historical Quick Ball provenance");
+}
+
+void wonder_tag_state_relative_route_still_rejects_k0() {
+  Fixture fixture;
+  sim::EngineTestAccess::set_state(
+      fixture.engine, wonder_tag_post_search_state(), false);
+
+  // Hidden-zone reads remain illegal before the first legal deck inspection.
+  // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4343
+  expect(!sim::EngineTestAccess::wonder_tag_route(fixture.engine),
+         "State-relative Wonder Tag route read hidden zones at K0");
 }
 
 void k0_rejects_route() {
@@ -316,6 +376,9 @@ int main() {
     quick_ball_selects_tapu_and_low_dci_cost();
     lusamine_is_legal_fallback_cost();
     wonder_tag_banks_steven_going_first();
+    wonder_tag_accepts_state_relative_paid_cost();
+    wonder_tag_accepts_complete_state_without_quick_ball_provenance();
+    wonder_tag_state_relative_route_still_rejects_k0();
     k0_rejects_route();
     missing_discard_cost_rejects_route();
     missing_tapu_rejects_route();

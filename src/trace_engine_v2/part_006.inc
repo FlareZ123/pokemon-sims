@@ -41,8 +41,7 @@
 
   bool sole_known_payload_is_in_hand() const {
     if (!prizes_known()) return false;
-    const int payloads_in_hand = static_cast<int>(std::count_if(
-        state_.hand.begin(), state_.hand.end(), is_payload));
+    const int payloads_in_hand = payload_cards_in_hand_count();
     // K1 fixed-list knowledge proves whether another modeled payload remains in
     // deck. Preserve the sole in-hand payload when no replacement is searchable:
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
@@ -90,8 +89,7 @@
 }
 
   bool can_spend_redundant_payload_for_locked_vstar_search() const {
-    const int held_payloads = static_cast<int>(std::count_if(
-        state_.hand.begin(), state_.hand.end(), is_payload));
+    const int held_payloads = payload_cards_in_hand_count();
     const bool burnet_outlet = hand_count(Card::ProfessorBurnet) > 0 &&
         payload_might_be_in_deck();
     const bool serena_outlet = hand_count(Card::Serena) > 0;
@@ -119,14 +117,10 @@
   }
 
 std::optional<Card> issue_1605_redundant_payload_cost() const {
-  int held_payloads = 0;
+  const int held_payloads = payload_cards_in_hand_count();
   int distinct_payloads = 0;
-  for (const Card card : {Card::Appletun, Card::MegaDragonite,
-                          Card::Dragapult, Card::GoodraVstar,
-                          Card::DialgaGX}) {
-    const int copies = hand_count(card);
-    held_payloads += copies;
-    distinct_payloads += copies > 0 ? 1 : 0;
+  for (const Card card : PayloadPreferencePolicy::kOrder) {
+    distinct_payloads += hand_count(card) > 0 ? 1 : 0;
   }
   if (held_payloads < 3 || distinct_payloads < 2) return std::nullopt;
   for (const Card card : {Card::Appletun, Card::MegaDragonite,
@@ -197,8 +191,7 @@ bool issue_1605_arven_crobat_route_available() const {
       }
     }
     if (allow_redundant_payload) {
-      const int held_payloads = static_cast<int>(std::count_if(
-          state_.hand.begin(), state_.hand.end(), is_payload));
+      const int held_payloads = payload_cards_in_hand_count();
       if (held_payloads >= 2) {
         for (const Card card : {Card::Appletun, Card::MegaDragonite, Card::Dragapult, Card::GoodraVstar, Card::DialgaGX}) {
           if (hand_count(card) > 0) return card;
@@ -320,8 +313,7 @@ bool issue_1605_arven_crobat_route_available() const {
     if (hand_count(Card::Grass) > grass_needed() + 1) return Card::Grass;
     if (hand_count(Card::Fire) > fire_needed() + 1) return Card::Fire;
 
-    const int held_payloads_for_turo = static_cast<int>(std::count_if(
-        state_.hand.begin(), state_.hand.end(), is_payload));
+    const int held_payloads_for_turo = payload_cards_in_hand_count();
     const bool latias_is_live_active_connector =
         ability_available_for_pokemon(Card::LatiasEx) &&
         (hand_count(Card::LatiasEx) > 0 || in_play(Card::LatiasEx));

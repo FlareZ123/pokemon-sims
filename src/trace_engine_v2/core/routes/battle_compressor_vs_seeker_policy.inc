@@ -354,9 +354,67 @@
     return targets;
   }
 
+  Engine issue_4359_public_battle_compressor_projection(
+      std::mt19937_64& shadow_rng) const {
+    Engine projected = issue_3545_projection(shadow_rng);
+    projected.state_.deck.clear();
+    projected.state_.prizes.clear();
+
+    // Before a legal deck inspection, the player knows the fixed list and every
+    // public zone, but cannot distinguish cards remaining in deck from unknown
+    // Prize cards. Build one deterministic "could still be unseen" pool from that
+    // public information only. This pool is used solely to decide whether Battle
+    // Compressor is strategically worth committing; exact targets are chosen only
+    // after the real search establishes K1.
+    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+    // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Hidden-information policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#hidden-information-policy
+    // Advanced deck-search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4359
+    std::vector<Card> seen;
+    for (const auto& [card, ignored_copies] : recipe_) {
+      (void)ignored_copies;
+      if (std::find(seen.begin(), seen.end(), card) != seen.end()) continue;
+      seen.push_back(card);
+      const int unseen = std::max(0, registered_recipe_count(card) -
+                                      public_known_count(card));
+      for (int copy = 0; copy < unseen; ++copy) {
+        projected.state_.deck.push_back(card);
+      }
+    }
+    projected.deck_seen_ = true;
+    projected.prizes_revealed_ = false;
+    return projected;
+  }
+
+  bool issue_4359_battle_compressor_should_play() const {
+    if (state_.turn_ended || item_locked() ||
+        hand_count(Card::BattleCompressor) == 0 || state_.deck.empty()) {
+      return false;
+    }
+    if (prizes_known()) {
+      return !issue_3545_battle_compressor_targets().empty();
+    }
+
+    std::mt19937_64 shadow_rng = rng_;
+    Engine public_projection =
+        issue_4359_public_battle_compressor_projection(shadow_rng);
+    return !public_projection.issue_3545_battle_compressor_targets().empty();
+  }
+
   bool play_battle_compressor() {
+    // The K0 decision to commit Battle Compressor must be identical for hidden
+    // deck/Prize allocations with the same public state. Once committed, the
+    // search itself establishes K1 and exact target selection may use the inspected
+    // deck. A K0 commitment may therefore legally resolve with zero chosen cards
+    // when the hoped-for card is revealed to be Prized.
+    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+    // K0/K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Advanced Item/search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4359
+    if (!issue_4359_battle_compressor_should_play()) return false;
+    record_deck_search_knowledge("Battle Compressor");
     const std::vector<Card> targets = issue_3545_battle_compressor_targets();
-    if (targets.empty()) return false;
 
     // Resolve the printed effect exactly: search the deck for up to three cards,
     // discard the selected cards, then shuffle. The legal deck inspection establishes

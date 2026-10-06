@@ -71,6 +71,8 @@ Keep strategic selection, DCI/UDP/AMR, Supporter contention, connector dominatio
 
 2026-10-06 forwarding cleanup checkpoint: `src/trace_engine_v2/part_014c_issue_1152_bridge.inc` now includes the canonical `core/routes/issue_1199_steven_package_policy.inc` owner directly, and the historical `part_issue_1199_steven_package_override.inc` compatibility seam is retired. `src/trace_engine_v2/part_014c.inc` likewise composes `core/forretress/package.inc` directly, so `part_forretress_ex_combo.inc` is retired. These moves preserve the same member and namespace-scope textual boundaries while removing two single-include hops. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
 
+Validation provenance for this checkpoint is refreshed only after CI regenerated the paired 3.2M-game matrix and verified both committed matrix files byte-for-byte, keeping cleanup evidence bound to the exact source lineage.
+
 ## Payload policy cleanup
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner. Reuse `PayloadZonePolicy` only where physical-zone traversal, membership, and count semantics match exactly. Preserve physical order for observable first-match selection and preserve explicit strategic order for preference selection.

@@ -149,7 +149,7 @@ void test_remaining_route_families_are_semantic() {
                "Vessel/Latias hold lost semantic one-Basic completion");
 
   const std::string gladion = read_source(
-      "src/trace_engine_v2/part_issue_1608_burnet_before_dead_crispin_override.inc");
+      "src/trace_engine_v2/core/routes/gladion_burnet_crispin_continuation.inc");
   require_text(gladion, "completing_basic_energy_for",
                "Gladion family lost DDE-aware future-manual completion");
 

@@ -205,12 +205,19 @@
     // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
     // Item / Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
-    if (!remove_one(state_.hand, Card::VsSeeker)) {
+    // B-01 step 2 removes the played Item from ordinary hand, while step 4
+    // moves it to discard only after its printed effect has finished.
+    // VS Seeker: https://api.pokemontcg.io/v2/cards/xy4-109
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4366
+    if (!begin_legacy_item_resolution(Card::VsSeeker)) {
       throw std::logic_error("projected VS Seeker disappeared");
     }
-    state_.discard.push_back(Card::VsSeeker);
     if (!recover_discard_to_hand(*target)) {
       throw std::logic_error("projected VS Seeker Supporter target disappeared");
+    }
+    if (!finish_legacy_item_resolution(Card::VsSeeker)) {
+      throw std::logic_error("resolving VS Seeker source disappeared");
     }
     trace("PLAY ITEM", "R-VS-SEEKER-01; R-GAME-ITEM; P-COMPRESS-01",
           "Recovered " + std::string(name(*target)) + " from the discard pile.");
@@ -366,10 +373,15 @@
     // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
     // JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
     // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
-    if (!remove_one(state_.hand, Card::BattleCompressor)) {
+    // Keep the played Item outside ordinary hand and discard throughout its
+    // deck search and discard effect. B-01 step 4 moves the source to discard only
+    // after the selected cards have been discarded and the deck has been shuffled.
+    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4366
+    if (!begin_legacy_item_resolution(Card::BattleCompressor)) {
       throw std::logic_error("projected Battle Compressor disappeared");
     }
-    state_.discard.push_back(Card::BattleCompressor);
     record_deck_search_knowledge("Battle Compressor");
 
     std::vector<Card> discarded;
@@ -384,6 +396,9 @@
       discarded.push_back(target);
     }
     shuffle(state_.deck);
+    if (!finish_legacy_item_resolution(Card::BattleCompressor)) {
+      throw std::logic_error("resolving Battle Compressor source disappeared");
+    }
     trace("PLAY ITEM",
           "R-BATTLE-COMPRESSOR-01; R-GAME-ITEM; P-JIT-01; P-DCI-01; P-KNOWLEDGE-01",
           "Searched and discarded: " + join_cards(discarded) + ".");

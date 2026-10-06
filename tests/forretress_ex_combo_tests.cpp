@@ -39,6 +39,15 @@ struct EngineTestAccess {
   static Card choose_supporter_after_search_started(const Engine& engine) {
     return engine.choose_supporter_after_search_started();
   }
+  static int resolving_source_count(const Engine& engine, const Card card) {
+    return Engine::ResolvingTrainerSourcePolicy::count(
+        engine.resolving_trainer_sources_, card);
+  }
+  template <typename Effect>
+  static bool resolve_item_source_lifecycle(Engine& engine, const Card source,
+                                            Effect effect) {
+    return engine.resolve_item_source_lifecycle(source, effect);
+  }
 };
 
 }  // namespace sim
@@ -494,6 +503,47 @@ void test_exploding_energy_zero_selection_and_lock_boundary() {
   }
 }
 
+void test_forretress_item_sources_stay_resolving_until_effect_finishes() {
+  for (const sim::Card source : {sim::Card::QuickBall, sim::Card::UltraBall,
+                                 sim::Card::EvolutionIncense}) {
+    Fixture fixture("forretress-item-source-lifecycle");
+    sim::State state;
+    state.turn = 2;
+    state.active = sim::Pokemon{sim::Card::RegidragoV, 0};
+    state.hand = {source};
+    sim::EngineTestAccess::set_state(fixture.engine, state);
+
+    bool saw_intermediate_state = false;
+    // B-01 keeps a played Item outside ordinary hand and discard while its
+    // printed effect resolves, then discards it after use:
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Ultra Ball: https://api.pokemontcg.io/v2/cards/sv1-196
+    // Evolution Incense: https://api.pokemontcg.io/v2/cards/swsh1-163
+    // https://github.com/FlareZ123/pokemon-sims/issues/4387
+    if (!sim::EngineTestAccess::resolve_item_source_lifecycle(
+            fixture.engine, source, [&] {
+              const sim::State& during =
+                  sim::EngineTestAccess::state(fixture.engine);
+              saw_intermediate_state =
+                  count(during.hand, source) == 0 &&
+                  count(during.discard, source) == 0 &&
+                  sim::EngineTestAccess::resolving_source_count(
+                      fixture.engine, source) == 1;
+            })) {
+      throw std::runtime_error("Forretress Item source could not begin resolution.");
+    }
+
+    const sim::State& after = sim::EngineTestAccess::state(fixture.engine);
+    if (!saw_intermediate_state || count(after.discard, source) != 1 ||
+        sim::EngineTestAccess::resolving_source_count(fixture.engine, source) !=
+            0) {
+      throw std::runtime_error(
+          "Forretress Item source violated the shared resolving lifecycle.");
+    }
+  }
+}
+
 void test_basic_and_evolution_connectors() {
   Fixture quick("forretress-quick-ball");
   sim::State quick_state;
@@ -633,6 +683,7 @@ int main() {
   test_wonder_tag_prefers_live_dawn_forest_route();
   test_exploding_energy_attaches_distributes_and_self_knocks_out();
   test_exploding_energy_zero_selection_and_lock_boundary();
+  test_forretress_item_sources_stay_resolving_until_effect_finishes();
   test_basic_and_evolution_connectors();
   test_seeded_variant_executes_combo();
   test_seeded_dawn_forest_routes();

@@ -195,6 +195,24 @@ if (play_issue_1552_t1_vessel_route()) return true;
           permit_payload && need_payload() && can_play_payload_this_turn() &&
           hand_count(Card::EarthenVessel) > 0 &&
           std::any_of(state_.hand.begin(), state_.hand.end(), is_payload);
+      // After Arven has explicitly split the VSTAR and payload channels across
+      // Forest Seal Stone and Brilliant Blender, and Star Alchemy has completed
+      // the VSTAR channel, Blender owns the exact remaining payload axis. Execute
+      // that committed one-shot connector before generic paid search can discard
+      // the protected held Dragon.
+      // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+      // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+      // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+      // Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+      // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4391
+      const bool issue_4391_blender_is_exact_remaining_axis =
+          permit_payload && need_payload() && !need_regi() && !need_vstar() &&
+          !need_energy() && !need_active_vstar() &&
+          issue_4391_arven_blender_fss_commit_turn_ == state_.turn &&
+          state_.vstar_power_used;
+      if (issue_4391_blender_is_exact_remaining_axis &&
+          play_brilliant_blender()) return true;
       if (!vessel_payload_compression_live && play_professors_letter()) return true;
       if (play_earthen_vessel(permit_payload)) return true;
       if (play_professors_letter()) return true;

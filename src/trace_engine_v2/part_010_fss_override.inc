@@ -317,7 +317,7 @@
     // https://api.pokemontcg.io/v2/cards/swsh1-179
     // https://api.pokemontcg.io/v2/cards/sv4-163
     // https://compendium.pokegym.net/category/5-trainers/trainers-in-general/
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_tate_blender_tate_override.inc#L1-L22
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/tate/action_policy.inc#L1-L22
     const bool tate_held_payload_route = need_active_vstar() &&
         benched_vstar_promotion_ready() && !can_free_retreat_with_latias() &&
         supporter_allowed() && need_payload() && state_.deck.size() > 1U &&

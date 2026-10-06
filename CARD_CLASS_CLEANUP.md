@@ -60,6 +60,10 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 2026-08-18 search-connector checkpoint: `src/trace_engine_v2/core/routes/search_connector_helpers.inc` now gives post-search outlet feasibility explicit owners for card presence, survival of the current search discard, and Ultra Ball payability. Keep future K1 connector cleanup on these named helpers so route callers do not recreate hand-count and discard-cost arithmetic. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 
+2026-10-06 cleanup checkpoint: the forwarding-only `src/trace_engine_v2/core/tate/package.inc` layer is retired. `composition/opening_engine_overrides.inc` now composes discard/recovery provenance, attachment policy, and Tate action policy directly in the same historical order, making alias lifetime and member ordering visible at the canonical Engine boundary. C++ textual include semantics: https://eel.is/c++draft/cpp.include
+
+2026-10-06 cleanup checkpoint: setup recipe metadata policy is now co-located with its sole consumer in `src/trace_engine_v2/core/setup_lifecycle.inc`, and the one-consumer `core/setup/policies.inc` seam is retired. Keep future setup-only metadata and setup state-transition helpers together unless another independent consumer appears. Setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
 ## Active card migrations
 
 No open migration issue is assumed by this plan. Before starting a card migration, search the current issue tracker and branch set for an existing owner. A migration should move intrinsic metadata and classification before printed resolution, then move printed resolution only after its live resolver and reusable `CardContext` operations are identified.

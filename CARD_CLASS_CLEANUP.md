@@ -72,6 +72,8 @@ Keep strategic selection, DCI/UDP/AMR, Supporter contention, connector dominatio
 
 `src/trace_engine_v2/composition/steven_blender_overrides.inc` owns the Steven/Brilliant Blender macro-composition boundary. `src/trace_engine_v2/core/routes/steven/package.inc` is the canonical organized Steven route package. Retire remaining forwarders only when source-contract references and macro lifetime are both proven migrated.
 
+2026-10-06 forwarding cleanup checkpoint: `src/trace_engine_v2/part_014c_issue_1152_bridge.inc` now includes the canonical `core/routes/issue_1199_steven_package_policy.inc` owner directly, and the historical `part_issue_1199_steven_package_override.inc` compatibility seam is retired. `src/trace_engine_v2/part_014c.inc` likewise composes `core/forretress/package.inc` directly, so `part_forretress_ex_combo.inc` is retired. These moves preserve the same member and namespace-scope textual boundaries while removing two single-include hops. C++ textual-include semantics: https://eel.is/c++draft/cpp.include
+
 ## Payload policy cleanup
 
 `src/trace_engine_v2/core/payload_hand_policy.inc` is the canonical Dragon-payload query owner. Reuse `PayloadZonePolicy` only where physical-zone traversal, membership, and count semantics match exactly. Preserve physical order for observable first-match selection and preserve explicit strategic order for preference selection.
@@ -110,7 +112,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 
 ## Next cleanup steps
 
-The Regidrago-line compatibility forwarder is complete. Keep future cleanup at the actual composition consumer and canonical catalog owner rather than recreating a helper include solely to assert include order.
+The Regidrago-line, issue-1199 Steven, and Forretress compatibility forwarders are complete. Keep future cleanup at the actual composition consumer and canonical owner rather than recreating helper includes solely to assert include order.
 
 1. Continue deleting forwarding `.inc` files only after tracing them from `composition/engine_body.inc` and proving they are absent from the live include graph. A missing historical target is evidence of stale code, while composition reachability is the decisive check.
 2. Keep `core/mysterious_treasure_target_policy.inc` until `part_009a.inc` is migrated to a canonical organized route package. Preserve its target order and direct Mysterious Treasure card-data citation during that move.

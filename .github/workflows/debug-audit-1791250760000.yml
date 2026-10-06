@@ -1,0 +1,19 @@
+name: Debug audit three simulate-this passes
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --parallel 2
+      - name: Simulate pass 1 strict second
+        run: build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 1 --require-ready-by 3
+      - name: Simulate pass 2 strict first
+        run: build/regidrago_sim --simulate-this --scenario strict-jit/go-first --seed 2 --require-ready-by 4
+      - name: Simulate pass 3 rulebox lock
+        run: build/regidrago_sim --simulate-this --scenario strict-jit-rulebox-ability-lock/go-second --seed 13 --require-ready-by 3

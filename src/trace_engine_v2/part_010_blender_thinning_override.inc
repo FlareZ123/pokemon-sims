@@ -252,7 +252,20 @@
     }
     const bool live_serena_payload_outlet = payload_already_held &&
         supporter_allowed() && hand_count(Card::Serena) > 0;
+    // A current-turn Arven -> Blender + Forest Seal Stone commitment is stronger
+    // than the ordinary ACE SPEC preservation rule once Star Alchemy has completed
+    // the VSTAR axis. Blender then establishes the remaining payload from deck
+    // without consuming the held Dragon plus another Item.
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4391
+    const bool issue_4391_committed_blender_route =
+        issue_4391_arven_blender_fss_commit_turn_ == state_.turn &&
+        state_.supporter_used && state_.vstar_power_used;
     if (!issue_1912_post_attachment_blender_replay_ &&
+        !issue_4391_committed_blender_route &&
         (live_one_discard_payload_outlet || live_ultra_ball_payload_outlet ||
          live_serena_payload_outlet)) {
       // Ordinarily preserve the one-copy ACE SPEC when another visible outlet

@@ -19,6 +19,8 @@ The program models opening setup, legal card sequencing, deck and Prize knowledg
 
 Exact rule and card sources are registered in [`docs/RULE_SOURCES.md`](docs/RULE_SOURCES.md) and mapped to simulator behavior in [`docs/RULES_TRACEABILITY.md`](docs/RULES_TRACEABILITY.md).
 
+The canonical Engine composition spine is `src/trace_engine_v2/composition/engine_body.inc`. Shared search-connector fallback ordering is owned by `src/trace_engine_v2/core/routes/search_connector_helpers.inc`; route-specific strategic target priority remains in its named route policy. This ownership split is tracked in [`CARD_CLASS_CLEANUP.md`](CARD_CLASS_CLEANUP.md).
+
 <a id="named-deck-recipes"></a>
 ## Registered decks
 

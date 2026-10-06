@@ -108,7 +108,7 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Garbodor lock behavior: `src/trace_engine_v2/core/locks/garbodor_policy.inc`.
 - Card effect bridge: `src/trace_engine_v2/core/adapters/card_context_adapter.hpp`.
 
-## Next cleanup steps
+2026-10-06 cleanup checkpoint: search-connector fallback target orders now live as named immutable data on `SearchConnectorFallbackPolicy`; callers no longer reconstruct the Mysterious Treasure, Quick Ball, and Ultra Ball fallback arrays on each query. Printed legality order and K1 behavior are unchanged. Exact search effects: https://api.pokemontcg.io/v2/cards/sm6-113 https://api.pokemontcg.io/v2/cards/swsh1-179 https://api.pokemontcg.io/v2/cards/swsh12pt5-146\n\n## Next cleanup steps
 
 The Regidrago-line compatibility forwarder is complete. Keep future cleanup at the actual composition consumer and canonical catalog owner rather than recreating a helper include solely to assert include order.
 

@@ -350,3 +350,15 @@ add_test(NAME trace_issue_2294_matchup_first_seed8
 add_test(NAME trace_issue_2293_strict_first_seed291
   COMMAND regidrago_sim --simulate-this --deck regidrago-shell
     --scenario strict-jit/go-first --seed 291 --require-ready-by 4)
+
+
+# Legacy Star can recover the final manual Grass after the earlier Item fixed point.
+# Once GGF is complete, the held Mysterious Treasure may discard a Dragon payload,
+# search Latias ex, and Skyliner can promote the ready Benched Regidrago VSTAR on T4.
+# Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+# Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+# Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+# Advanced turn procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+# Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4358
+add_test(NAME trace_issue_4358_post_legacy_treasure_latias
+  COMMAND regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 15 --require-ready-by 4)

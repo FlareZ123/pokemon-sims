@@ -361,28 +361,54 @@
     return targets;
   }
 
-  bool play_battle_compressor() {
-    const std::vector<Card> targets = issue_3545_battle_compressor_targets();
-    if (targets.empty()) return false;
+  bool issue_4359_public_compressor_route_available() const {
+    // K0 exposes the fixed deck list and public zones, while deck-versus-Prize
+    // placement remains hidden. Build a possibility deck from unresolved public
+    // copy counts so the play decision cannot depend on that hidden placement.
+    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
+    // Item/deck-search procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // K0/K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Future-card oracle policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#policy-versus-future-card-oracle
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4359
+    std::mt19937_64 shadow_rng = rng_;
+    Engine projected = issue_3545_projection(shadow_rng);
+    projected.state_.deck.clear();
+    for (const auto& [card, copies] : recipe_) {
+      const int unresolved =
+          std::min(copies, unresolved_fixed_list_copy_count(card));
+      for (int copy = 0; copy < unresolved; ++copy) {
+        projected.state_.deck.push_back(card);
+      }
+    }
+    return !projected.issue_3545_battle_compressor_targets().empty();
+  }
 
-    // Resolve the printed effect exactly: search the deck for up to three cards,
-    // discard the selected cards, then shuffle. The legal deck inspection establishes
-    // K1. Current-turn Dragon discards are recorded for strict-JIT provenance.
+  bool play_battle_compressor() {
+    const bool knowledge_established = deck_seen_ || prizes_revealed_;
+    std::vector<Card> targets;
+    if (knowledge_established) {
+      targets = issue_3545_battle_compressor_targets();
+      if (targets.empty()) return false;
+    } else if (!issue_4359_public_compressor_route_available()) {
+      return false;
+    }
+
+    // At K0 the commitment to play Battle Compressor is made from public
+    // information only. B-01 then places the Item in the resolving-source zone;
+    // starting the printed deck search establishes K1 before exact targets are
+    // selected. If K1 reveals no useful target, "up to 3" still permits zero.
     // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
-    // Item procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-    // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
-    // JIT policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
-    // Enhancement: https://github.com/FlareZ123/pokemon-sims/issues/3545
-    // Keep the played Item outside ordinary hand and discard throughout its
-    // deck search and discard effect. B-01 step 4 moves the source to discard only
-    // after the selected cards have been discarded and the deck has been shuffled.
-    // Battle Compressor: https://api.pokemontcg.io/v2/cards/xy4-92
-    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4366
+    // Item/deck-search procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // K0/K1 contract: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // Confirmed hidden-information bug: https://github.com/FlareZ123/pokemon-sims/issues/4359
+    // Confirmed source-lifecycle bug: https://github.com/FlareZ123/pokemon-sims/issues/4366
     if (!begin_legacy_item_resolution(Card::BattleCompressor)) {
       throw std::logic_error("projected Battle Compressor disappeared");
     }
     record_deck_search_knowledge("Battle Compressor");
+    if (!knowledge_established) {
+      targets = issue_3545_battle_compressor_targets();
+    }
 
     std::vector<Card> discarded;
     for (const Card target : targets) {

@@ -68,9 +68,12 @@
   // Brilliant Blender and Professor Burnet can only place deck cards in discard:
   // https://api.pokemontcg.io/v2/cards/sv8-164 https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
   bool payload_might_be_in_deck() const {
-    return might_be_unseen(Card::Appletun) || might_be_unseen(Card::MegaDragonite) ||
-           might_be_unseen(Card::Dragapult) || might_be_unseen(Card::GoodraVstar) ||
-           might_be_unseen(Card::DialgaGX);
+    // Keep strategic payload identity centralized in PayloadPreferencePolicy while
+    // preserving K0/K1 visibility through the existing might_be_unseen predicate.
+    // Cleanup owner: https://github.com/FlareZ123/pokemon-sims/blob/main/CARD_CLASS_CLEANUP.md#payload-policy-cleanup
+    return PayloadPreferencePolicy::first_preferred(
+               [this](const Card card) { return might_be_unseen(card); })
+        .has_value();
   }
 
   bool has_live_blender_payload_line() const {

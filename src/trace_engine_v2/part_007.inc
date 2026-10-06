@@ -115,12 +115,18 @@
     const int deck_fire = deck_count_after_search_started(Card::Fire);
     const bool deck_payload = std::any_of(
         state_.deck.begin(), state_.deck.end(), is_payload);
-    const bool route_cost_paid = count_of(state_.discard, Card::TateLiza) > 0 ||
-        count_of(state_.discard, Card::Lusamine) > 0;
-    // Quick Ball is the route's already-paid T1 Item, Steven's Resolve and Crispin
-    // consume future Supporter plays, and Earthen Vessel is the required T3 Item.
-    // Evaluate each action class at the turn where the route uses it:
+    // This selector runs after Wonder Tag has begun a legal deck search, so K1 and
+    // the live route resources below prove the T1-T3 line without requiring the
+    // historical Quick Ball source or a specific earlier discard-cost identity.
+    // Quick Ball can pay any other hand card, including dead Dipplin in this
+    // submitted no-Applin list:
     // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // https://api.pokemontcg.io/v2/cards/sv6-127
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+    // https://github.com/FlareZ123/pokemon-sims/issues/4343
+    // Steven's Resolve and Crispin consume future Supporter plays, and Earthen
+    // Vessel is the required T3 Item. Evaluate each action class where it is used:
     // https://api.pokemontcg.io/v2/cards/sm7-145
     // https://api.pokemontcg.io/v2/cards/sv7-133
     // https://api.pokemontcg.io/v2/cards/sv4-163
@@ -149,7 +155,6 @@
         state_.active && state_.active->card == Card::RegidragoV &&
         state_.active->grass == 0 && state_.active->fire == 0 &&
         state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368
-        count_of(state_.discard, Card::QuickBall) > 0 && route_cost_paid &&
         in_play(Card::TapuLeleGX) &&
         ability_available_for_pokemon(Card::TapuLeleGX) &&
         hand_count(Card::RegidragoVstar) > 0 && hand_count(Card::Grass) >= 2 &&

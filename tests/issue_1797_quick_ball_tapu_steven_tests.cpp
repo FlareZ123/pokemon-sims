@@ -167,6 +167,49 @@ void wonder_tag_banks_steven_going_first() {
          "Wonder Tag did not bank Steven's Resolve on T1");
 }
 
+void wonder_tag_accepts_dead_dipplin_cost() {
+  Fixture fixture;
+  sim::State state = t1_state();
+  state.hand.erase(std::find(state.hand.begin(), state.hand.end(),
+                             sim::Card::QuickBall));
+  state.discard.push_back(sim::Card::QuickBall);
+  state.discard.push_back(sim::Card::Dipplin);
+  state.bench.push_back(sim::Pokemon{sim::Card::TapuLeleGX, 1, 0, 0,
+                                     sim::Tool::None});
+  state.deck.erase(std::find(state.deck.begin(), state.deck.end(),
+                             sim::Card::TapuLeleGX));
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // Quick Ball permits discarding any other card. Dipplin is dead modeled fuel
+  // because this submitted list has no Applin, so the post-search Wonder Tag
+  // choice must be derived from the live K1 route rather than historical cost ID.
+  // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+  // Dipplin: https://api.pokemontcg.io/v2/cards/sv6-127
+  // K1/DCI policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4343
+  expect(sim::EngineTestAccess::wonder_tag_route(fixture.engine),
+         "Wonder Tag rejected the complete route after a legal Dipplin cost");
+}
+
+void wonder_tag_accepts_complete_state_without_quick_ball_history() {
+  Fixture fixture;
+  sim::State state = t1_state();
+  state.bench.push_back(sim::Pokemon{sim::Card::TapuLeleGX, 1, 0, 0,
+                                     sim::Tool::None});
+  state.deck.erase(std::find(state.deck.begin(), state.deck.end(),
+                             sim::Card::TapuLeleGX));
+  sim::EngineTestAccess::set_state(fixture.engine, std::move(state));
+
+  // Wonder Tag itself is a legal deck inspection and therefore establishes K1.
+  // A complete post-search route does not require Quick Ball discard provenance.
+  // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
+  // K1 policy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4343
+  expect(sim::EngineTestAccess::wonder_tag_route(fixture.engine),
+         "Wonder Tag incorrectly required historical Quick Ball provenance");
+}
+
 void k0_rejects_route() {
   Fixture fixture;
   sim::EngineTestAccess::set_state(fixture.engine, t1_state(), false);
@@ -316,6 +359,8 @@ int main() {
     quick_ball_selects_tapu_and_low_dci_cost();
     lusamine_is_legal_fallback_cost();
     wonder_tag_banks_steven_going_first();
+    wonder_tag_accepts_dead_dipplin_cost();
+    wonder_tag_accepts_complete_state_without_quick_ball_history();
     k0_rejects_route();
     missing_discard_cost_rejects_route();
     missing_tapu_rejects_route();

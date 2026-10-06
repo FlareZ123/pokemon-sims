@@ -180,6 +180,19 @@
       cost = choose_discard(can_jit_discard, true, true,
                             Card::MysteriousTreasure);
     }
+    if (!cost && want_latias && strict_payload_timing() && payload_ready()) {
+      // Legacy Star or another current-turn effect may already have established the
+      // strict-JIT payload in discard. In that state an additional held Dragon no
+      // longer carries setup-axis value, so it may legally pay Mysterious Treasure
+      // to search Latias ex and complete the remaining Active-position axis.
+      // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+      // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+      // Regidrago VSTAR / Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+      // Dynamic DCI and same-turn JIT: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#dci-implementation
+      // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment
+      // Confirmed post-Legacy regression: https://github.com/FlareZ123/pokemon-sims/issues/4358
+      cost = choose_discard(true, true, true, Card::MysteriousTreasure);
+    }
     if (!cost && want_regi && issue_1605_arven_redundant_payload_route_) {
       // Arven already established K1 and selected this exact one-discard search
       // Item. Spend only the duplicated payload identity, after all ordinary DCI

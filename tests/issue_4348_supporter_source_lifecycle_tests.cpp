@@ -1,0 +1,110 @@
+#define REGIDRAGO_SIM_NO_MAIN
+#include "../src/regidrago_sim.cpp"
+
+#include <algorithm>
+#include <random>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+namespace sim {
+struct EngineTestAccess {
+  static void set_state(Engine& engine, State state) {
+    engine.state_ = std::move(state);
+  }
+  static const State& state(const Engine& engine) { return engine.state_; }
+  static const std::vector<Card>& resolving_sources(const Engine& engine) {
+    return engine.resolving_trainer_sources_;
+  }
+  static bool begin_supporter(Engine& engine, const Card card) {
+    return engine.begin_supporter_resolution(card);
+  }
+  static bool finish_supporter(Engine& engine, const Card card) {
+    return engine.finish_supporter_resolution(card);
+  }
+  static bool play_tate_draw(Engine& engine) { return engine.play_tate_draw(); }
+};
+}  // namespace sim
+
+namespace {
+bool contains(const std::vector<sim::Card>& cards, const sim::Card card) {
+  return std::find(cards.begin(), cards.end(), card) != cards.end();
+}
+
+void require(const bool condition, const char* message) {
+  if (!condition) throw std::runtime_error(message);
+}
+
+struct Fixture {
+  sim::Scenario scenario{"issue-4348/exact", sim::DciProfile::StrictJit,
+                         sim::LockMode::None, false, 5};
+  sim::DeckRecipe recipe{sim::pineco_recipe()};
+  std::mt19937_64 rng{4348};
+  sim::TraceLog trace{true, {}};
+  sim::Engine engine{scenario, recipe, rng, &trace};
+};
+
+void shared_supporter_lifecycle_matches_b03() {
+  Fixture fixture;
+  sim::State state;
+  state.turn = 2;
+  state.hand = {sim::Card::Crispin, sim::Card::Grass};
+  sim::EngineTestAccess::set_state(fixture.engine, state);
+
+  // B-03 plays the Supporter before step 3 resolves and discards it after use.
+  // Crispin: https://api.pokemontcg.io/v2/cards/sv7-133
+  // Supporter procedure B-03: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4348
+  require(sim::EngineTestAccess::begin_supporter(fixture.engine, sim::Card::Crispin),
+          "Supporter did not enter resolving-source state.");
+  const auto& resolving = sim::EngineTestAccess::state(fixture.engine);
+  require(!contains(resolving.hand, sim::Card::Crispin),
+          "Resolving Supporter remained in hand.");
+  require(!contains(resolving.discard, sim::Card::Crispin),
+          "Resolving Supporter entered discard before effect completion.");
+  require(resolving.supporter_used, "Supporter action was not consumed.");
+  require(contains(sim::EngineTestAccess::resolving_sources(fixture.engine),
+                   sim::Card::Crispin),
+          "Supporter source was not retained while resolving.");
+
+  require(sim::EngineTestAccess::finish_supporter(fixture.engine, sim::Card::Crispin),
+          "Resolved Supporter did not move to discard.");
+  const auto& finished = sim::EngineTestAccess::state(fixture.engine);
+  require(contains(finished.discard, sim::Card::Crispin),
+          "Resolved Supporter did not end in discard.");
+  require(sim::EngineTestAccess::resolving_sources(fixture.engine).empty(),
+          "Resolved Supporter leaked from resolving-source state.");
+}
+
+void tate_draw_excludes_its_own_source() {
+  Fixture fixture;
+  sim::State state;
+  state.turn = 2;
+  state.hand = {sim::Card::TateLiza, sim::Card::Grass};
+  state.deck = {sim::Card::Fire, sim::Card::RegidragoV,
+                sim::Card::RegidragoVstar, sim::Card::Dipplin,
+                sim::Card::Crispin, sim::Card::QuickBall};
+  sim::EngineTestAccess::set_state(fixture.engine, state);
+
+  // Tate & Liza's source is already being played when its draw mode shuffles the
+  // remaining hand, so the Supporter itself cannot be shuffled by its own effect.
+  // Tate & Liza: https://api.pokemontcg.io/v2/cards/sm7-148
+  // Supporter procedure B-03: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4348
+  require(sim::EngineTestAccess::play_tate_draw(fixture.engine),
+          "Legal Tate & Liza draw mode did not resolve.");
+  const auto& after = sim::EngineTestAccess::state(fixture.engine);
+  require(contains(after.discard, sim::Card::TateLiza),
+          "Tate & Liza did not enter discard after resolution.");
+  require(!contains(after.deck, sim::Card::TateLiza),
+          "Tate & Liza was shuffled into the deck by its own effect.");
+  require(sim::EngineTestAccess::resolving_sources(fixture.engine).empty(),
+          "Tate & Liza remained in resolving-source state.");
+}
+}  // namespace
+
+int main() {
+  shared_supporter_lifecycle_matches_b03();
+  tate_draw_excludes_its_own_source();
+  return 0;
+}

@@ -250,23 +250,23 @@
   }
 
   bool post_attach_treasure_latias_route_available() {
-    const Pokemon* target = target_regi();
-    if (!strict_payload_timing() || item_locked() || target == nullptr ||
-        target->card != Card::RegidragoVstar ||
-        !pays_apex_energy_cost(*target) || // https://github.com/FlareZ123/pokemon-sims/issues/2442
-        !need_active_vstar() || state_.retreat_used ||
+    if (!strict_payload_timing() || item_locked() || !prizes_known() ||
+        !need_active_vstar() || need_energy() || state_.retreat_used ||
         !state_.active || !is_basic(state_.active->card) || bench_space() == 0 ||
         !ability_available_for_pokemon(Card::LatiasEx) || in_play(Card::LatiasEx) ||
-        hand_count(Card::LatiasEx) > 0 || !might_be_unseen(Card::LatiasEx) ||
-        hand_count(Card::MysteriousTreasure) == 0 ||
-        !std::any_of(state_.hand.begin(), state_.hand.end(), is_payload)) {
+        hand_count(Card::LatiasEx) > 0 ||
+        deck_count_after_search_started(Card::LatiasEx) == 0 ||
+        hand_count(Card::MysteriousTreasure) == 0) {
       return false;
     }
 
     // A manual attachment can complete GGF on the prior-turn Regidrago VSTAR.
-    // Mysterious Treasure may then discard the held Dragon payload, search Latias
-    // ex, and Skyliner may immediately promote that VSTAR before the unused
-    // Supporter slot is considered. This is the shortest observable complete route:
+    // K1 must prove Latias ex remains in the deck. Mysterious Treasure can then
+    // pay any legal DCI-approved cost, search Latias ex, and Skyliner may
+    // immediately promote that VSTAR before the unused Supporter slot is considered.
+    // Legacy Star may already have supplied the strict-JIT payload this turn, so
+    // admission must follow the remaining mobility axis instead of requiring a
+    // second held Dragon payload. This is the shortest observable complete route:
     // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
     // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
     // Regidrago VSTAR / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136

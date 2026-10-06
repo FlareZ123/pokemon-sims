@@ -42,6 +42,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/card_catalog.inc` owns the shrinking unmigrated name and classification compatibility layer. Registered `CardDefinition` lookup stays the preferred metadata path.
 - `src/trace_engine_v2/composition/engine_body.inc` is the canonical ordered composition spine: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
 - `src/trace_engine_v2/core/turn_lifecycle.inc` owns turn-number assignment, action-state reset, transient lock reset, start-of-turn draw, and first-turn restriction tracing. Its reset orchestration has one `TurnLifecyclePolicy` owner.
+- `src/trace_engine_v2/core/supporter_source_lifecycle.inc` owns generic Engine-side Supporter source staging and post-effect discard, preserving the B-03 resolving-source lifecycle independently of route choice.
+- `src/trace_engine_v2/core/routes/latias_vstar_promotion_policy.inc` owns the reusable Latias ex free-retreat promotion helpers for selecting and promoting the best-powered Benched Regidrago VSTAR.
 - `src/trace_engine_v2/core/deck_knowledge.inc` owns copy arithmetic after visibility is resolved. K0/K1 visibility decisions stay in Engine strategy: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states
 - `src/trace_engine_v2/core/payload_hand_policy.inc` owns reusable Dragon-payload zone and preference traversal.
 - `src/trace_engine_v2/core/board_state_policy.inc` owns reusable board traversal and board-index queries.
@@ -65,6 +67,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 2026-10-06 cleanup checkpoint: the forwarding-only `src/trace_engine_v2/core/tate/package.inc` layer is retired. `composition/opening_engine_overrides.inc` now composes discard/recovery provenance, attachment policy, and Tate action policy directly in the same historical order, making alias lifetime and member ordering visible at the canonical Engine boundary. C++ textual include semantics: https://eel.is/c++draft/cpp.include
 
 2026-10-06 cleanup checkpoint: setup recipe metadata policy is now co-located with its sole consumer in `src/trace_engine_v2/core/setup_lifecycle.inc`, and the one-consumer `core/setup/policies.inc` seam is retired. Keep future setup-only metadata and setup state-transition helpers together unless another independent consumer appears. Setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+
+2026-10-06 cleanup checkpoint: `part_008a.inc` now composes two named owners instead of embedding unrelated helper families: `core/supporter_source_lifecycle.inc` for Supporter source staging/finalization and `core/routes/latias_vstar_promotion_policy.inc` for Latias ex VSTAR promotion. The extraction preserves declaration order and the original textual composition boundary while reducing mixed responsibilities in the numbered fragment. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
 
 
 2026-10-06 cleanup checkpoint: Forest Seal Stone holder selection now reuses the canonical Active-first board traversal in `core/board_state_policy.inc`. The board owner exposes mutable and const Bench-only lookups, `part_010_attach_fss_override.inc` delegates its V-preferred and generic Tool-slot selection to those helpers, and `part_011.inc` no longer maintains a separate Star Alchemy holder scan. Preserve V-first FSS strategy in the route layer while keeping physical board traversal centralized. Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156 Board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
@@ -117,6 +121,8 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Search connector fallback order: `src/trace_engine_v2/core/routes/search_connector_helpers.inc`.
 - Mysterious Treasure strategic target order: `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc`.
 - Turn reset mechanics: `src/trace_engine_v2/core/turn_lifecycle.inc`.
+- Supporter source staging/finalization: `src/trace_engine_v2/core/supporter_source_lifecycle.inc`.
+- Latias ex VSTAR promotion: `src/trace_engine_v2/core/routes/latias_vstar_promotion_policy.inc`.
 - Scenario extension traversal: `src/trace_engine_v2/core/scenario_extension_policy.inc`.
 - Garbodor lock behavior: `src/trace_engine_v2/core/locks/garbodor_policy.inc`.
 - Card effect bridge: `src/trace_engine_v2/core/adapters/card_context_adapter.hpp`.

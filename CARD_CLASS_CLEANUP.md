@@ -64,6 +64,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 2026-10-06 cleanup checkpoint: the forwarding-only `src/trace_engine_v2/core/tate/package.inc` layer is retired. `composition/opening_engine_overrides.inc` now composes discard/recovery provenance, attachment policy, and Tate action policy directly in the same historical order, making alias lifetime and member ordering visible at the canonical Engine boundary. C++ textual include semantics: https://eel.is/c++draft/cpp.include
 
+2026-10-06 cleanup checkpoint: the three root-level Tate compatibility copies `part_discard_recovery_provenance_override.inc`, `part_tate_blender_attachment_override.inc`, and `part_tate_blender_tate_override.inc` are retired after the live opening composition moved to `core/tate/discard_recovery_provenance.inc`, `core/tate/attachment_policy.inc`, and `core/tate/action_policy.inc`. Keep the canonical Tate owners under `core/tate/`; future composition changes should reference those files directly. C++ textual include semantics: https://eel.is/c++draft/cpp.include
+
 2026-10-06 cleanup checkpoint: setup recipe metadata policy is now co-located with its sole consumer in `src/trace_engine_v2/core/setup_lifecycle.inc`, and the one-consumer `core/setup/policies.inc` seam is retired. Keep future setup-only metadata and setup state-transition helpers together unless another independent consumer appears. Setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
 

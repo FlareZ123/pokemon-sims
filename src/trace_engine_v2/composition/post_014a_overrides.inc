@@ -131,7 +131,17 @@
 // Keep the Powerglass continuation at the sole post-search Arven owner. This is
 // the former part_012_powerglass_override.inc body at the same macro boundary.
 #define play_arven play_arven_fss_blender_contention_original
-#include "../core/regidrago_line_helpers.inc"
+
+// Intrinsic Regidrago-line identity is already provided by the canonical card
+// catalog at the Engine composition root. Keep the ordering contract at the live
+// consumer boundary instead of routing it through a forwarding-only include.
+// Canonical classifier: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/card_catalog.inc
+// Canonical composition: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/composition/engine_body.inc
+// Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135
+// Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+#ifndef SIM_TRACE_CARD_CLASSIFICATION_INCLUDED
+#error "Post-search Arven routes require canonical card classification to be composed first"
+#endif
 
   bool arven_powerglass_tool_route_live() const {
     if (!state_.active || state_.active->tool != Tool::None ||

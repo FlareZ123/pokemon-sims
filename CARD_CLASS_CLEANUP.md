@@ -49,7 +49,7 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 - `src/trace_engine_v2/core/mysterious_treasure_target_policy.inc` remains the live strategic target-priority owner composed by `part_009a.inc`. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
 - `src/trace_engine_v2/core/locks/garbodor_policy.inc` remains the sole Garbodor scenario-timing and Ability-lock policy owner. Garbodor / Garbotoxin: https://api.pokemontcg.io/v2/cards/xy9-57
 
-2026-08-18 cleanup checkpoint: `src/trace_engine_v2/core/regidrago_line_helpers.inc` remains a compatibility include at the post-search Arven boundary, but it no longer contains a fallback include to the retired `core/card_classification.inc` path. The canonical catalog is composed first and owns `is_regidrago_v_line()`. Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
+2026-10-06 cleanup checkpoint: the forwarding-only `src/trace_engine_v2/core/regidrago_line_helpers.inc` compatibility seam has been retired. The post-search Arven composition boundary now checks the canonical classification feature marker directly, while `src/trace_engine_v2/core/card_catalog.inc` remains the sole owner of `is_regidrago_v_line()`. This removes one textual include hop without changing route policy or card behavior. Regidrago V: https://api.pokemontcg.io/v2/cards/swsh12-135 Regidrago VSTAR: https://api.pokemontcg.io/v2/cards/swsh12-136
 
 2026-08-18 search-connector checkpoint: `src/trace_engine_v2/core/routes/search_connector_helpers.inc` now gives post-search outlet feasibility explicit owners for card presence, survival of the current search discard, and Ultra Ball payability. Keep future K1 connector cleanup on these named helpers so route callers do not recreate hand-count and discard-cost arithmetic. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179 Ultra Ball: https://api.pokemontcg.io/v2/cards/swsh12pt5-146 Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
 
@@ -106,6 +106,8 @@ Before adding a route-local loop or helper, reuse an existing owner when orderin
 - Card effect bridge: `src/trace_engine_v2/core/adapters/card_context_adapter.hpp`.
 
 ## Next cleanup steps
+
+The Regidrago-line compatibility forwarder is complete. Keep future cleanup at the actual composition consumer and canonical catalog owner rather than recreating a helper include solely to assert include order.
 
 1. Continue deleting forwarding `.inc` files only after tracing them from `composition/engine_body.inc` and proving they are absent from the live include graph. A missing historical target is evidence of stale code, while composition reachability is the decisive check.
 2. Keep `core/mysterious_treasure_target_policy.inc` until `part_009a.inc` is migrated to a canonical organized route package. Preserve its target order and direct Mysterious Treasure card-data citation during that move.

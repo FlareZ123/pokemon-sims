@@ -189,6 +189,21 @@
     }
     if (pay_tapu_retreat_to_ready_benched_vstar()) return true;
     attach_manual();
+    // A late manual attachment, including one enabled by Legacy Star recovery, can
+    // complete GGF and make the existing strict-JIT Mysterious Treasure -> Latias ex
+    // route legal only after the earlier Item fixed point has already run. Reuse the
+    // state-relative route predicate here, then resolve the searched Basic before the
+    // final Skyliner retreat instead of waiting an extra turn:
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+    // Regidrago VSTAR / Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+    // Item, Bench, Ability, attachment, and retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Strict-JIT timing and current-turn completion priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4358
+    if (post_attach_treasure_latias_route_available()) {
+      play_items_until_stable(true);
+      play_basics_from_hand();
+    }
     return retreat_to_benched_vstar_with_latias();
   }
 

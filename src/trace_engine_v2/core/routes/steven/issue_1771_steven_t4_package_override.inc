@@ -83,7 +83,7 @@
     // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // Confirmed relative-trace bug: https://github.com/FlareZ123/pokemon-sims/issues/3798
     // Sibling relative-turn route implementation:
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1772_steven_t3_package_override.inc
+    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven/issue_1772_steven_t3_package_override.inc
     trace("PLAY SUPPORTER",
           "R-STEVEN-01; R-GAME-SUPPORTER; P-KNOWLEDGE-01; P-COMPRESS-01",
           "Searched the deterministic T" + std::to_string(completion_turn) +

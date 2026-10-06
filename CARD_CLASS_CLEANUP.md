@@ -139,3 +139,6 @@ If migration exposes gameplay behavior that is wrong, use the normal bug-confirm
 A cleanup PR is mergeable only when strict Release compilation succeeds, focused tests and the full regression suite show no new failure, sanitizer and structural checks show no new failure, representative `--simulate-this` traces preserve legal action ordering and readiness, the paired T2/T3 matrix has no unexplained drift, and the PR contains no gameplay behavior change.
 
 Known baseline failures must be tied to an existing issue and remain unchanged. Any newly discovered gameplay defect uses the separate bug-confirmation workflow.
+
+
+2026-10-06: Steven issue-1745, issue-1771, and issue-1772 route fragments now live under `src/trace_engine_v2/core/routes/steven/` and are included by `steven/package.inc` in the same order.

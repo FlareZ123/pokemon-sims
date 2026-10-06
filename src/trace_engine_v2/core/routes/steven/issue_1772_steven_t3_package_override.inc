@@ -124,7 +124,7 @@
     // Shared payload membership policy: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/payload_hand_policy.inc
     // Apex Dragon payload semantics: https://api.pokemontcg.io/v2/cards/swsh12-136
     const Pokemon* prepared_regi = issue_1772_prepared_fire_regidrago();
-    // Reuse the same prepared-bench witness throughout this pure predicate: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/issue_1772_steven_t3_package_override.inc
+    // Reuse the same prepared-bench witness throughout this pure predicate: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/steven/issue_1772_steven_t3_package_override.inc
 
     // Only the package banked by this helper on the immediately preceding turn may
     // unlock its specialized Crispin/Vessel continuation. The recorded relative turn

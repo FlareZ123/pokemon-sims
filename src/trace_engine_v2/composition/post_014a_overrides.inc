@@ -312,12 +312,7 @@
     // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/1293
     const bool direct_blender_route =
         !item_locked() && might_be_unseen(Card::BrilliantBlender);
-    const bool open_v_tool_slot =
-        (state_.active && is_pokemon_v(state_.active->card) &&
-         state_.active->tool == Tool::None) ||
-        std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
-          return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
-        });
+    const bool open_v_tool_slot = board_has_open_pokemon_v_tool_slot();
     const bool next_turn_burnet_route = state_.turn < scenario_.max_turn &&
         !state_.vstar_power_used && open_v_tool_slot &&
         might_be_unseen(Card::ForestSealStone) &&
@@ -592,12 +587,7 @@ bool play_arven() {
     // https://api.pokemontcg.io/v2/cards/sv1-166
     // https://api.pokemontcg.io/v2/cards/swsh12-156
     // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_011.inc
-    const bool open_v_tool_slot =
-        (state_.active && is_pokemon_v(state_.active->card) &&
-         state_.active->tool == Tool::None) ||
-        std::any_of(state_.bench.begin(), state_.bench.end(), [](const Pokemon& pokemon) {
-          return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
-        });
+    const bool open_v_tool_slot = board_has_open_pokemon_v_tool_slot();
     if (!state_.vstar_power_used && open_v_tool_slot &&
         move_deck_to_hand(Card::ForestSealStone)) {
       found.push_back(Card::ForestSealStone);

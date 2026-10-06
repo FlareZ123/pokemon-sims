@@ -77,6 +77,8 @@ Keep strategic selection, DCI/UDP/AMR, Supporter contention, connector dominatio
 
 Mysterious Treasure keeps strategic Dragon/Psychic target preference in `core/mysterious_treasure_target_policy.inc`; post-search K1 fallback legality and order stay in `core/routes/search_connector_helpers.inc`. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
 
+Legacy discard and connector policy in `part_006.inc` now routes generic payload-in-hand counts and unseen-payload existence through `PayloadZonePolicy` / `PayloadPreferencePolicy`. Continue migrating duplicate payload scans only when they have identical physical-zone or strategic-order semantics; route-local distinct-identity and DCI/JIT admission logic stays at the caller. Cleanup implementation: https://github.com/FlareZ123/pokemon-sims/blob/cleanup-1791250620000/src/trace_engine_v2/part_006.inc
+
 ## Setup lifecycle cleanup
 
 `src/trace_engine_v2/core/setup/policies.inc` owns pure setup recipe predicates, setup constants, and scenario labels. `src/trace_engine_v2/core/setup_lifecycle.inc` owns physical opening-deck initialization, mulligan handling, Prize dealing, and setup trace emission. `src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn reset and start-of-turn mechanics.

@@ -23,6 +23,7 @@
   }
 
 bool issue_1605_arven_redundant_payload_route_{false};
+int issue_4391_arven_blender_fss_commit_turn_{0};
 
 bool play_arven() {
     if (!supporter_allowed() || item_locked() || hand_count(Card::Arven) == 0) return false;
@@ -170,6 +171,20 @@ const bool can_pay_search_cost =
       if (move_deck_to_hand(item)) { found.push_back(item); break; }
     }
     if (live_tool && move_deck_to_hand(Card::ForestSealStone)) found.push_back(Card::ForestSealStone);
+    // When Arven deliberately spends its one Supporter action on the split
+    // Brilliant Blender + Forest Seal Stone line, remember that commitment only
+    // for this turn. If Star Alchemy later completes the VSTAR axis, the fetched
+    // Blender owns the remaining payload channel instead of a generic paid search
+    // discarding a protected held Dragon.
+    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
+    // Brilliant Blender: https://api.pokemontcg.io/v2/cards/sv8-164
+    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
+    // Connector priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed connector-domination bug: https://github.com/FlareZ123/pokemon-sims/issues/4391
+    if (std::find(found.begin(), found.end(), Card::BrilliantBlender) != found.end() &&
+        std::find(found.begin(), found.end(), Card::ForestSealStone) != found.end()) {
+      issue_4391_arven_blender_fss_commit_turn_ = state_.turn;
+    }
     issue_1605_arven_redundant_payload_route_ =
         issue_1605_public_arven_route &&
         std::any_of(found.begin(), found.end(), [](const Card card) {

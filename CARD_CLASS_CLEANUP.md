@@ -69,6 +69,8 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 2026-10-06 cleanup checkpoint: Forest Seal Stone holder selection now reuses the canonical Active-first board traversal in `core/board_state_policy.inc`. The board owner exposes mutable and const Bench-only lookups, `part_010_attach_fss_override.inc` delegates its V-preferred and generic Tool-slot selection to those helpers, and `part_011.inc` no longer maintains a separate Star Alchemy holder scan. Preserve V-first FSS strategy in the route layer while keeping physical board traversal centralized. Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156 Board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
 
+2026-10-06 cleanup checkpoint: Mysterious Treasure preference iteration now consumes `MysteriousTreasureTargetPolicy::preferred_targets()` directly instead of forwarding through a one-line Engine wrapper. Forest Seal Stone attachment also reuses the canonical `pokemon_has_open_tool_slot()` predicate from `core/board_state_policy.inc`, so generic Tool-slot legality and Pokémon V Tool-slot legality share one physical-board predicate. Keep route preference in route code while moving reusable board facts behind the board owner. Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113 Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156 Board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+
 ## Active card migrations
 
 No open migration issue is assumed by this plan. Before starting a card migration, search the current issue tracker and branch set for an existing owner. A migration should move intrinsic metadata and classification before printed resolution, then move printed resolution only after its live resolver and reusable `CardContext` operations are identified.
@@ -95,7 +97,7 @@ Mysterious Treasure keeps strategic Dragon/Psychic target preference in `core/my
 
 ## Setup lifecycle cleanup
 
-`src/trace_engine_v2/core/setup/policies.inc` owns pure setup recipe predicates, setup constants, and scenario labels. `src/trace_engine_v2/core/setup_lifecycle.inc` owns physical opening-deck initialization, mulligan handling, Prize dealing, and setup trace emission. `src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn reset and start-of-turn mechanics.
+`src/trace_engine_v2/core/setup_lifecycle.inc` owns setup recipe predicates, setup constants, scenario labels, physical opening-deck initialization, mulligan handling, Prize dealing, and setup trace emission. The former one-consumer `core/setup/policies.inc` seam is retired. `src/trace_engine_v2/core/turn_lifecycle.inc` owns per-turn reset and start-of-turn mechanics.
 
 Keep setup and turn mechanics source-linked to the advanced manual and official rules. Advanced manual: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Official rules: https://www.pokemon.com/us/pokemon-tcg/rules
 

@@ -21,47 +21,10 @@
     return true;
   }
 
-  bool promote_best_benched_vstar() {
-    Pokemon* target = best_benched_vstar_for_promotion();
-    if (target == nullptr) return false;
-    std::swap(*state_.active, *target);
-    return true;
-  }
+#include "core/routes/latias_vstar_promotion_policy.inc"
 
-  bool retreat_to_benched_vstar_with_latias() {
-    if (!need_active_vstar() || !can_free_retreat_with_latias()) return false;
-    // Latias ex removes the Basic Active's Retreat Cost. Promote the Benched
-    // Regidrago VSTAR that best satisfies Apex Dragon's GGF cost:
-    // https://api.pokemontcg.io/v2/cards/sv8-76
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    if (!promote_best_benched_vstar()) return false;
-    state_.retreat_used = true;
-    trace("RETREAT", "R-LATIAS-01; R-GAME-RETREAT",
-          "Latias ex gives the Basic Active no Retreat Cost; promoted the "
-          "best-powered Benched Regidrago VSTAR.");
-    return true;
-  }
+#include "core/supporter_source_lifecycle.inc"
 
-  bool begin_supporter_resolution(const Card source) {
-    // B-03 step 2 plays and reveals the Supporter before its effect resolves.
-    // Keep that source outside ordinary hand and discard until step 4.
-    // Supporter procedure B-03: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4348
-    if (!ResolvingTrainerSourcePolicy::move_from_hand(
-            state_.hand, resolving_trainer_sources_, source)) {
-      return false;
-    }
-    state_.supporter_used = true;
-    return true;
-  }
-
-  bool finish_supporter_resolution(const Card source) {
-    // B-03 step 4 discards the Supporter only after its printed effect finishes.
-    // Supporter procedure B-03: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
-    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4348
-    return ResolvingTrainerSourcePolicy::move_to_discard(
-        resolving_trainer_sources_, state_.discard, source);
-  }
 
   bool play_tate_switch() {
     // Card text source: https://api.pokemontcg.io/v2/cards/sm7-148

@@ -102,7 +102,7 @@
 #undef play_gladion
 
 #define play_gladion play_gladion_issue1595_original
-#include "../part_issue_1191_gladion_steven_override.inc"
+#include "../core/routes/gladion_steven_continuation.inc" // Canonical continuation owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/routes/gladion_steven_continuation.inc
 #undef play_gladion
 
 #define play_gladion play_gladion_issue1608_original

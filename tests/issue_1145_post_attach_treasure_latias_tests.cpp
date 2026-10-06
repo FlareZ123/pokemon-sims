@@ -135,12 +135,48 @@ void test_seed_five_preserves_arven() {
   expect(trace_contains(trace, "T4 | READY |"),
          "Seed 5 must record turn-four readiness.");
 }
+void test_seed_fifteen_replays_after_legacy_attachment() {
+  const auto scenario = sim::scenario_by_label("strict-jit/go-second");
+  if (!scenario) throw std::runtime_error("Missing strict-jit/go-second scenario");
+  const sim::DeckRecipe recipe = sim::baseline_recipe();
+  std::mt19937_64 rng{15};
+  sim::TraceLog trace{true, {}};
+  sim::Engine engine(*scenario, recipe, rng, &trace);
+  const sim::TrialOutcome outcome = engine.run();
+
+  // Legacy Star may recover the final manual-attachment Energy after the earlier
+  // strict-JIT Item pass. Once that attachment completes GGF, Mysterious Treasure
+  // may discard the held Dragon, search Latias ex, and Skyliner may promote the
+  // powered Benched Regidrago VSTAR during the same attack-available turn:
+  // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+  // Latias ex / Skyliner: https://api.pokemontcg.io/v2/cards/sv8-76
+  // Regidrago VSTAR / Legacy Star / Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
+  // Item, Bench, Ability, attachment, and retreat procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+  // Strict-JIT timing and current-turn completion priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+  // Confirmed bug: https://github.com/FlareZ123/pokemon-sims/issues/4358
+  expect(outcome.first_ready_turn == 4,
+         "Seed 15 must become ready on turn four after the post-Legacy attachment.");
+  expect(trace_contains(trace, "T4 | LEGACY STAR |"),
+         "Seed 15 must use Legacy Star on turn four.");
+  expect(trace_contains(trace, "T4 | DISCARD | rules: R-MT-01 | Mega Dragonite ex"),
+         "Seed 15 must pay Mysterious Treasure with the current-turn Dragon payload.");
+  expect(trace_contains(trace, "T4 | PLAY ITEM | rules: R-MT-01"),
+         "Seed 15 must replay Mysterious Treasure on turn four.");
+  expect(trace_contains(trace, "T4 | BENCH | rules: R-GAME-BENCH | Latias ex"),
+         "Seed 15 must Bench Latias ex on turn four.");
+  expect(trace_contains(trace, "T4 | RETREAT | rules: R-LATIAS-01"),
+         "Seed 15 must use Skyliner on turn four.");
+  expect(trace_contains(trace, "T4 | READY |"),
+         "Seed 15 must record turn-four readiness.");
+}
+
 }  // namespace
 
 int main() {
   try {
     test_exact_route_and_controls();
     test_seed_five_preserves_arven();
+    test_seed_fifteen_replays_after_legacy_attachment();
     std::cout << "Issue 1145 post-attachment Treasure Latias tests passed\n";
     return 0;
   } catch (const std::exception& error) {

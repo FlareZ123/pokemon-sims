@@ -115,15 +115,20 @@
     const int deck_fire = deck_count_after_search_started(Card::Fire);
     const bool deck_payload = std::any_of(
         state_.deck.begin(), state_.deck.end(), is_payload);
-    const bool route_cost_paid = count_of(state_.discard, Card::TateLiza) > 0 ||
-        count_of(state_.discard, Card::Lusamine) > 0;
-    // Quick Ball is the route's already-paid T1 Item, Steven's Resolve and Crispin
-    // consume future Supporter plays, and Earthen Vessel is the required T3 Item.
-    // Evaluate each action class at the turn where the route uses it:
-    // https://api.pokemontcg.io/v2/cards/swsh1-179
+    // This is a post-search selector. Tapu in play, K1, and the still-live T1-T3
+    // resources below prove the route without replaying the historical Quick Ball
+    // source or cost identity. A dead Dipplin is an equally legal paid cost in this
+    // submitted no-Applin list, so discard fingerprints cannot define route validity:
+    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
+    // Dipplin: https://api.pokemontcg.io/v2/cards/sv6-127
+    // K1 / DCI / earliest complete route: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#knowledge-states https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#dcijit-treatment https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
+    // Confirmed state-relative regression: https://github.com/FlareZ123/pokemon-sims/issues/4343
+    // Steven's Resolve and Crispin consume future Supporter plays, and Earthen Vessel
+    // is the required T3 Item. Evaluate each action class on the turn that uses it:
     // https://api.pokemontcg.io/v2/cards/sm7-145
     // https://api.pokemontcg.io/v2/cards/sv7-133
     // https://api.pokemontcg.io/v2/cards/sv4-163
+    // https://api.pokemontcg.io/v2/cards/swsh12-136
     // https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
     // https://github.com/FlareZ123/pokemon-sims/blob/main/docs/MODEL_ASSUMPTIONS.md#lock-interpretation
     const bool t1_quick_ball_allowed = !item_locked_on_turn(1);
@@ -149,7 +154,6 @@
         state_.active && state_.active->card == Card::RegidragoV &&
         state_.active->grass == 0 && state_.active->fire == 0 &&
         state_.active->double_dragon == 0 && // https://github.com/FlareZ123/pokemon-sims/issues/2368
-        count_of(state_.discard, Card::QuickBall) > 0 && route_cost_paid &&
         in_play(Card::TapuLeleGX) &&
         ability_available_for_pokemon(Card::TapuLeleGX) &&
         hand_count(Card::RegidragoVstar) > 0 && hand_count(Card::Grass) >= 2 &&
@@ -494,218 +498,3 @@
     const bool serena_completes_current_turn_route = strict_payload_timing() &&
         supporter_allowed() && need_payload() && can_play_payload_this_turn() &&
         held_manual_completes_energy && current_turn_active_vstar_route && held_payload &&
-        deck_count_after_search_started(Card::Serena) > 0;
-    if (serena_completes_current_turn_route) return Card::Serena;
-
-    if (wonder_tag_future_gladion_treasure_route()) return Card::Gladion;
-
-    // Guzma & Hala is a legal Wonder Tag target and can compress the Special-Energy
-    // and Tool axes without depending on an Item play. After K1, select it when the
-    // same multi-axis conditions that justify direct play are visible. This also
-    // allows a turn-one going-first Wonder Tag to bank G&H before a scheduled T2
-    // Item lock.
-    // Tapu Lele-GX: https://api.pokemontcg.io/v2/cards/sm2-60
-    // Guzma & Hala: https://api.pokemontcg.io/v2/cards/sm12-229
-    // Double Dragon Energy: https://api.pokemontcg.io/v2/cards/xy6-97
-    // Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156
-    const bool guzma_hala_searchable =
-        deck_count_after_search_started(Card::GuzmaHala) > 0;
-    const bool guzma_hala_multi_axis =
-        guzma_hala_dde_axis_available() && guzma_hala_fss_axis_available();
-    const bool guzma_hala_unlock_axis =
-        guzma_hala_stadium_unlock_available() &&
-        (guzma_hala_dde_axis_available() || guzma_hala_fss_axis_available());
-    if (guzma_hala_searchable &&
-        (guzma_hala_multi_axis || guzma_hala_unlock_axis)) {
-      return Card::GuzmaHala;
-    }
-
-    // Burnet plus Quick Ball into Latias ex is the complete same-turn finish when
-    // Crispin's Energy axis is already covered by the held manual attachment.
-    // https://api.pokemontcg.io/v2/cards/sm2-60
-    // https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    // https://api.pokemontcg.io/v2/cards/swsh1-179
-    // https://api.pokemontcg.io/v2/cards/sv8-76
-    // https://github.com/FlareZ123/pokemon-sims/issues/2343
-    if (issue_2343_burnet_quick_ball_latias_route_available() &&
-        deck_count_after_search_started(Card::ProfessorBurnet) > 0) {
-      return Card::ProfessorBurnet;
-    }
-
-    // Crispin source: https://api.pokemontcg.io/v2/cards/sv7-133
-    // Do not choose it after K1 if the inspected deck contains no needed Energy.
-    if (need_energy() && crispin_can_advance_energy_axis() && deck_count_after_search_started(Card::Crispin) > 0) return Card::Crispin;
-
-    // Wonder Tag may search Arven, Arven may search Earthen Vessel, and Vessel may
-    // search the final Basic Energy for this turn's unused manual attachment:
-    // https://api.pokemontcg.io/v2/cards/sm2-60
-    // https://api.pokemontcg.io/v2/cards/sv1-166
-    // https://api.pokemontcg.io/v2/cards/sv4-163
-    // https://www.pokemon.com/us/pokemon-tcg/rules
-    const Pokemon* arven_energy_target = target_regi();
-    const bool needed_energy_in_deck = arven_energy_target != nullptr &&
-        completing_basic_energy_for(*arven_energy_target, [this](const Card card) {
-          return deck_count_after_search_started(card) > 0;
-        }).has_value();
-    const bool exactly_one_energy_missing = needed_energy_in_deck;
-    // DDE-only is one physical Basic attachment short even though either type
-    // can complete Apex: https://github.com/FlareZ123/pokemon-sims/issues/2368
-    const bool arven_vessel_energy_route = need_energy() && exactly_one_energy_missing &&
-        !state_.manual_energy_used && !item_locked() && needed_energy_in_deck &&
-        deck_count_after_search_started(Card::Arven) > 0 &&
-        deck_count_after_search_started(Card::EarthenVessel) > 0 &&
-        is_legal_cost_available(can_play_payload_this_turn(), true);
-    if (arven_vessel_energy_route) return Card::Arven;
-
-    // After Wonder Tag establishes K1, choose Arven for the target-legal
-    // held-payload Item bridge recognized by the preflight. A direct held Item stays
-    // preferable because it avoids spending Tapu's Bench slot and the Supporter play:
-    // Wonder Tag: https://api.pokemontcg.io/v2/cards/sm2-60
-    // Arven: https://api.pokemontcg.io/v2/cards/sv1-166
-    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
-    // Quick Ball: https://api.pokemontcg.io/v2/cards/swsh1-179
-    // Earthen Vessel: https://api.pokemontcg.io/v2/cards/sv4-163
-    // Apex Dragon: https://api.pokemontcg.io/v2/cards/swsh12-136
-    // Decision priority: https://github.com/FlareZ123/pokemon-sims/blob/main/docs/POLICY_DECISIONS.md#decision-priorities
-    // Regression: https://github.com/FlareZ123/pokemon-sims/issues/648
-    if (!has_live_one_discard_hand_payload_line() &&
-        wonder_tag_arven_held_payload_route_available()) {
-      return Card::Arven;
-    }
-
-    // Wonder Tag has now inspected the deck. Burnet can only discard cards it
-    // selects from that deck, so it is not a payload connector after K1 proves
-    // no modeled payload remains: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-    const bool deck_payload_available = payload_might_be_in_deck();
-    const bool blender_is_playable = deck_payload_available && !item_locked() &&
-                                     hand_count(Card::BrilliantBlender) > 0 && can_play_payload_this_turn();
-    if (need_payload() && can_play_payload_this_turn() && deck_payload_available && !blender_is_playable &&
-        deck_count_after_search_started(Card::ProfessorBurnet) > 0) {
-      // Burnet directly searches and discards up to 2 cards: https://api.pokemontcg.io/v2/cards/swsh12tg-TG26
-      // Wonder Tag must take it when Blender cannot supply this payload line: https://api.pokemontcg.io/v2/cards/sv8-164
-      return Card::ProfessorBurnet;
-    }
-    if (need_vstar() && deck_count_after_search_started(Card::Arven) > 0) return Card::Arven;
-    // Wonder Tag can search Tate & Liza, whose switch mode immediately promotes a
-    // Benched Regidrago VSTAR. Select Tate when the target already pays GGF and the
-    // payload is ready or a payable held one-discard Item can establish it afterward:
-    // https://api.pokemontcg.io/v2/cards/sm2-60
-    // https://api.pokemontcg.io/v2/cards/sm7-148
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    // https://api.pokemontcg.io/v2/cards/sm6-113
-    // https://api.pokemontcg.io/v2/cards/swsh1-179
-    // https://api.pokemontcg.io/v2/cards/sv4-163
-    // Serena is only a fallback because it cannot promote the Benched attacker:
-    // https://api.pokemontcg.io/v2/cards/swsh12-164
-    // https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/part_tapu_tate_switch_override.inc#L14-L29
-    const bool payload_axis_completable_after_tate = !need_payload() ||
-        (state_.deck.size() > 1U && has_live_one_discard_hand_payload_line());
-    if (need_active_vstar() && benched_vstar_promotion_ready() &&
-        payload_axis_completable_after_tate && !can_free_retreat_with_latias() &&
-        deck_count_after_search_started(Card::TateLiza) > 0) {
-      return Card::TateLiza;
-    }
-    if (deck_count_after_search_started(Card::Serena) > 0) return Card::Serena;
-    const bool tate_would_promote_incomplete_vstar = need_active_vstar() &&
-        !benched_vstar_promotion_ready() && !can_free_retreat_with_latias();
-    // Wonder Tag is optional. Do not fall through to Tate's switch route after the
-    // target-aware branch rejected an Energy-incomplete promotion:
-    // https://api.pokemontcg.io/v2/cards/sm2-60
-    // https://api.pokemontcg.io/v2/cards/sm7-148
-    // https://api.pokemontcg.io/v2/cards/swsh12-136
-    if (deck_count_after_search_started(Card::TateLiza) > 0 &&
-        !tate_would_promote_incomplete_vstar) {
-      return Card::TateLiza;
-    }
-
-    // Wonder Tag may search any Supporter. A completed deck inspection must not
-    // nominate an absent hard-coded card while another legal Supporter remains:
-    // https://api.pokemontcg.io/v2/cards/sm2-60
-    for (const Card fallback : {Card::Dawn, Card::Crispin, Card::Arven,
-                                Card::ProfessorBurnet, Card::StevensResolve,
-                                Card::GuzmaHala, Card::Gladion, Card::Lusamine, Card::Guzma,
-                                Card::Channeler, Card::TeamYellsCheer,
-                                Card::RoseannesBackup, Card::Klara, Card::ProfessorTuro}) {
-      if (deck_count_after_search_started(fallback) > 0) return fallback;
-    }
-    // Wonder Tag is optional. Returning an absent sentinel makes the caller
-    // resolve the legal no-card case when the deck contains no Supporter.
-    return Card::Crispin;
-  }
-
-  std::vector<Card> choose_energy_targets_after_search_started(const int max_cards) const {
-    std::vector<Card> targets;
-    int g_need = grass_needed();
-    int f_need = fire_needed();
-    int g_available = deck_count_after_search_started(Card::Grass);
-    int f_available = deck_count_after_search_started(Card::Fire);
-    while (static_cast<int>(targets.size()) < max_cards) {
-      Card wanted = Card::Grass;
-      if (g_need > 0 && f_need > 0) {
-        wanted = std::find(targets.begin(), targets.end(), Card::Grass) == targets.end() ? Card::Grass : Card::Fire;
-      } else if (g_need > 0) {
-        wanted = Card::Grass;
-      } else if (f_need > 0) {
-        wanted = Card::Fire;
-      } else {
-        // Vital Dance and Earthen Vessel each allow up to 2 Basic Energy cards.
-        // After GGF is covered, select another legal Basic Energy for deck thinning
-        // and potential duplicate-Energy discard capacity: https://api.pokemontcg.io/v2/cards/sm2-55 https://api.pokemontcg.io/v2/cards/sv4-163
-        wanted = g_available > 0 ? Card::Grass : Card::Fire;
-      }
-      if ((wanted == Card::Grass && g_available == 0) || (wanted == Card::Fire && f_available == 0)) {
-        const Card other = wanted == Card::Grass ? Card::Fire : Card::Grass;
-        if ((other == Card::Grass && g_available == 0) || (other == Card::Fire && f_available == 0)) break;
-        wanted = other;
-      }
-      targets.push_back(wanted);
-      if (wanted == Card::Grass) {
-        --g_available;
-        if (g_need > 0) --g_need;
-      } else {
-        --f_available;
-        if (f_need > 0) --f_need;
-      }
-    }
-    return targets;
-  }
-
-  void search_energy_to_hand(const int max_cards, std::string_view rules, std::string_view source) {
-    // A legal Energy search reveals the whole deck even when it finds zero cards.
-    record_deck_search_knowledge(source);
-    const std::vector<Card> targets = choose_energy_targets_after_search_started(max_cards);
-    for (const Card target : targets) {
-      if (!move_deck_to_hand(target)) throw std::logic_error("energy search target disappeared");
-    }
-    shuffle(state_.deck);
-    trace(std::string(source), rules, "Searched up to " + std::to_string(max_cards) + " Basic Energy: " + join_cards(targets) + ".");
-  }
-
-  bool attach_manual() {
-    if (state_.manual_energy_used) return false;
-    Pokemon* target = target_regi();
-    if (target == nullptr || !need_energy()) return false;
-    const auto wanted = preferred_manual_energy_from_hand(*target);
-    if (!wanted) return false;
-    if (!remove_one(state_.hand, *wanted)) {
-      throw std::logic_error("selected manual Energy disappeared");
-    }
-    if (!attach_energy_card(*target, *wanted)) {
-      // DDE can only remain attached to Dragon Pokémon. target_regi() is
-      // Regidrago V/VSTAR, both Dragon, so reaching this branch is a bug:
-      // https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/
-      // https://api.pokemontcg.io/v2/cards/swsh12-135
-      // https://api.pokemontcg.io/v2/cards/swsh12-136
-      // https://github.com/FlareZ123/pokemon-sims/issues/2238
-      throw std::logic_error("selected manual Energy was illegal on Regidrago");
-    }
-    state_.manual_energy_used = true;
-    trace("ATTACH", "R-GAME-ENERGY",
-          std::string(name(*wanted)) + " manually to " +
-              std::string(name(target->card)) + ".");  // DDE-aware selection preserves the existing action contract: https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xy6/97/ ; https://github.com/FlareZ123/pokemon-sims/issues/2238
-    return true;
-  }
-
-  bool evolve_best_regi() {
-    if (state_.turn == 1 || hand_count(Card::RegidragoVstar) == 0) return false;
-    Pokemon* best = nullptr;

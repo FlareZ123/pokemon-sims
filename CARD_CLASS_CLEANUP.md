@@ -70,6 +70,9 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 2026-10-06 cleanup checkpoint: `part_008a.inc` now composes two named owners instead of embedding unrelated helper families: `core/supporter_source_lifecycle.inc` for Supporter source staging/finalization and `core/routes/latias_vstar_promotion_policy.inc` for Latias ex VSTAR promotion. The extraction preserves declaration order and the original textual composition boundary while reducing mixed responsibilities in the numbered fragment. Supporter procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md Latias ex: https://api.pokemontcg.io/v2/cards/sv8-76
 
+
+2026-10-06 cleanup checkpoint: Forest Seal Stone holder selection now reuses the canonical Active-first board traversal in `core/board_state_policy.inc`. The board owner exposes mutable and const Bench-only lookups, `part_010_attach_fss_override.inc` delegates its V-preferred and generic Tool-slot selection to those helpers, and `part_011.inc` no longer maintains a separate Star Alchemy holder scan. Preserve V-first FSS strategy in the route layer while keeping physical board traversal centralized. Forest Seal Stone: https://api.pokemontcg.io/v2/cards/swsh12-156 Board owner: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
+
 ## Active card migrations
 
 No open migration issue is assumed by this plan. Before starting a card migration, search the current issue tracker and branch set for an existing owner. A migration should move intrinsic metadata and classification before printed resolution, then move printed resolution only after its live resolver and reusable `CardContext` operations are identified.

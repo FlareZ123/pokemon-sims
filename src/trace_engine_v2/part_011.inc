@@ -1,10 +1,8 @@
   bool use_fss() {
     if (state_.vstar_power_used) return false;
-    Pokemon* holder = nullptr;
-    if (state_.active && state_.active->tool == Tool::ForestSealStone) holder = &*state_.active;
-    if (holder == nullptr) {
-      for (Pokemon& p : state_.bench) if (p.tool == Tool::ForestSealStone) { holder = &p; break; }
-    }
+    Pokemon* holder = find_board_pokemon_matching([](const Pokemon& pokemon) {
+      return pokemon.tool == Tool::ForestSealStone;
+    }); // Canonical Active-first traversal: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/board_state_policy.inc
     // Star Alchemy is printed on Forest Seal Stone, a Pokémon Tool; the attached
     // Pokémon V can use that Tool's VSTAR Power: https://api.pokemontcg.io/v2/cards/swsh12-156
     // Path to the Peak removes Abilities from Pokémon with Rule Boxes. The published

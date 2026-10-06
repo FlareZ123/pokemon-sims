@@ -179,4 +179,4 @@ bool play_gladion_issue1737_original() {
   return false;
 }
 
-#include "part_issue_1737_gladion_prized_steven_override.inc"
+#include "../../part_issue_1737_gladion_prized_steven_override.inc"

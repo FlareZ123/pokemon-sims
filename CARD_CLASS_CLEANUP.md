@@ -66,6 +66,10 @@ Quick Ball remains the reference for explicit registration, exact-print metadata
 
 2026-10-06 cleanup checkpoint: setup recipe metadata policy is now co-located with its sole consumer in `src/trace_engine_v2/core/setup_lifecycle.inc`, and the one-consumer `core/setup/policies.inc` seam is retired. Keep future setup-only metadata and setup state-transition helpers together unless another independent consumer appears. Setup procedure: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
 
+2026-10-06 cleanup checkpoint: the historical Gladion/Steven continuation moved from `src/trace_engine_v2/part_issue_1191_gladion_steven_override.inc` to `src/trace_engine_v2/core/routes/gladion_steven_continuation.inc`. The post-`part_014a` composition owner still includes it at the same textual boundary, and the continuation now consumes `gladion_steven_route_policy.inc` from its canonical route directory without a root-level hop. C++ textual include semantics: https://eel.is/c++draft/cpp.include
+
+2026-10-06 cleanup checkpoint: the Gladion/Burnet/Crispin continuation moved from `src/trace_engine_v2/part_issue_1608_burnet_before_dead_crispin_override.inc` to `src/trace_engine_v2/core/routes/gladion_burnet_crispin_continuation.inc`. Its downstream historical continuation remains composed in the same order, while `composition/post_014a_overrides.inc` now points directly at the organized route owner. C++ textual include semantics: https://eel.is/c++draft/cpp.include
+
 ## Active card migrations
 
 No open migration issue is assumed by this plan. Before starting a card migration, search the current issue tracker and branch set for an existing owner. A migration should move intrinsic metadata and classification before printed resolution, then move printed resolution only after its live resolver and reusable `CardContext` operations are identified.

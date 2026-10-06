@@ -5,7 +5,7 @@
 #if !defined(play_gladion)
 #error "Gladion/Steven composition requires the parent play_gladion alias"
 #endif
-#include "core/routes/gladion_steven_route_policy.inc"
+#include "gladion_steven_route_policy.inc"
 
   bool issue_1204_blind_gladion_missing_regi_admitted() const {
     if (prizes_known() || !supporter_allowed() || hand_count(Card::Gladion) == 0 ||

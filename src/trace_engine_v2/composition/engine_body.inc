@@ -35,8 +35,11 @@
 
 // Presentation-only trace formatting has one core owner so numbered composition
 // fragments do not grow duplicate rendering helpers.
-// Source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/trace_formatting.inc
-#include "../core/trace_formatting.inc"
+// Source: https://github.com/FlareZ123/pokemon-sims/blob/main/src/trace_engine_v2/core/formatting/trace_formatting.inc
+#ifndef SIM_TRACE_FORMATTING_INCLUDED
+#define SIM_TRACE_FORMATTING_INCLUDED
+#include "../core/formatting/trace_formatting.inc"
+#endif
 
 #endif  // SIM_TRACE_SIMULATOR_STATE_INCLUDED
 

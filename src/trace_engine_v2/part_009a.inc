@@ -1,3 +1,21 @@
+  bool begin_legacy_item_resolution(const Card source) {
+    // A played Item leaves ordinary hand before its printed effect resolves and is
+    // discarded only after that effect finishes. Reuse the same resolving-source
+    // lifecycle as the migrated Quick Ball resolver for legacy Item bodies.
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed legacy lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4339
+    return ResolvingTrainerSourcePolicy::move_from_hand(
+        state_.hand, resolving_trainer_sources_, source);
+  }
+
+  bool finish_legacy_item_resolution(const Card source) {
+    // B-01 step 4 discards the Item only after its effect has finished.
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed legacy lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4339
+    return ResolvingTrainerSourcePolicy::move_to_discard(
+        resolving_trainer_sources_, state_.discard, source);
+  }
+
   std::optional<Card> issue_1221_burnet_treasure_vstar_cost() const {
     // After Professor Burnet establishes the strict current-turn payload, one
     // setup-dead Supporter may pay Mysterious Treasure only when the searched
@@ -197,10 +215,13 @@
     }
     if (!cost) return false;
 
-    remove_one(state_.hand, Card::MysteriousTreasure);
+    // The played Item is now outside ordinary hand but is not yet a discard card.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4339
+    if (!begin_legacy_item_resolution(Card::MysteriousTreasure)) return false;
     issue_1598_bank_prized_treasure_ = false;
     issue_1605_arven_redundant_payload_route_ = false;
-    state_.discard.push_back(Card::MysteriousTreasure);
     discard_from_hand(*cost, "Mysterious Treasure cost", "R-MT-01");
 
     // Card text source: https://api.pokemontcg.io/v2/cards/sm6-113
@@ -226,6 +247,10 @@
                            (want_payload && is_payload(target));
       if (desired && move_deck_to_hand(target)) {
         shuffle(state_.deck);
+        // B-01 step 4 happens only after the search and required shuffle finish.
+        // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+        // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+        if (!finish_legacy_item_resolution(Card::MysteriousTreasure)) return false;
         trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM", "Searched a Psychic or Dragon Pokémon: " + std::string(name(target)) + ".");
         return true;
       }
@@ -244,4 +269,8 @@
     const Card fallback = found_tapu_for_gladion ? Card::TapuLeleGX : fallback_mysterious_target_after_search_started();
     const bool found_fallback = found_tapu_for_gladion || move_deck_to_hand(fallback);
     shuffle(state_.deck);
+    // Mysterious Treasure remains outside discard until its effect and shuffle end.
+    // Mysterious Treasure: https://api.pokemontcg.io/v2/cards/sm6-113
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    if (!finish_legacy_item_resolution(Card::MysteriousTreasure)) return false;
     trace("PLAY ITEM", "R-MT-01; R-GAME-ITEM", found_fallback ? "No preferred target remained; legally searched " + std::string(name(fallback)) + "." : "No Psychic or Dragon Pokémon remained after search.");

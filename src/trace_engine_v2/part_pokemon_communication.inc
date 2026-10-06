@@ -443,16 +443,16 @@
       return false;
     }
 
-    // The revealed hand Pokémon enters the deck before the search. It is therefore
-    // a legal target of the same resolving Pokémon Communication, including when the
-    // deck was empty before the exchange:
-    // https://api.pokemontcg.io/v2/cards/sm9-152
-    // https://www.pokemon.com/us/pokemon-tcg/rules
-    if (!remove_one(state_.hand, Card::PokemonCommunication) ||
+    // Pokémon Communication returns the revealed hand Pokémon to the deck before
+    // searching for a Pokémon. The played Item itself stays outside ordinary hand
+    // and discard until the search and required shuffle have finished.
+    // Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    // Confirmed lifecycle defect: https://github.com/FlareZ123/pokemon-sims/issues/4339
+    if (!begin_legacy_item_resolution(Card::PokemonCommunication) ||
         !remove_one(state_.hand, returned)) {
       throw std::logic_error("Pokémon Communication preflight diverged from hand state");
     }
-    state_.discard.push_back(Card::PokemonCommunication);
     state_.deck.push_back(returned);
     record_deck_search_knowledge("Pokémon Communication");
     const Card actual_target =
@@ -461,6 +461,10 @@
       throw std::logic_error("Pokémon Communication target disappeared after search started");
     }
     shuffle(state_.deck);
+    // B-01 moves the used Item to discard only after its printed effect completes.
+    // Pokémon Communication: https://api.pokemontcg.io/v2/cards/sm9-152
+    // Item procedure B-01: https://github.com/FlareZ123/pokemon-sims/blob/main/EN_advanced_manual-2025-transcription-structured.md
+    if (!finish_legacy_item_resolution(Card::PokemonCommunication)) return false;
     trace("PLAY ITEM", "R-PCOMM-01; R-GAME-ITEM; P-KNOWLEDGE-01",
           "Returned " + std::string(name(returned)) +
               " to the deck and searched " + std::string(name(actual_target)) + ".");

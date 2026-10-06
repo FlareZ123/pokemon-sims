@@ -1,0 +1,29 @@
+name: Issue 4358 fast validation
+on:
+  pull_request:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build simulator
+        run: cmake --build build --target regidrago_sim --parallel 2
+      - name: Reproduce T4 completion
+        run: build/regidrago_sim --simulate-this --scenario strict-jit/go-second --seed 15 --require-ready-by 4
+      - name: Regenerate canonical setup baselines
+        run: python scripts/regenerate_setup_baselines.py --exe build/regidrago_sim --out-dir results
+      - name: Refresh generated setup docs
+        run: python scripts/update_setup_docs.py
+      - name: Upload regenerated baselines
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue-4358-regenerated-baselines
+          path: |
+            results
+            docs/REPORT.md
+            docs/TRACE_AUDIT.md

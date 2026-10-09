@@ -58,7 +58,7 @@
     // Confirmed legality bug: https://github.com/FlareZ123/pokemon-sims/issues/4158
     if (Pokemon* holder = first_open_fss_v_holder(allow_active)) return holder;
     const auto has_open_tool_slot = [](const Pokemon& pokemon) {
-      return pokemon.tool == Tool::None;
+      return pokemon_has_open_tool_slot(pokemon);
     };
     return allow_active
         ? find_board_pokemon_matching(has_open_tool_slot)

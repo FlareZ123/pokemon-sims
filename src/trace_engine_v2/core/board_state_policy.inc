@@ -258,9 +258,14 @@
     return board_index_matching(predicate).has_value();
   }
 
+  [[nodiscard]] static constexpr bool pokemon_has_open_tool_slot(
+      const Pokemon& pokemon) {
+    return pokemon.tool == Tool::None;
+  }
+
   [[nodiscard]] static constexpr bool pokemon_has_open_v_tool_slot(
       const Pokemon& pokemon) {
-    return is_pokemon_v(pokemon.card) && pokemon.tool == Tool::None;
+    return is_pokemon_v(pokemon.card) && pokemon_has_open_tool_slot(pokemon);
   }
 
   [[nodiscard]] bool board_has_open_pokemon_v_tool_slot() const {
